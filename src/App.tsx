@@ -158,12 +158,71 @@ function App() {
     )
   }
 
+  function removeSet(exerciseId: string, setId: string) {
+    setState((s) =>
+      s.activeWorkout
+        ? {
+            ...s,
+            activeWorkout: {
+              ...s.activeWorkout,
+              exercises: s.activeWorkout.exercises.map((e) =>
+                e.id === exerciseId
+                  ? { ...e, sets: e.sets.filter((set) => set.id !== setId) }
+                  : e,
+              ),
+            },
+          }
+        : s,
+    )
+  }
+
+  function removeExercise(exerciseId: string) {
+    setState((s) =>
+      s.activeWorkout
+        ? {
+            ...s,
+            activeWorkout: {
+              ...s.activeWorkout,
+              exercises: s.activeWorkout.exercises.filter(
+                (e) => e.id !== exerciseId,
+              ),
+            },
+          }
+        : s,
+    )
+  }
+
+  function renameExercise(exerciseId: string, name: string) {
+    setState((s) =>
+      s.activeWorkout
+        ? {
+            ...s,
+            activeWorkout: {
+              ...s.activeWorkout,
+              exercises: s.activeWorkout.exercises.map((e) =>
+                e.id === exerciseId ? { ...e, name } : e,
+              ),
+            },
+          }
+        : s,
+    )
+  }
+
+  function discardWorkout() {
+    setState((s) => ({ ...s, activeWorkout: null }))
+    setViewedSession(null)
+  }
+
   if (activeWorkout) {
     return (
       <WorkoutScreen
         workout={activeWorkout}
         onAddExercise={addExercise}
         onAddSet={addSet}
+        onRemoveSet={removeSet}
+        onRemoveExercise={removeExercise}
+        onRenameExercise={renameExercise}
+        onDiscard={discardWorkout}
         onFinish={finishWorkout}
       />
     )
@@ -240,15 +299,30 @@ function WorkoutScreen({
   workout,
   onAddExercise,
   onAddSet,
+  onRemoveSet,
+  onRemoveExercise,
+  onRenameExercise,
+  onDiscard,
   onFinish,
 }: {
   workout: Workout
   onAddExercise: (name: string) => void
   onAddSet: (exerciseId: string, reps: number, weightKg: number) => void
+  onRemoveSet: (exerciseId: string, setId: string) => void
+  onRemoveExercise: (exerciseId: string) => void
+  onRenameExercise: (exerciseId: string, name: string) => void
+  onDiscard: () => void
   onFinish: () => void
 }) {
+  const [confirmingDiscard, setConfirmingDiscard] = useState(false)
   const hasSet = workout.exercises.some((e) => e.sets.length > 0)
   const canFinish = workout.exercises.length > 0 && hasSet
+
+  useEffect(() => {
+    if (!confirmingDiscard) return
+    const timer = setTimeout(() => setConfirmingDiscard(false), 3000)
+    return () => clearTimeout(timer)
+  }, [confirmingDiscard])
 
   return (
     <main className="screen">
@@ -265,6 +339,9 @@ function WorkoutScreen({
             key={exercise.id}
             exercise={exercise}
             onAddSet={(reps, weightKg) => onAddSet(exercise.id, reps, weightKg)}
+            onRemoveSet={(setId) => onRemoveSet(exercise.id, setId)}
+            onRemove={() => onRemoveExercise(exercise.id)}
+            onRename={(name) => onRenameExercise(exercise.id, name)}
           />
         ))
       )}
@@ -284,6 +361,31 @@ function WorkoutScreen({
           Add at least one exercise with a set to finish the workout.
         </p>
       )}
+
+      <div className="discard">
+        {confirmingDiscard ? (
+          <>
+            <button type="button" className="danger" onClick={onDiscard}>
+              Confirm discard
+            </button>
+            <button
+              type="button"
+              className="secondary"
+              onClick={() => setConfirmingDiscard(false)}
+            >
+              Cancel
+            </button>
+          </>
+        ) : (
+          <button
+            type="button"
+            className="danger"
+            onClick={() => setConfirmingDiscard(true)}
+          >
+            Discard workout
+          </button>
+        )}
+      </div>
     </main>
   )
 }
@@ -291,13 +393,22 @@ function WorkoutScreen({
 function ExerciseCard({
   exercise,
   onAddSet,
+  onRemoveSet,
+  onRemove,
+  onRename,
 }: {
   exercise: Exercise
   onAddSet: (reps: number, weightKg: number) => void
+  onRemoveSet: (setId: string) => void
+  onRemove: () => void
+  onRename: (name: string) => void
 }) {
   const [reps, setReps] = useState('')
   const [weight, setWeight] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [editingName, setEditingName] = useState(false)
+  const [nameDraft, setNameDraft] = useState('')
+  const [nameError, setNameError] = useState<string | null>(null)
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault()
@@ -317,9 +428,65 @@ function ExerciseCard({
     setError(null)
   }
 
+  function startRename() {
+    setNameDraft(exercise.name)
+    setNameError(null)
+    setEditingName(true)
+  }
+
+  function handleRenameSubmit(event: FormEvent) {
+    event.preventDefault()
+    const trimmed = nameDraft.trim()
+    if (!trimmed) {
+      setNameError('Exercise name is required.')
+      return
+    }
+    onRename(trimmed)
+    setEditingName(false)
+    setNameError(null)
+  }
+
   return (
     <section className="card exercise">
-      <h3>{exercise.name}</h3>
+      <div className="exercise-head">
+        <h3>{exercise.name}</h3>
+        <div className="exercise-actions">
+          <button type="button" className="btn-sm secondary" onClick={startRename}>
+            Rename
+          </button>
+          <button type="button" className="btn-sm danger" onClick={onRemove}>
+            Remove
+          </button>
+        </div>
+      </div>
+
+      {editingName && (
+        <form onSubmit={handleRenameSubmit} className="rename-form">
+          <input
+            type="text"
+            value={nameDraft}
+            onChange={(e) => {
+              setNameDraft(e.target.value)
+              setNameError(null)
+            }}
+            autoFocus
+          />
+          <div className="rename-actions">
+            <button type="submit" className="btn-sm secondary">
+              Save
+            </button>
+            <button
+              type="button"
+              className="btn-sm secondary"
+              onClick={() => setEditingName(false)}
+            >
+              Cancel
+            </button>
+          </div>
+          {nameError && <p className="error">{nameError}</p>}
+        </form>
+      )}
+
       {exercise.sets.length === 0 ? (
         <p className="muted">No sets yet.</p>
       ) : (
@@ -330,6 +497,13 @@ function ExerciseCard({
               <span>
                 {set.reps} reps · {set.weightKg} kg
               </span>
+              <button
+                type="button"
+                className="btn-sm secondary"
+                onClick={() => onRemoveSet(set.id)}
+              >
+                Remove
+              </button>
             </li>
           ))}
         </ul>
