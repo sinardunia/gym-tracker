@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import './App.css'
 
 type WorkoutSet = {
@@ -20,62 +20,148 @@ type Workout = {
   exercises: Exercise[]
 }
 
+type PersistedState = {
+  activeWorkout: Workout | null
+  sessions: Workout[]
+}
+
+const STORAGE_KEY = 'gym-tracker.state.v1'
+
+const EMPTY_STATE: PersistedState = { activeWorkout: null, sessions: [] }
+
 const newId = (): string => crypto.randomUUID()
 
+function createWorkout(): Workout {
+  return {
+    id: newId(),
+    startedAt: new Date().toISOString(),
+    finishedAt: null,
+    exercises: [],
+  }
+}
+
+function isWorkout(value: unknown): value is Workout {
+  if (typeof value !== 'object' || value === null) return false
+  const workout = value as Record<string, unknown>
+  if (typeof workout.id !== 'string' || typeof workout.startedAt !== 'string') {
+    return false
+  }
+  if (
+    workout.finishedAt !== null &&
+    typeof workout.finishedAt !== 'string'
+  ) {
+    return false
+  }
+  if (!Array.isArray(workout.exercises)) return false
+  return workout.exercises.every((exercise) => {
+    if (typeof exercise !== 'object' || exercise === null) return false
+    const entry = exercise as Record<string, unknown>
+    if (typeof entry.id !== 'string' || typeof entry.name !== 'string') {
+      return false
+    }
+    if (!Array.isArray(entry.sets)) return false
+    return entry.sets.every((set) => {
+      if (typeof set !== 'object' || set === null) return false
+      const setEntry = set as Record<string, unknown>
+      return (
+        typeof setEntry.id === 'string' &&
+        typeof setEntry.reps === 'number' &&
+        typeof setEntry.weightKg === 'number'
+      )
+    })
+  })
+}
+
+function loadState(): PersistedState {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (!raw) return EMPTY_STATE
+    const parsed: unknown = JSON.parse(raw)
+    if (typeof parsed !== 'object' || parsed === null) return EMPTY_STATE
+    const data = parsed as Record<string, unknown>
+    const activeWorkout = isWorkout(data.activeWorkout)
+      ? data.activeWorkout
+      : null
+    const sessions = Array.isArray(data.sessions)
+      ? data.sessions.filter(isWorkout)
+      : []
+    return { activeWorkout, sessions }
+  } catch {
+    return EMPTY_STATE
+  }
+}
+
 function App() {
-  const [workout, setWorkout] = useState<Workout | null>(null)
-  const [summary, setSummary] = useState<Workout | null>(null)
+  const [state, setState] = useState<PersistedState>(loadState)
+  const [viewedSession, setViewedSession] = useState<Workout | null>(null)
+
+  const activeWorkout = state.activeWorkout
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
+    } catch {
+      // Storage unavailable; keep working in memory.
+    }
+  }, [state])
 
   function startWorkout() {
-    setWorkout({
-      id: newId(),
-      startedAt: new Date().toISOString(),
-      finishedAt: null,
-      exercises: [],
-    })
-    setSummary(null)
+    setState((s) => ({ ...s, activeWorkout: createWorkout() }))
+    setViewedSession(null)
   }
 
   function finishWorkout() {
-    if (!workout) return
-    setSummary({ ...workout, finishedAt: new Date().toISOString() })
-    setWorkout(null)
+    if (!activeWorkout) return
+    const finished: Workout = {
+      ...activeWorkout,
+      finishedAt: new Date().toISOString(),
+    }
+    setState((s) => ({
+      activeWorkout: null,
+      sessions: [finished, ...s.sessions],
+    }))
+    setViewedSession(finished)
   }
 
   function addExercise(name: string) {
-    setWorkout(
-      (w) =>
-        w && { ...w, exercises: [...w.exercises, { id: newId(), name, sets: [] }] },
+    setState((s) =>
+      s.activeWorkout
+        ? {
+            ...s,
+            activeWorkout: {
+              ...s.activeWorkout,
+              exercises: [
+                ...s.activeWorkout.exercises,
+                { id: newId(), name, sets: [] },
+              ],
+            },
+          }
+        : s,
     )
   }
 
   function addSet(exerciseId: string, reps: number, weightKg: number) {
-    setWorkout(
-      (w) =>
-        w && {
-          ...w,
-          exercises: w.exercises.map((e) =>
-            e.id === exerciseId
-              ? { ...e, sets: [...e.sets, { id: newId(), reps, weightKg }] }
-              : e,
-          ),
-        },
+    setState((s) =>
+      s.activeWorkout
+        ? {
+            ...s,
+            activeWorkout: {
+              ...s.activeWorkout,
+              exercises: s.activeWorkout.exercises.map((e) =>
+                e.id === exerciseId
+                  ? { ...e, sets: [...e.sets, { id: newId(), reps, weightKg }] }
+                  : e,
+              ),
+            },
+          }
+        : s,
     )
   }
 
-  if (summary) {
-    return (
-      <SummaryScreen
-        workout={summary}
-        onStartAnother={startWorkout}
-      />
-    )
-  }
-
-  if (workout) {
+  if (activeWorkout) {
     return (
       <WorkoutScreen
-        workout={workout}
+        workout={activeWorkout}
         onAddExercise={addExercise}
         onAddSet={addSet}
         onFinish={finishWorkout}
@@ -83,17 +169,69 @@ function App() {
     )
   }
 
-  return <StartScreen onStart={startWorkout} />
+  if (viewedSession) {
+    return (
+      <SummaryScreen
+        workout={viewedSession}
+        onStartAnother={startWorkout}
+        onBack={() => setViewedSession(null)}
+      />
+    )
+  }
+
+  return (
+    <HomeScreen
+      sessions={state.sessions}
+      onStart={startWorkout}
+      onViewSession={setViewedSession}
+    />
+  )
 }
 
-function StartScreen({ onStart }: { onStart: () => void }) {
+function HomeScreen({
+  sessions,
+  onStart,
+  onViewSession,
+}: {
+  sessions: Workout[]
+  onStart: () => void
+  onViewSession: (session: Workout) => void
+}) {
   return (
-    <main className="screen center">
-      <h1>Gym Tracker</h1>
-      <p className="muted">Log your workout, one exercise and set at a time.</p>
+    <main className="screen">
+      <header className="screen-header">
+        <h1>Gym Tracker</h1>
+        <p className="muted">Log your workout, one exercise and set at a time.</p>
+      </header>
+
       <button type="button" className="primary start" onClick={onStart}>
         Start workout
       </button>
+
+      <section className="recent">
+        <h2>Recent sessions</h2>
+        {sessions.length === 0 ? (
+          <p className="muted">No completed sessions yet.</p>
+        ) : (
+          <ul className="session-list">
+            {sessions.map((session) => (
+              <li key={session.id}>
+                <button
+                  type="button"
+                  className="session-item"
+                  onClick={() => onViewSession(session)}
+                >
+                  <span>{formatDate(session.startedAt)}</span>
+                  <span className="muted">
+                    {session.exercises.length} exercises ·{' '}
+                    {countSets(session)} sets
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </main>
   )
 }
@@ -282,15 +420,12 @@ function AddExerciseForm({ onAdd }: { onAdd: (name: string) => void }) {
 function SummaryScreen({
   workout,
   onStartAnother,
+  onBack,
 }: {
   workout: Workout
   onStartAnother: () => void
+  onBack: () => void
 }) {
-  const totalSets = workout.exercises.reduce(
-    (sum, exercise) => sum + exercise.sets.length,
-    0,
-  )
-
   return (
     <main className="screen">
       <header className="screen-header">
@@ -315,14 +450,21 @@ function SummaryScreen({
       ))}
 
       <p className="summary-count">
-        {workout.exercises.length} exercises · {totalSets} sets
+        {workout.exercises.length} exercises · {countSets(workout)} sets
       </p>
 
       <button type="button" className="primary" onClick={onStartAnother}>
         Start another workout
       </button>
+      <button type="button" className="secondary" onClick={onBack}>
+        Back
+      </button>
     </main>
   )
+}
+
+function countSets(workout: Workout): number {
+  return workout.exercises.reduce((sum, exercise) => sum + exercise.sets.length, 0)
 }
 
 function formatTime(iso: string): string {

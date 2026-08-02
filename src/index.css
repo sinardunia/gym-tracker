@@ -50,6 +50,21 @@ h3 {
   color: var(--text-h);
 }
 
+h1 {
+  font-size: 28px;
+  margin: 0;
+}
+
+h2 {
+  font-size: 20px;
+  margin: 0;
+}
+
+h3 {
+  font-size: 17px;
+  margin: 0;
+}
+
 #root {
   max-width: 640px;
   min-height: 100dvh;
