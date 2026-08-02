@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
 import './App.css'
 
 type WorkoutSet = {
@@ -23,6 +23,11 @@ type Workout = {
 type PersistedState = {
   activeWorkout: Workout | null
   sessions: Workout[]
+}
+
+type BackupMessage = {
+  kind: 'error' | 'info'
+  text: string
 }
 
 const STORAGE_KEY = 'gym-tracker.state.v1'
@@ -66,10 +71,33 @@ function isWorkout(value: unknown): value is Workout {
       return (
         typeof setEntry.id === 'string' &&
         typeof setEntry.reps === 'number' &&
-        typeof setEntry.weightKg === 'number'
+        Number.isFinite(setEntry.reps) &&
+        typeof setEntry.weightKg === 'number' &&
+        Number.isFinite(setEntry.weightKg)
       )
     })
   })
+}
+
+function isPersistedState(value: unknown): value is PersistedState {
+  if (typeof value !== 'object' || value === null) return false
+  const data = value as Record<string, unknown>
+  const activeWorkoutIsValid =
+    data.activeWorkout === null || isWorkout(data.activeWorkout)
+  return (
+    activeWorkoutIsValid &&
+    Array.isArray(data.sessions) &&
+    data.sessions.every(isWorkout)
+  )
+}
+
+function parseBackup(text: string): PersistedState | null {
+  try {
+    const parsed: unknown = JSON.parse(text)
+    return isPersistedState(parsed) ? parsed : null
+  } catch {
+    return null
+  }
 }
 
 function loadState(): PersistedState {
@@ -213,6 +241,11 @@ function App() {
     setViewedSession(null)
   }
 
+  function importBackup(nextState: PersistedState) {
+    setState(nextState)
+    setViewedSession(null)
+  }
+
   if (activeWorkout) {
     return (
       <WorkoutScreen
@@ -224,6 +257,8 @@ function App() {
         onRenameExercise={renameExercise}
         onDiscard={discardWorkout}
         onFinish={finishWorkout}
+        backupState={state}
+        onImportBackup={importBackup}
       />
     )
   }
@@ -243,6 +278,8 @@ function App() {
       sessions={state.sessions}
       onStart={startWorkout}
       onViewSession={setViewedSession}
+      backupState={state}
+      onImportBackup={importBackup}
     />
   )
 }
@@ -251,10 +288,14 @@ function HomeScreen({
   sessions,
   onStart,
   onViewSession,
+  backupState,
+  onImportBackup,
 }: {
   sessions: Workout[]
   onStart: () => void
   onViewSession: (session: Workout) => void
+  backupState: PersistedState
+  onImportBackup: (state: PersistedState) => void
 }) {
   return (
     <main className="screen">
@@ -291,6 +332,8 @@ function HomeScreen({
           </ul>
         )}
       </section>
+
+      <BackupControls state={backupState} onImport={onImportBackup} />
     </main>
   )
 }
@@ -304,6 +347,8 @@ function WorkoutScreen({
   onRenameExercise,
   onDiscard,
   onFinish,
+  backupState,
+  onImportBackup,
 }: {
   workout: Workout
   onAddExercise: (name: string) => void
@@ -313,6 +358,8 @@ function WorkoutScreen({
   onRenameExercise: (exerciseId: string, name: string) => void
   onDiscard: () => void
   onFinish: () => void
+  backupState: PersistedState
+  onImportBackup: (state: PersistedState) => void
 }) {
   const [confirmingDiscard, setConfirmingDiscard] = useState(false)
   const hasSet = workout.exercises.some((e) => e.sets.length > 0)
@@ -386,7 +433,104 @@ function WorkoutScreen({
           </button>
         )}
       </div>
+
+      <BackupControls state={backupState} onImport={onImportBackup} />
     </main>
+  )
+}
+
+function BackupControls({
+  state,
+  onImport,
+}: {
+  state: PersistedState
+  onImport: (state: PersistedState) => void
+}) {
+  const [pendingImport, setPendingImport] = useState<PersistedState | null>(null)
+  const [message, setMessage] = useState<BackupMessage | null>(null)
+
+  function handleExport() {
+    const blob = new Blob([JSON.stringify(state, null, 2)], {
+      type: 'application/json',
+    })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `gym-tracker-backup-${new Date().toISOString().slice(0, 10)}.json`
+    document.body.append(link)
+    link.click()
+    link.remove()
+    URL.revokeObjectURL(url)
+    setMessage({ kind: 'info', text: 'Backup downloaded.' })
+  }
+
+  async function handleImportFile(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) return
+
+    const backup = parseBackup(await file.text())
+    if (!backup) {
+      setPendingImport(null)
+      setMessage({
+        kind: 'error',
+        text: 'Backup file is invalid. Existing data was not changed.',
+      })
+      return
+    }
+
+    setPendingImport(backup)
+    setMessage(null)
+  }
+
+  function confirmImport() {
+    if (!pendingImport) return
+    onImport(pendingImport)
+    setPendingImport(null)
+    setMessage({ kind: 'info', text: 'Backup imported.' })
+  }
+
+  return (
+    <section className="card backup">
+      <h2>Backup</h2>
+      <p className="muted">Export or restore all local Gym Tracker data.</p>
+      <div className="backup-actions">
+        <button type="button" className="secondary" onClick={handleExport}>
+          Export JSON
+        </button>
+        <label className="file-button">
+          Import JSON
+          <input type="file" accept="application/json,.json" onChange={handleImportFile} />
+        </label>
+      </div>
+
+      {pendingImport && (
+        <div className="import-confirm">
+          <p>
+            Importing this backup will replace all current local data, including
+            any active workout and recent sessions.
+          </p>
+          <div className="backup-actions">
+            <button type="button" className="danger" onClick={confirmImport}>
+              Confirm import
+            </button>
+            <button
+              type="button"
+              className="secondary"
+              onClick={() => setPendingImport(null)}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {message && (
+        <p className={message.kind === 'error' ? 'error' : 'muted'}>
+          {message.text}
+        </p>
+      )}
+    </section>
   )
 }
 

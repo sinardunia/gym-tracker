@@ -222,6 +222,56 @@ button.danger {
   }
 }
 
+.backup {
+  h2,
+  p {
+    margin: 0;
+  }
+}
+
+.backup-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+
+  button,
+  .file-button {
+    flex: 1;
+  }
+}
+
+.file-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text-h);
+  cursor: pointer;
+
+  &:hover {
+    border-color: var(--accent);
+  }
+
+  input {
+    display: none;
+  }
+}
+
+.import-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 10px;
+  background: var(--row-bg);
+
+  p {
+    margin: 0;
+  }
+}
+
 .error {
   color: var(--danger);
   font-size: 14px;
