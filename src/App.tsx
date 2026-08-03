@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from 'react'
 import './App.css'
 
 type WorkoutSet = {
@@ -294,8 +294,6 @@ function App() {
         onRenameExercise={renameExercise}
         onDiscard={discardWorkout}
         onFinish={finishWorkout}
-        backupState={state}
-        onImportBackup={importBackup}
         recentExercises={recentExercises}
         sessions={state.sessions}
       />
@@ -386,8 +384,6 @@ function WorkoutScreen({
   onRenameExercise,
   onDiscard,
   onFinish,
-  backupState,
-  onImportBackup,
   recentExercises,
   sessions,
 }: {
@@ -399,14 +395,27 @@ function WorkoutScreen({
   onRenameExercise: (exerciseId: string, name: string) => void
   onDiscard: () => void
   onFinish: () => void
-  backupState: PersistedState
-  onImportBackup: (state: PersistedState) => void
   recentExercises: string[]
   sessions: Workout[]
 }) {
   const [confirmingDiscard, setConfirmingDiscard] = useState(false)
+  const [collapsedExerciseIds, setCollapsedExerciseIds] = useState<Set<string>>(
+    () => new Set(),
+  )
   const hasSet = workout.exercises.some((e) => e.sets.length > 0)
   const canFinish = workout.exercises.length > 0 && hasSet
+
+  function toggleExerciseCollapsed(exerciseId: string) {
+    setCollapsedExerciseIds((ids) => {
+      const next = new Set(ids)
+      if (next.has(exerciseId)) {
+        next.delete(exerciseId)
+      } else {
+        next.add(exerciseId)
+      }
+      return next
+    })
+  }
 
   useEffect(() => {
     if (!confirmingDiscard) return
@@ -421,6 +430,44 @@ function WorkoutScreen({
         <p className="muted">Started at {formatTime(workout.startedAt)}</p>
       </header>
 
+      <div className="workout-actions">
+        <button
+          type="button"
+          className="primary finish"
+          onClick={onFinish}
+          disabled={!canFinish}
+        >
+          Finish workout
+        </button>
+        {confirmingDiscard ? (
+          <div className="discard-confirm">
+            <button type="button" className="btn-sm danger" onClick={onDiscard}>
+              Confirm discard
+            </button>
+            <button
+              type="button"
+              className="btn-sm secondary"
+              onClick={() => setConfirmingDiscard(false)}
+            >
+              Cancel
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            className="btn-sm danger discard-action"
+            onClick={() => setConfirmingDiscard(true)}
+          >
+            Cancel workout
+          </button>
+        )}
+      </div>
+      {!canFinish && (
+        <p className="error hint">
+          Add at least one exercise with a set to finish the workout.
+        </p>
+      )}
+
       {workout.exercises.length === 0 ? (
         <p className="muted empty">No exercises yet. Add your first one below.</p>
       ) : (
@@ -433,52 +480,13 @@ function WorkoutScreen({
             onRemove={() => onRemoveExercise(exercise.id)}
             onRename={(name) => onRenameExercise(exercise.id, name)}
             sessions={sessions}
+            collapsed={collapsedExerciseIds.has(exercise.id)}
+            onToggleCollapsed={() => toggleExerciseCollapsed(exercise.id)}
           />
         ))
       )}
 
       <AddExerciseForm onAdd={onAddExercise} recentExercises={recentExercises} />
-
-      <button
-        type="button"
-        className="primary finish"
-        onClick={onFinish}
-        disabled={!canFinish}
-      >
-        Finish workout
-      </button>
-      {!canFinish && (
-        <p className="error hint">
-          Add at least one exercise with a set to finish the workout.
-        </p>
-      )}
-
-      <div className="discard">
-        {confirmingDiscard ? (
-          <>
-            <button type="button" className="danger" onClick={onDiscard}>
-              Confirm discard
-            </button>
-            <button
-              type="button"
-              className="secondary"
-              onClick={() => setConfirmingDiscard(false)}
-            >
-              Cancel
-            </button>
-          </>
-        ) : (
-          <button
-            type="button"
-            className="danger"
-            onClick={() => setConfirmingDiscard(true)}
-          >
-            Discard workout
-          </button>
-        )}
-      </div>
-
-      <BackupControls state={backupState} onImport={onImportBackup} />
     </main>
   )
 }
@@ -585,6 +593,8 @@ function ExerciseCard({
   onRemove,
   onRename,
   sessions,
+  collapsed,
+  onToggleCollapsed,
 }: {
   exercise: Exercise
   onAddSet: (reps: number, weightKg: number) => void
@@ -592,6 +602,8 @@ function ExerciseCard({
   onRemove: () => void
   onRename: (name: string) => void
   sessions: Workout[]
+  collapsed: boolean
+  onToggleCollapsed: () => void
 }) {
   const [reps, setReps] = useState('')
   const [weight, setWeight] = useState('')
@@ -599,6 +611,9 @@ function ExerciseCard({
   const [editingName, setEditingName] = useState(false)
   const [nameDraft, setNameDraft] = useState('')
   const [nameError, setNameError] = useState<string | null>(null)
+  const [highlightedSetId, setHighlightedSetId] = useState<string | null>(null)
+  const lastSetRef = useRef<HTMLLIElement | null>(null)
+  const previousSetCount = useRef(exercise.sets.length)
 
   const lastSet = exercise.sets[exercise.sets.length - 1]
   const previous = useMemo(
@@ -611,6 +626,17 @@ function ExerciseCard({
     setReps(String(previous.reps))
     setWeight(String(previous.weightKg))
   }, [previous])
+
+  useEffect(() => {
+    const previousLength = previousSetCount.current
+    previousSetCount.current = exercise.sets.length
+    if (exercise.sets.length <= previousLength) return
+    const added = exercise.sets[exercise.sets.length - 1]
+    setHighlightedSetId(added.id)
+    lastSetRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+    const timer = setTimeout(() => setHighlightedSetId(null), 1200)
+    return () => clearTimeout(timer)
+  }, [exercise.sets])
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault()
@@ -648,19 +674,45 @@ function ExerciseCard({
     setNameError(null)
   }
 
+  const setCount = exercise.sets.length
+  const lastSetSummary = lastSet
+    ? `Last: ${lastSet.reps} reps · ${lastSet.weightKg} kg`
+    : 'No sets yet'
+
   return (
     <section className="card exercise">
       <div className="exercise-head">
-        <h3>{exercise.name}</h3>
+        <div>
+          <h3>{exercise.name}</h3>
+          <p className="exercise-summary">
+            {setCount} {setCount === 1 ? 'set' : 'sets'} · {lastSetSummary}
+          </p>
+        </div>
         <div className="exercise-actions">
-          <button type="button" className="btn-sm secondary" onClick={startRename}>
-            Rename
+          <button
+            type="button"
+            className="btn-sm secondary"
+            onClick={onToggleCollapsed}
+          >
+            {collapsed ? 'Expand' : 'Collapse'}
           </button>
-          <button type="button" className="btn-sm danger" onClick={onRemove}>
-            Remove
-          </button>
+          {!collapsed && (
+            <>
+              <button type="button" className="btn-sm secondary" onClick={startRename}>
+                Rename
+              </button>
+              <button type="button" className="btn-sm danger" onClick={onRemove}>
+                Remove
+              </button>
+            </>
+          )}
         </div>
       </div>
+
+      {collapsed && <p className="muted collapsed-hint">Tap Expand to log sets.</p>}
+
+      {!collapsed && (
+        <>
 
       {editingName && (
         <form onSubmit={handleRenameSubmit} className="rename-form">
@@ -694,7 +746,11 @@ function ExerciseCard({
       ) : (
         <ul className="sets">
           {exercise.sets.map((set, index) => (
-            <li key={set.id}>
+            <li
+              key={set.id}
+              ref={index === exercise.sets.length - 1 ? lastSetRef : undefined}
+              className={highlightedSetId === set.id ? 'set-highlight' : ''}
+            >
               <span>Set {index + 1}</span>
               <span>
                 {set.reps} reps · {set.weightKg} kg
@@ -758,6 +814,8 @@ function ExerciseCard({
           Add set
         </button>
       </form>
+        </>
+      )}
     </section>
   )
 }

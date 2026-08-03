@@ -6,6 +6,7 @@
   --row-bg: #f3f4f6;
   --border: #e5e7eb;
   --accent: #7c3aed;
+  --accent-bg: rgba(124, 58, 237, 0.12);
   --danger: #dc2626;
   --danger-bg: rgba(220, 38, 38, 0.08);
 
@@ -30,6 +31,7 @@
     --row-bg: #26272f;
     --border: #2e303a;
     --accent: #a78bfa;
+    --accent-bg: rgba(167, 139, 250, 0.18);
     --danger: #f87171;
     --danger-bg: rgba(248, 113, 113, 0.12);
   }
