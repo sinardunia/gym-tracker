@@ -1,4 +1,4 @@
-import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
+import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from 'react'
 import './App.css'
 
 type WorkoutSet = {
@@ -108,6 +108,23 @@ function deriveRecentExercises(state: PersistedState): string[] {
   })
 
   return recent
+}
+
+function findLastSessionSet(
+  sessions: Workout[],
+  exerciseName: string,
+): { reps: number; weightKg: number } | null {
+  const name = exerciseName.trim().toLowerCase()
+  for (const session of sessions) {
+    let lastSet: WorkoutSet | undefined
+    for (const exercise of session.exercises) {
+      if (exercise.name.trim().toLowerCase() === name) {
+        lastSet = exercise.sets[exercise.sets.length - 1]
+      }
+    }
+    if (lastSet) return { reps: lastSet.reps, weightKg: lastSet.weightKg }
+  }
+  return null
 }
 
 function parseBackup(text: string): PersistedState | null {
@@ -280,6 +297,7 @@ function App() {
         backupState={state}
         onImportBackup={importBackup}
         recentExercises={recentExercises}
+        sessions={state.sessions}
       />
     )
   }
@@ -371,6 +389,7 @@ function WorkoutScreen({
   backupState,
   onImportBackup,
   recentExercises,
+  sessions,
 }: {
   workout: Workout
   onAddExercise: (name: string) => void
@@ -383,6 +402,7 @@ function WorkoutScreen({
   backupState: PersistedState
   onImportBackup: (state: PersistedState) => void
   recentExercises: string[]
+  sessions: Workout[]
 }) {
   const [confirmingDiscard, setConfirmingDiscard] = useState(false)
   const hasSet = workout.exercises.some((e) => e.sets.length > 0)
@@ -412,6 +432,7 @@ function WorkoutScreen({
             onRemoveSet={(setId) => onRemoveSet(exercise.id, setId)}
             onRemove={() => onRemoveExercise(exercise.id)}
             onRename={(name) => onRenameExercise(exercise.id, name)}
+            sessions={sessions}
           />
         ))
       )}
@@ -563,12 +584,14 @@ function ExerciseCard({
   onRemoveSet,
   onRemove,
   onRename,
+  sessions,
 }: {
   exercise: Exercise
   onAddSet: (reps: number, weightKg: number) => void
   onRemoveSet: (setId: string) => void
   onRemove: () => void
   onRename: (name: string) => void
+  sessions: Workout[]
 }) {
   const [reps, setReps] = useState('')
   const [weight, setWeight] = useState('')
@@ -576,6 +599,18 @@ function ExerciseCard({
   const [editingName, setEditingName] = useState(false)
   const [nameDraft, setNameDraft] = useState('')
   const [nameError, setNameError] = useState<string | null>(null)
+
+  const lastSet = exercise.sets[exercise.sets.length - 1]
+  const previous = useMemo(
+    () => lastSet ?? findLastSessionSet(sessions, exercise.name),
+    [lastSet, sessions, exercise.name],
+  )
+
+  useEffect(() => {
+    if (!previous) return
+    setReps(String(previous.reps))
+    setWeight(String(previous.weightKg))
+  }, [previous])
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault()
@@ -590,8 +625,8 @@ function ExerciseCard({
       return
     }
     onAddSet(repsValue, weightValue)
-    setReps('')
-    setWeight('')
+    setReps(String(repsValue))
+    setWeight(String(weightValue))
     setError(null)
   }
 
