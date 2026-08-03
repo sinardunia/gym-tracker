@@ -712,6 +712,15 @@ function ExerciseCard({
       )}
 
       <form onSubmit={handleSubmit} className="set-form">
+        {previous && (
+          <button
+            type="button"
+            className="primary"
+            onClick={() => onAddSet(previous.reps, previous.weightKg)}
+          >
+            Repeat last set
+          </button>
+        )}
         <div className="field">
           <label htmlFor={`reps-${exercise.id}`}>Reps</label>
           <input
