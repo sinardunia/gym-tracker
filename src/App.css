@@ -259,6 +259,54 @@ button.danger {
   }
 }
 
+.add-exercise {
+  .field {
+    margin-bottom: 4px;
+  }
+}
+
+.recent-exercises {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.recent-label {
+  font-size: 13px;
+}
+
+.recent-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.recent-item {
+  width: 100%;
+  text-align: left;
+  font-size: 15px;
+  padding: 10px 12px;
+  background: var(--row-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-h);
+  cursor: pointer;
+
+  &:hover {
+    border-color: var(--accent);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+}
+
 .import-confirm {
   display: flex;
   flex-direction: column;

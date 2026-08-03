@@ -91,6 +91,25 @@ function isPersistedState(value: unknown): value is PersistedState {
   )
 }
 
+function deriveRecentExercises(state: PersistedState): string[] {
+  const seen = new Set<string>()
+  const recent: string[] = []
+
+  function add(name: string) {
+    const key = name.trim().toLowerCase()
+    if (seen.has(key)) return
+    seen.add(key)
+    recent.push(name.trim())
+  }
+
+  state.activeWorkout?.exercises.forEach((e) => add(e.name))
+  state.sessions.forEach((session) => {
+    session.exercises.forEach((e) => add(e.name))
+  })
+
+  return recent
+}
+
 function parseBackup(text: string): PersistedState | null {
   try {
     const parsed: unknown = JSON.parse(text)
@@ -124,6 +143,7 @@ function App() {
   const [viewedSession, setViewedSession] = useState<Workout | null>(null)
 
   const activeWorkout = state.activeWorkout
+  const recentExercises = deriveRecentExercises(state)
 
   useEffect(() => {
     try {
@@ -259,6 +279,7 @@ function App() {
         onFinish={finishWorkout}
         backupState={state}
         onImportBackup={importBackup}
+        recentExercises={recentExercises}
       />
     )
   }
@@ -349,6 +370,7 @@ function WorkoutScreen({
   onFinish,
   backupState,
   onImportBackup,
+  recentExercises,
 }: {
   workout: Workout
   onAddExercise: (name: string) => void
@@ -360,6 +382,7 @@ function WorkoutScreen({
   onFinish: () => void
   backupState: PersistedState
   onImportBackup: (state: PersistedState) => void
+  recentExercises: string[]
 }) {
   const [confirmingDiscard, setConfirmingDiscard] = useState(false)
   const hasSet = workout.exercises.some((e) => e.sets.length > 0)
@@ -393,7 +416,7 @@ function WorkoutScreen({
         ))
       )}
 
-      <AddExerciseForm onAdd={onAddExercise} />
+      <AddExerciseForm onAdd={onAddExercise} recentExercises={recentExercises} />
 
       <button
         type="button"
@@ -695,7 +718,13 @@ function ExerciseCard({
   )
 }
 
-function AddExerciseForm({ onAdd }: { onAdd: (name: string) => void }) {
+function AddExerciseForm({
+  onAdd,
+  recentExercises,
+}: {
+  onAdd: (name: string) => void
+  recentExercises: string[]
+}) {
   const [name, setName] = useState('')
   const [error, setError] = useState<string | null>(null)
 
@@ -711,6 +740,13 @@ function AddExerciseForm({ onAdd }: { onAdd: (name: string) => void }) {
     setError(null)
   }
 
+  const query = name.trim().toLowerCase()
+  const matches = query
+    ? recentExercises.filter((exercise) =>
+        exercise.toLowerCase().includes(query),
+      )
+    : recentExercises
+
   return (
     <form onSubmit={handleSubmit} className="card add-exercise">
       <h3>Add exercise</h3>
@@ -725,9 +761,40 @@ function AddExerciseForm({ onAdd }: { onAdd: (name: string) => void }) {
             setError(null)
           }}
           placeholder="e.g. Bench Press"
+          autoComplete="off"
         />
         {error && <p className="error">{error}</p>}
       </div>
+
+      {recentExercises.length > 0 && (
+        <div className="recent-exercises">
+          <span className="recent-label">
+            {query ? 'Matches' : 'Recent exercises'}
+          </span>
+          {matches.length === 0 ? (
+            <p className="muted">No match. Type the name and tap Add exercise.</p>
+          ) : (
+            <ul className="recent-list">
+              {matches.map((exercise) => (
+                <li key={exercise}>
+                  <button
+                    type="button"
+                    className="recent-item"
+                    onClick={() => {
+                      onAdd(exercise)
+                      setName('')
+                      setError(null)
+                    }}
+                  >
+                    {exercise}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+
       <button type="submit" className="primary">
         Add exercise
       </button>
