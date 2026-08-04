@@ -7,6 +7,31 @@ Status: Raw evidence / ideas, not commitments
 > Living feedback log dari pemakaian nyata. Bukan roadmap dan tidak menentukan
 > solusi. Setiap item dicatat sebagai masalah/konteks apa adanya.
 
+## Pemakaian Day 2 (2026-08-05)
+
+### Masalah terbesar (prioritas)
+- Masih harus buka Notes/jadwal di luar app untuk tahu latihan hari ini.
+- Recent Exercises tidak menyelesaikan; tetap butuh daftar exercise hari itu.
+- Visi: buka app → Today's Workout → Start → exercise otomatis tersedia.
+- Manual/custom workout tetap harus tersedia.
+
+### Bagus & jangan rusak
+- Repeat last set; previous-value/prefill; fitur Day 0/Day 1 yang sudah jalan.
+
+### Konfirmasi kebutuhan
+- Routine/program mingguan (Push/Pull/Legs/UL/Upper/Lower); bisa edit exercise saat latihan.
+- Warmup vs working set; dropset; bodyweight tanpa pura-pura 0 kg; machine plate/stack.
+- Rest timer; notes untuk workout/exercise; Bahasa Indonesia default + opsi English.
+- UX: icon familiar (delete→trash, rename→pencil, repeat→repeat icon); Back/Home + konfirmasi
+  menggantikan "Cancel Workout"; collapse/expand pakai kontrol konsisten; Add Exercise hijau;
+  Rename: Enter langsung save; Finish Workout mudah dijangkau; mobile-first.
+
+### Nanti, bukan sekarang
+- Preset PPL/UL/ULPPL + pilih program/goal; tanpa nama/foto public figure (copyright/personality rights).
+- Exercise library/discovery, icon/visual exercise.
+- Progress: tracking, strength, PR, chart, streak; copy motivasi harus berbasis data.
+- Backup auto (Google Drive); backend/AI — keputusan akhir tetap di user.
+
 ## Perencanaan workout & rutinitas
 1. Saat mulai workout belum tahu/belum punya workout dan exercise apa saja yang
    harus dilakukan; tiba-tiba harus input manual.

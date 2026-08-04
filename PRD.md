@@ -1,6 +1,6 @@
 # Gym Tracker PRD
 
-Status: Living document · Owner: waltahh · Updated: 2026-08-04
+Status: Living document · Owner: waltahh · Updated: 2026-08-05
 
 ## Product vision
 Gym Tracker: pencatatan workout mobile-first yang sangat cepat sehingga tidak
@@ -47,16 +47,26 @@ app sampai set tercatat, tanpa mengetik ulang data yang sudah pernah ada.
   plate-based machine, dan rest timer.
   (Dicatat sebagai evidence/kebutuhan yang ditemukan, bukan semuanya langsung
   dikerjakan.)
+- Day 2: masalah terbesar = masih harus membuka Notes/jadwal di luar app untuk
+  mengetahui latihan hari ini. Visi: buka app → Today's Workout → Start →
+  exercise hari itu otomatis tersedia (manual/custom tetap ada).
 
 ## Current priorities
-1. Exercise library / search / recent.
-2. Workout templates.
-3. Fast set logging: previous values/prefill + keyboard/interaction flow.
-4. Mobile workout navigation: collapse/sticky actions dan pengurangan scroll.
+1. Workout routines & Today's Workout (Day 2, aktif): buka app langsung tahu
+   latihan hari ini, Start preload exercise, fallback pilih routine / empty.
+2. Exercise library / search / recent — recent memory sudah jalan (Day 0/1).
+3. Fast set logging: previous values/prefill + one-tap repeat — sudah jalan
+   (Day 0/1).
+4. Mobile workout navigation: collapse/sticky actions — sebagian jalan
+   (collapse card + sticky finish).
 
 ## Non-goals (saat ini)
 - Backend/cloud sync, akun, AI, dan analytics.
+- i18n (Bahasa Indonesia default + opsi English) — bukan Day 2.
+- Set-type modeling: warmup/dropset/bodyweight/plate-based machine — butuh
+  perubahan data model, bukan Day 2.
 - Visual polish.
 - Rest timer aktif (notification) — kebutuhan baru saja ditemukan, belum
   diprioritaskan.
+- Notes untuk workout/exercise.
 - Multi-user / multi-device.
