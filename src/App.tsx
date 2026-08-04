@@ -20,9 +20,40 @@ type Workout = {
   exercises: Exercise[]
 }
 
+type RoutineDay = {
+  id: string
+  name: string
+  exerciseNames: string[]
+}
+
+type Weekday = 0 | 1 | 2 | 3 | 4 | 5 | 6
+
+const WEEKDAY_NAMES = [
+  'Sunday',
+  'Monday',
+  'Tuesday',
+  'Wednesday',
+  'Thursday',
+  'Friday',
+  'Saturday',
+] as const
+
+type Routine = {
+  id: string
+  name: string
+  days: RoutineDay[]
+  schedule: Partial<Record<Weekday, string>>
+}
+
+type ScheduleConflict = {
+  routineName: string
+  dayName: string
+}
+
 type PersistedState = {
   activeWorkout: Workout | null
   sessions: Workout[]
+  routines: Routine[]
 }
 
 type BackupMessage = {
@@ -32,7 +63,11 @@ type BackupMessage = {
 
 const STORAGE_KEY = 'gym-tracker.state.v1'
 
-const EMPTY_STATE: PersistedState = { activeWorkout: null, sessions: [] }
+const EMPTY_STATE: PersistedState = {
+  activeWorkout: null,
+  sessions: [],
+  routines: [],
+}
 
 const newId = (): string => crypto.randomUUID()
 
@@ -79,15 +114,63 @@ function isWorkout(value: unknown): value is Workout {
   })
 }
 
+function isRoutineDay(value: unknown): value is RoutineDay {
+  if (typeof value !== 'object' || value === null) return false
+  const day = value as Record<string, unknown>
+  if (typeof day.id !== 'string' || typeof day.name !== 'string') {
+    return false
+  }
+  return (
+    Array.isArray(day.exerciseNames) &&
+    day.exerciseNames.every((name) => typeof name === 'string')
+  )
+}
+
+function isSchedule(
+  value: unknown,
+): value is Partial<Record<Weekday, string>> {
+  if (typeof value !== 'object' || value === null) return false
+  const schedule = value as Record<string, unknown>
+  return Object.entries(schedule).every(([key, dayId]) => {
+    const weekday = Number(key)
+    return (
+      Number.isInteger(weekday) &&
+      weekday >= 0 &&
+      weekday <= 6 &&
+      typeof dayId === 'string'
+    )
+  })
+}
+
+function isRoutine(value: unknown): value is Routine {
+  if (typeof value !== 'object' || value === null) return false
+  const routine = value as Record<string, unknown>
+  if (typeof routine.id !== 'string' || typeof routine.name !== 'string') {
+    return false
+  }
+  if (routine.schedule !== undefined && !isSchedule(routine.schedule)) {
+    return false
+  }
+  return Array.isArray(routine.days) && routine.days.every(isRoutineDay)
+}
+
+function normalizeRoutine(routine: Routine): Routine {
+  return { ...routine, schedule: routine.schedule ?? {} }
+}
+
 function isPersistedState(value: unknown): value is PersistedState {
   if (typeof value !== 'object' || value === null) return false
   const data = value as Record<string, unknown>
   const activeWorkoutIsValid =
     data.activeWorkout === null || isWorkout(data.activeWorkout)
+  const routinesAreValid =
+    data.routines === undefined ||
+    (Array.isArray(data.routines) && data.routines.every(isRoutine))
   return (
     activeWorkoutIsValid &&
     Array.isArray(data.sessions) &&
-    data.sessions.every(isWorkout)
+    data.sessions.every(isWorkout) &&
+    routinesAreValid
   )
 }
 
@@ -127,10 +210,27 @@ function findLastSessionSet(
   return null
 }
 
+function findTodayWorkout(
+  routines: Routine[],
+): { routine: Routine; day: RoutineDay } | null {
+  const today = new Date().getDay() as Weekday
+  for (const routine of routines) {
+    const dayId = routine.schedule[today]
+    if (!dayId) continue
+    const day = routine.days.find((d) => d.id === dayId)
+    if (day) return { routine, day }
+  }
+  return null
+}
+
 function parseBackup(text: string): PersistedState | null {
   try {
     const parsed: unknown = JSON.parse(text)
-    return isPersistedState(parsed) ? parsed : null
+    if (!isPersistedState(parsed)) return null
+    return {
+      ...parsed,
+      routines: (parsed.routines ?? []).map(normalizeRoutine),
+    }
   } catch {
     return null
   }
@@ -149,7 +249,10 @@ function loadState(): PersistedState {
     const sessions = Array.isArray(data.sessions)
       ? data.sessions.filter(isWorkout)
       : []
-    return { activeWorkout, sessions }
+    const routines = Array.isArray(data.routines)
+      ? data.routines.filter(isRoutine).map(normalizeRoutine)
+      : []
+    return { activeWorkout, sessions, routines }
   } catch {
     return EMPTY_STATE
   }
@@ -158,6 +261,7 @@ function loadState(): PersistedState {
 function App() {
   const [state, setState] = useState<PersistedState>(loadState)
   const [viewedSession, setViewedSession] = useState<Workout | null>(null)
+  const [routinesOpen, setRoutinesOpen] = useState(false)
 
   const activeWorkout = state.activeWorkout
   const recentExercises = deriveRecentExercises(state)
@@ -170,8 +274,18 @@ function App() {
     }
   }, [state])
 
-  function startWorkout() {
-    setState((s) => ({ ...s, activeWorkout: createWorkout() }))
+  function startWorkout(exerciseNames: string[] = []) {
+    setState((s) => ({
+      ...s,
+      activeWorkout: {
+        ...createWorkout(),
+        exercises: exerciseNames.map((name) => ({
+          id: newId(),
+          name,
+          sets: [],
+        })),
+      },
+    }))
     setViewedSession(null)
   }
 
@@ -182,6 +296,7 @@ function App() {
       finishedAt: new Date().toISOString(),
     }
     setState((s) => ({
+      ...s,
       activeWorkout: null,
       sessions: [finished, ...s.sessions],
     }))
@@ -278,6 +393,190 @@ function App() {
     setViewedSession(null)
   }
 
+  function addRoutine() {
+    setState((s) => ({
+      ...s,
+      routines: [
+        ...s.routines,
+        { id: newId(), name: 'New routine', days: [], schedule: {} },
+      ],
+    }))
+  }
+
+  function renameRoutine(routineId: string, name: string) {
+    setState((s) => ({
+      ...s,
+      routines: s.routines.map((r) =>
+        r.id === routineId ? { ...r, name } : r,
+      ),
+    }))
+  }
+
+  function deleteRoutine(routineId: string) {
+    setState((s) => ({
+      ...s,
+      routines: s.routines.filter((r) => r.id !== routineId),
+    }))
+  }
+
+  function addDay(routineId: string) {
+    setState((s) => ({
+      ...s,
+      routines: s.routines.map((r) =>
+        r.id === routineId
+          ? {
+              ...r,
+              days: [
+                ...r.days,
+                { id: newId(), name: 'New day', exerciseNames: [] },
+              ],
+            }
+          : r,
+      ),
+    }))
+  }
+
+  function renameDay(routineId: string, dayId: string, name: string) {
+    setState((s) => ({
+      ...s,
+      routines: s.routines.map((r) =>
+        r.id === routineId
+          ? {
+              ...r,
+              days: r.days.map((d) => (d.id === dayId ? { ...d, name } : d)),
+            }
+          : r,
+      ),
+    }))
+  }
+
+  function removeDay(routineId: string, dayId: string) {
+    setState((s) => ({
+      ...s,
+      routines: s.routines.map((r) => {
+        if (r.id !== routineId) return r
+        const schedule: Partial<Record<Weekday, string>> = {}
+        for (const [weekday, id] of Object.entries(r.schedule)) {
+          if (id !== dayId) schedule[Number(weekday) as Weekday] = id
+        }
+        return {
+          ...r,
+          days: r.days.filter((d) => d.id !== dayId),
+          schedule,
+        }
+      }),
+    }))
+  }
+
+  function setDaySchedule(
+    routineId: string,
+    dayId: string,
+    weekday: Weekday | null,
+  ) {
+    setState((s) => ({
+      ...s,
+      routines: s.routines.map((r) => {
+        if (r.id !== routineId) return r
+        if (weekday === null) {
+          const schedule: Partial<Record<Weekday, string>> = {}
+          for (const [w, id] of Object.entries(r.schedule)) {
+            if (id !== dayId) schedule[Number(w) as Weekday] = id
+          }
+          return { ...r, schedule }
+        }
+        return { ...r, schedule: { ...r.schedule, [weekday]: dayId } }
+      }),
+    }))
+  }
+
+  function moveDay(routineId: string, dayId: string, direction: -1 | 1) {
+    setState((s) => ({
+      ...s,
+      routines: s.routines.map((r) => {
+        if (r.id !== routineId) return r
+        const index = r.days.findIndex((d) => d.id === dayId)
+        const target = index + direction
+        if (index < 0 || target < 0 || target >= r.days.length) return r
+        const days = [...r.days]
+        const [moved] = days.splice(index, 1)
+        days.splice(target, 0, moved)
+        return { ...r, days }
+      }),
+    }))
+  }
+
+  function addExerciseToDay(routineId: string, dayId: string, name: string) {
+    setState((s) => ({
+      ...s,
+      routines: s.routines.map((r) =>
+        r.id === routineId
+          ? {
+              ...r,
+              days: r.days.map((d) =>
+                d.id === dayId
+                  ? { ...d, exerciseNames: [...d.exerciseNames, name] }
+                  : d,
+              ),
+            }
+          : r,
+      ),
+    }))
+  }
+
+  function removeExerciseFromDay(
+    routineId: string,
+    dayId: string,
+    index: number,
+  ) {
+    setState((s) => ({
+      ...s,
+      routines: s.routines.map((r) =>
+        r.id === routineId
+          ? {
+              ...r,
+              days: r.days.map((d) =>
+                d.id === dayId
+                  ? {
+                      ...d,
+                      exerciseNames: d.exerciseNames.filter(
+                        (_, i) => i !== index,
+                      ),
+                    }
+                  : d,
+              ),
+            }
+          : r,
+      ),
+    }))
+  }
+
+  function moveExerciseInDay(
+    routineId: string,
+    dayId: string,
+    index: number,
+    direction: -1 | 1,
+  ) {
+    setState((s) => ({
+      ...s,
+      routines: s.routines.map((r) =>
+        r.id === routineId
+          ? {
+              ...r,
+              days: r.days.map((d) => {
+                if (d.id !== dayId) return d
+                const target = index + direction
+                if (target < 0 || target >= d.exerciseNames.length) return d
+                const names = [...d.exerciseNames]
+                const [moved] = names.splice(index, 1)
+                names.splice(target, 0, moved)
+                return { ...d, exerciseNames: names }
+              }),
+            }
+          : r,
+      ),
+    }))
+  }
+
   function importBackup(nextState: PersistedState) {
     setState(nextState)
     setViewedSession(null)
@@ -310,11 +609,34 @@ function App() {
     )
   }
 
+  if (routinesOpen) {
+    return (
+      <RoutineEditorScreen
+        routines={state.routines}
+        onBack={() => setRoutinesOpen(false)}
+        onAddRoutine={addRoutine}
+        onRenameRoutine={renameRoutine}
+        onDeleteRoutine={deleteRoutine}
+        onAddDay={addDay}
+        onRenameDay={renameDay}
+        onRemoveDay={removeDay}
+        onMoveDay={moveDay}
+        onAddExercise={addExerciseToDay}
+        onRemoveExercise={removeExerciseFromDay}
+        onMoveExercise={moveExerciseInDay}
+        onSetSchedule={setDaySchedule}
+      />
+    )
+  }
+
   return (
     <HomeScreen
       sessions={state.sessions}
-      onStart={startWorkout}
+      routines={state.routines}
+      onStart={() => startWorkout()}
+      onStartWithExercises={(names) => startWorkout(names)}
       onViewSession={setViewedSession}
+      onOpenRoutines={() => setRoutinesOpen(true)}
       backupState={state}
       onImportBackup={importBackup}
     />
@@ -323,17 +645,27 @@ function App() {
 
 function HomeScreen({
   sessions,
+  routines,
   onStart,
+  onStartWithExercises,
   onViewSession,
+  onOpenRoutines,
   backupState,
   onImportBackup,
 }: {
   sessions: Workout[]
+  routines: Routine[]
   onStart: () => void
+  onStartWithExercises: (exerciseNames: string[]) => void
   onViewSession: (session: Workout) => void
+  onOpenRoutines: () => void
   backupState: PersistedState
   onImportBackup: (state: PersistedState) => void
 }) {
+  const [pickingRoutine, setPickingRoutine] = useState(false)
+  const [pickedRoutineId, setPickedRoutineId] = useState<string | null>(null)
+  const today = findTodayWorkout(routines)
+
   return (
     <main className="screen">
       <header className="screen-header">
@@ -341,8 +673,121 @@ function HomeScreen({
         <p className="muted">Log your workout, one exercise and set at a time.</p>
       </header>
 
-      <button type="button" className="primary start" onClick={onStart}>
-        Start workout
+      <section className="card today-card">
+        <h2>Today's workout</h2>
+        {today ? (
+          <>
+            <h3>{today.day.name}</h3>
+            <p className="muted exercise-summary">{today.routine.name}</p>
+            {today.day.exerciseNames.length === 0 ? (
+              <p className="muted">This day has no exercises yet.</p>
+            ) : (
+              <ul className="today-exercises">
+                {today.day.exerciseNames.map((name) => (
+                  <li key={name}>{name}</li>
+                ))}
+              </ul>
+            )}
+            <button
+              type="button"
+              className="primary"
+              onClick={() => onStartWithExercises(today.day.exerciseNames)}
+            >
+              Start workout
+            </button>
+            <button type="button" className="secondary" onClick={onStart}>
+              Start empty workout
+            </button>
+          </>
+        ) : (
+          <>
+            <p className="muted">No workout scheduled today.</p>
+            <div className="backup-actions">
+              <button
+                type="button"
+                className="primary"
+                onClick={() => {
+                  setPickingRoutine(true)
+                  setPickedRoutineId(null)
+                }}
+              >
+                Pick a routine
+              </button>
+              <button type="button" className="secondary" onClick={onStart}>
+                Start empty workout
+              </button>
+            </div>
+          </>
+        )}
+      </section>
+
+      {pickingRoutine && (
+        <section className="card">
+          <h3>Pick a routine</h3>
+          {routines.length === 0 ? (
+            <p className="muted">
+              No routines yet. Create one in Routines first.
+            </p>
+          ) : (
+            <ul className="days">
+              {routines.map((routine) => (
+                <li key={routine.id} className="day">
+                  <button
+                    type="button"
+                    className="day-toggle"
+                    onClick={() =>
+                      setPickedRoutineId((cur) =>
+                        cur === routine.id ? null : routine.id,
+                      )
+                    }
+                  >
+                    <span>{routine.name}</span>
+                    <span className="muted">
+                      {routine.days.length}{' '}
+                      {routine.days.length === 1 ? 'day' : 'days'}
+                    </span>
+                  </button>
+                  {pickedRoutineId === routine.id && (
+                    <div className="day-body">
+                      {routine.days.length === 0 ? (
+                        <p className="muted">No days in this routine.</p>
+                      ) : (
+                        routine.days.map((day) => (
+                          <button
+                            key={day.id}
+                            type="button"
+                            className="day-toggle pick-day"
+                            onClick={() => {
+                              onStartWithExercises(day.exerciseNames)
+                              setPickingRoutine(false)
+                              setPickedRoutineId(null)
+                            }}
+                          >
+                            <span>{day.name}</span>
+                            <span className="muted">
+                              {day.exerciseNames.length}{' '}
+                              {day.exerciseNames.length === 1
+                                ? 'exercise'
+                                : 'exercises'}
+                            </span>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
+
+      <button
+        type="button"
+        className="secondary"
+        onClick={onOpenRoutines}
+      >
+        Routines
       </button>
 
       <section className="recent">
@@ -901,6 +1346,538 @@ function AddExerciseForm({
         Add exercise
       </button>
     </form>
+  )
+}
+
+function InlineRename({
+  value,
+  onSave,
+  onCancel,
+}: {
+  value: string
+  onSave: (name: string) => void
+  onCancel: () => void
+}) {
+  const [draft, setDraft] = useState(value)
+  const [error, setError] = useState<string | null>(null)
+
+  function handleSubmit(event: FormEvent) {
+    event.preventDefault()
+    const trimmed = draft.trim()
+    if (!trimmed) {
+      setError('Name is required.')
+      return
+    }
+    onSave(trimmed)
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="rename-form inline-rename">
+      <div className="inline-rename-row">
+        <input
+          type="text"
+          value={draft}
+          autoFocus
+          onChange={(e) => {
+            setDraft(e.target.value)
+            setError(null)
+          }}
+        />
+        <button type="submit" className="btn-sm primary">
+          Save
+        </button>
+        <button type="button" className="btn-sm secondary" onClick={onCancel}>
+          Cancel
+        </button>
+      </div>
+      {error && <p className="error">{error}</p>}
+    </form>
+  )
+}
+
+function AddRoutineExerciseForm({
+  onAdd,
+  existing,
+}: {
+  onAdd: (name: string) => void
+  existing: string[]
+}) {
+  const [name, setName] = useState('')
+  const [error, setError] = useState<string | null>(null)
+
+  function handleSubmit(event: FormEvent) {
+    event.preventDefault()
+    const trimmed = name.trim()
+    if (!trimmed) {
+      setError('Exercise name is required.')
+      return
+    }
+    if (
+      existing.some((n) => n.trim().toLowerCase() === trimmed.toLowerCase())
+    ) {
+      setError('Exercise already in this day.')
+      return
+    }
+    onAdd(trimmed)
+    setName('')
+    setError(null)
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="add-exercise-day">
+      <input
+        type="text"
+        value={name}
+        placeholder="Exercise name"
+        autoComplete="off"
+        onChange={(e) => {
+          setName(e.target.value)
+          setError(null)
+        }}
+      />
+      <button type="submit" className="btn-sm primary">
+        Add exercise
+      </button>
+      {error && <p className="error">{error}</p>}
+    </form>
+  )
+}
+
+function DayScheduleSelect({
+  assignedWeekday,
+  takenWeekdays,
+  getConflict,
+  onSchedule,
+}: {
+  assignedWeekday: string
+  takenWeekdays: number[]
+  getConflict: (weekday: Weekday) => ScheduleConflict | null
+  onSchedule: (weekday: Weekday | null) => void
+}) {
+  const [draft, setDraft] = useState(assignedWeekday)
+  const [pending, setPending] = useState<{
+    weekday: Weekday
+    conflict: ScheduleConflict
+  } | null>(null)
+
+  useEffect(() => {
+    setDraft(assignedWeekday)
+    setPending(null)
+  }, [assignedWeekday])
+
+  function handleChange(raw: string) {
+    setDraft(raw)
+    if (raw === '') {
+      onSchedule(null)
+      return
+    }
+    const weekday = Number(raw) as Weekday
+    const conflict = getConflict(weekday)
+    if (conflict) {
+      setPending({ weekday, conflict })
+    } else {
+      onSchedule(weekday)
+    }
+  }
+
+  return (
+    <div className="schedule-row">
+      <label htmlFor={`weekday-${assignedWeekday}`} className="muted">
+        Weekday
+      </label>
+      <select
+        id={`weekday-${assignedWeekday}`}
+        value={draft}
+        onChange={(e) => handleChange(e.target.value)}
+      >
+        <option value="">Not scheduled</option>
+        {WEEKDAY_NAMES.map((name, w) => (
+          <option
+            key={name}
+            value={String(w)}
+            disabled={takenWeekdays.includes(w) && String(w) !== draft}
+          >
+            {name}
+          </option>
+        ))}
+      </select>
+
+      {pending && (
+        <div className="import-confirm">
+          <p>
+            {WEEKDAY_NAMES[pending.weekday]} is already scheduled for{' '}
+            {pending.conflict.routineName} / {pending.conflict.dayName}.
+            Replace it?
+          </p>
+          <div className="backup-actions">
+            <button
+              type="button"
+              className="danger"
+              onClick={() => {
+                onSchedule(pending.weekday)
+                setPending(null)
+              }}
+            >
+              Replace
+            </button>
+            <button
+              type="button"
+              className="secondary"
+              onClick={() => {
+                setDraft(assignedWeekday)
+                setPending(null)
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function RoutineCard({
+  routine,
+  onRename,
+  onDelete,
+  onAddDay,
+  onRenameDay,
+  onRemoveDay,
+  onMoveDay,
+  onAddExercise,
+  onRemoveExercise,
+  onMoveExercise,
+  onSetSchedule,
+  getConflict,
+}: {
+  routine: Routine
+  onRename: (name: string) => void
+  onDelete: () => void
+  onAddDay: () => void
+  onRenameDay: (dayId: string, name: string) => void
+  onRemoveDay: (dayId: string) => void
+  onMoveDay: (dayId: string, direction: -1 | 1) => void
+  onAddExercise: (dayId: string, name: string) => void
+  onRemoveExercise: (dayId: string, index: number) => void
+  onMoveExercise: (dayId: string, index: number, direction: -1 | 1) => void
+  onSetSchedule: (dayId: string, weekday: Weekday | null) => void
+  getConflict: (weekday: Weekday, dayId: string) => ScheduleConflict | null
+}) {
+  const [renaming, setRenaming] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [renamingDayId, setRenamingDayId] = useState<string | null>(null)
+  const [expandedDayId, setExpandedDayId] = useState<string | null>(null)
+
+  function toggleDay(dayId: string) {
+    setExpandedDayId((cur) => (cur === dayId ? null : dayId))
+  }
+
+  return (
+    <section className="card routine">
+      <div className="routine-head">
+        {renaming ? (
+          <InlineRename
+            value={routine.name}
+            onSave={(name) => {
+              onRename(name)
+              setRenaming(false)
+            }}
+            onCancel={() => setRenaming(false)}
+          />
+        ) : (
+          <>
+            <div className="routine-title">
+              <h3>{routine.name}</h3>
+              <p className="muted exercise-summary">
+                {routine.days.length}{' '}
+                {routine.days.length === 1 ? 'day' : 'days'}
+              </p>
+            </div>
+            <div className="exercise-actions">
+              <button
+                type="button"
+                className="btn-sm secondary"
+                onClick={() => setRenaming(true)}
+              >
+                Rename
+              </button>
+              {confirmDelete ? (
+                <span className="inline-confirm">
+                  <button
+                    type="button"
+                    className="btn-sm danger"
+                    onClick={onDelete}
+                  >
+                    Confirm
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-sm secondary"
+                    onClick={() => setConfirmDelete(false)}
+                  >
+                    Cancel
+                  </button>
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  className="btn-sm danger"
+                  onClick={() => setConfirmDelete(true)}
+                >
+                  Delete
+                </button>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+
+      {routine.days.length === 0 && (
+        <p className="muted collapsed-hint">No days yet. Add your first day.</p>
+      )}
+
+      {routine.days.length > 0 && (
+        <ul className="days">
+          {routine.days.map((day, dayIndex) => {
+            const assignedWeekday =
+              Object.entries(routine.schedule).find(([, id]) => id === day.id)?.[0] ??
+              ''
+            const takenWeekdays = Object.entries(routine.schedule)
+              .filter(([, id]) => id !== day.id)
+              .map(([w]) => Number(w))
+            return (
+              <li key={day.id} className="day">
+                {renamingDayId === day.id ? (
+                  <InlineRename
+                    value={day.name}
+                    onSave={(name) => {
+                      onRenameDay(day.id, name)
+                      setRenamingDayId(null)
+                    }}
+                    onCancel={() => setRenamingDayId(null)}
+                  />
+                ) : (
+                  <div className="day-head">
+                    <button
+                      type="button"
+                      className="day-toggle"
+                      onClick={() => toggleDay(day.id)}
+                    >
+                      <span>{day.name}</span>
+                      <span className="muted">
+                        {day.exerciseNames.length}{' '}
+                        {day.exerciseNames.length === 1 ? 'exercise' : 'exercises'}
+                      </span>
+                    </button>
+                    <div className="exercise-actions">
+                      <button
+                        type="button"
+                        className="btn-sm secondary"
+                        disabled={dayIndex === 0}
+                        onClick={() => onMoveDay(day.id, -1)}
+                      >
+                        Up
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-sm secondary"
+                        disabled={dayIndex === routine.days.length - 1}
+                        onClick={() => onMoveDay(day.id, 1)}
+                      >
+                        Down
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-sm secondary"
+                        onClick={() => setRenamingDayId(day.id)}
+                      >
+                        Rename
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-sm danger"
+                        onClick={() => onRemoveDay(day.id)}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {expandedDayId === day.id && (
+                  <div className="day-body">
+                    {day.exerciseNames.length === 0 && (
+                      <p className="muted">No exercises yet.</p>
+                    )}
+                    {day.exerciseNames.map((name, index) => (
+                      <div key={`${name}-${index}`} className="exercise-row">
+                        <span>
+                          {index + 1}. {name}
+                        </span>
+                        <div className="exercise-actions">
+                          <button
+                            type="button"
+                            className="btn-sm secondary"
+                            disabled={index === 0}
+                            onClick={() => onMoveExercise(day.id, index, -1)}
+                          >
+                            Up
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-sm secondary"
+                            disabled={index === day.exerciseNames.length - 1}
+                            onClick={() => onMoveExercise(day.id, index, 1)}
+                          >
+                            Down
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-sm danger"
+                            onClick={() => onRemoveExercise(day.id, index)}
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                    <AddRoutineExerciseForm
+                      onAdd={(name) => onAddExercise(day.id, name)}
+                      existing={day.exerciseNames}
+                    />
+                    <DayScheduleSelect
+                      assignedWeekday={assignedWeekday}
+                      takenWeekdays={takenWeekdays}
+                      getConflict={(weekday) => getConflict(weekday, day.id)}
+                      onSchedule={(weekday) => onSetSchedule(day.id, weekday)}
+                    />
+                  </div>
+                )}
+              </li>
+            )
+          })}
+        </ul>
+      )}
+
+      <button type="button" className="btn-sm secondary" onClick={onAddDay}>
+        Add day
+      </button>
+    </section>
+  )
+}
+
+function RoutineEditorScreen({
+  routines,
+  onBack,
+  onAddRoutine,
+  onRenameRoutine,
+  onDeleteRoutine,
+  onAddDay,
+  onRenameDay,
+  onRemoveDay,
+  onMoveDay,
+  onAddExercise,
+  onRemoveExercise,
+  onMoveExercise,
+  onSetSchedule,
+}: {
+  routines: Routine[]
+  onBack: () => void
+  onAddRoutine: () => void
+  onRenameRoutine: (routineId: string, name: string) => void
+  onDeleteRoutine: (routineId: string) => void
+  onAddDay: (routineId: string) => void
+  onRenameDay: (routineId: string, dayId: string, name: string) => void
+  onRemoveDay: (routineId: string, dayId: string) => void
+  onMoveDay: (routineId: string, dayId: string, direction: -1 | 1) => void
+  onAddExercise: (routineId: string, dayId: string, name: string) => void
+  onRemoveExercise: (routineId: string, dayId: string, index: number) => void
+  onMoveExercise: (
+    routineId: string,
+    dayId: string,
+    index: number,
+    direction: -1 | 1,
+  ) => void
+  onSetSchedule: (
+    routineId: string,
+    dayId: string,
+    weekday: Weekday | null,
+  ) => void
+}) {
+  const owners = useMemo(() => {
+    const map = new Map<number, ScheduleConflict>()
+    for (const routine of routines) {
+      for (const [weekday, dayId] of Object.entries(routine.schedule)) {
+        const day = routine.days.find((d) => d.id === dayId)
+        if (day) {
+          map.set(Number(weekday), {
+            routineName: routine.name,
+            dayName: day.name,
+          })
+        }
+      }
+    }
+    return map
+  }, [routines])
+
+  function getScheduleConflict(
+    weekday: Weekday,
+    dayId: string,
+  ): ScheduleConflict | null {
+    for (const routine of routines) {
+      if (routine.schedule[weekday] === dayId) return null
+    }
+    return owners.get(weekday) ?? null
+  }
+
+  return (
+    <main className="screen">
+      <header className="screen-header">
+        <h1>Routines</h1>
+        <p className="muted">Prepare workout days and exercises ahead of time.</p>
+      </header>
+
+      <button type="button" className="btn-sm secondary" onClick={onBack}>
+        Back
+      </button>
+
+      <button type="button" className="primary" onClick={onAddRoutine}>
+        Add routine
+      </button>
+
+      {routines.length === 0 && (
+        <p className="muted empty">
+          No routines yet. Create one to plan your week.
+        </p>
+      )}
+
+      {routines.map((routine) => (
+        <RoutineCard
+          key={routine.id}
+          routine={routine}
+          onRename={(name) => onRenameRoutine(routine.id, name)}
+          onDelete={() => onDeleteRoutine(routine.id)}
+          onAddDay={() => onAddDay(routine.id)}
+          onRenameDay={(dayId, name) => onRenameDay(routine.id, dayId, name)}
+          onRemoveDay={(dayId) => onRemoveDay(routine.id, dayId)}
+          onMoveDay={(dayId, direction) => onMoveDay(routine.id, dayId, direction)}
+          onAddExercise={(dayId, name) =>
+            onAddExercise(routine.id, dayId, name)
+          }
+          onRemoveExercise={(dayId, index) =>
+            onRemoveExercise(routine.id, dayId, index)
+          }
+          onMoveExercise={(dayId, index, direction) =>
+            onMoveExercise(routine.id, dayId, index, direction)
+          }
+          onSetSchedule={(dayId, weekday) =>
+            onSetSchedule(routine.id, dayId, weekday)
+          }
+          getConflict={getScheduleConflict}
+        />
+      ))}
+    </main>
   )
 }
 
