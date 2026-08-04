@@ -1,16 +1,29 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from 'react'
 import './App.css'
 
+type SetType = 'working' | 'warmup' | 'dropset'
+type ExerciseUnit = 'kg' | 'plate' | 'bodyweight'
+
+const SET_TYPES: readonly SetType[] = ['working', 'warmup', 'dropset']
+
+const SET_TYPE_LABELS: Record<SetType, string> = {
+  working: 'Working',
+  warmup: 'Warmup',
+  dropset: 'Dropset',
+}
+
 type WorkoutSet = {
   id: string
   reps: number
   weightKg: number
+  type: SetType
 }
 
 type Exercise = {
   id: string
   name: string
   sets: WorkoutSet[]
+  unit: ExerciseUnit
 }
 
 type Workout = {
@@ -61,7 +74,8 @@ type BackupMessage = {
   text: string
 }
 
-const STORAGE_KEY = 'gym-tracker.state.v1'
+const STORAGE_KEY = 'gym-tracker.state.v2'
+const STORAGE_KEY_V1 = 'gym-tracker.state.v1'
 
 const EMPTY_STATE: PersistedState = {
   activeWorkout: null,
@@ -78,6 +92,14 @@ function createWorkout(): Workout {
     finishedAt: null,
     exercises: [],
   }
+}
+
+function isSetType(value: unknown): value is SetType {
+  return value === 'working' || value === 'warmup' || value === 'dropset'
+}
+
+function isExerciseUnit(value: unknown): value is ExerciseUnit {
+  return value === 'kg' || value === 'plate' || value === 'bodyweight'
 }
 
 function isWorkout(value: unknown): value is Workout {
@@ -99,6 +121,9 @@ function isWorkout(value: unknown): value is Workout {
     if (typeof entry.id !== 'string' || typeof entry.name !== 'string') {
       return false
     }
+    if (entry.unit !== undefined && !isExerciseUnit(entry.unit)) {
+      return false
+    }
     if (!Array.isArray(entry.sets)) return false
     return entry.sets.every((set) => {
       if (typeof set !== 'object' || set === null) return false
@@ -108,7 +133,8 @@ function isWorkout(value: unknown): value is Workout {
         typeof setEntry.reps === 'number' &&
         Number.isFinite(setEntry.reps) &&
         typeof setEntry.weightKg === 'number' &&
-        Number.isFinite(setEntry.weightKg)
+        Number.isFinite(setEntry.weightKg) &&
+        (setEntry.type === undefined || isSetType(setEntry.type))
       )
     })
   })
@@ -158,6 +184,22 @@ function normalizeRoutine(routine: Routine): Routine {
   return { ...routine, schedule: routine.schedule ?? {} }
 }
 
+function normalizeSet(set: WorkoutSet): WorkoutSet {
+  return { ...set, type: set.type ?? 'working' }
+}
+
+function normalizeExercise(exercise: Exercise): Exercise {
+  return {
+    ...exercise,
+    unit: exercise.unit ?? 'kg',
+    sets: exercise.sets.map(normalizeSet),
+  }
+}
+
+function normalizeWorkout(workout: Workout): Workout {
+  return { ...workout, exercises: workout.exercises.map(normalizeExercise) }
+}
+
 function isPersistedState(value: unknown): value is PersistedState {
   if (typeof value !== 'object' || value === null) return false
   const data = value as Record<string, unknown>
@@ -202,7 +244,9 @@ function findLastSessionSet(
     let lastSet: WorkoutSet | undefined
     for (const exercise of session.exercises) {
       if (exercise.name.trim().toLowerCase() === name) {
-        lastSet = exercise.sets[exercise.sets.length - 1]
+        const workingSets = exercise.sets.filter((set) => set.type === 'working')
+        const lastWorking = workingSets[workingSets.length - 1]
+        if (lastWorking) lastSet = lastWorking
       }
     }
     if (lastSet) return { reps: lastSet.reps, weightKg: lastSet.weightKg }
@@ -229,6 +273,10 @@ function parseBackup(text: string): PersistedState | null {
     if (!isPersistedState(parsed)) return null
     return {
       ...parsed,
+      activeWorkout: parsed.activeWorkout
+        ? normalizeWorkout(parsed.activeWorkout)
+        : null,
+      sessions: parsed.sessions.map(normalizeWorkout),
       routines: (parsed.routines ?? []).map(normalizeRoutine),
     }
   } catch {
@@ -238,16 +286,17 @@ function parseBackup(text: string): PersistedState | null {
 
 function loadState(): PersistedState {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
+    const raw =
+      localStorage.getItem(STORAGE_KEY) ?? localStorage.getItem(STORAGE_KEY_V1)
     if (!raw) return EMPTY_STATE
     const parsed: unknown = JSON.parse(raw)
     if (typeof parsed !== 'object' || parsed === null) return EMPTY_STATE
     const data = parsed as Record<string, unknown>
     const activeWorkout = isWorkout(data.activeWorkout)
-      ? data.activeWorkout
+      ? normalizeWorkout(data.activeWorkout)
       : null
     const sessions = Array.isArray(data.sessions)
-      ? data.sessions.filter(isWorkout)
+      ? data.sessions.filter(isWorkout).map(normalizeWorkout)
       : []
     const routines = Array.isArray(data.routines)
       ? data.routines.filter(isRoutine).map(normalizeRoutine)
@@ -283,6 +332,7 @@ function App() {
           id: newId(),
           name,
           sets: [],
+          unit: 'kg',
         })),
       },
     }))
@@ -310,17 +360,22 @@ function App() {
             ...s,
             activeWorkout: {
               ...s.activeWorkout,
-              exercises: [
-                ...s.activeWorkout.exercises,
-                { id: newId(), name, sets: [] },
-              ],
+            exercises: [
+              ...s.activeWorkout.exercises,
+              { id: newId(), name, sets: [], unit: 'kg' },
+            ],
             },
           }
         : s,
     )
   }
 
-  function addSet(exerciseId: string, reps: number, weightKg: number) {
+  function addSet(
+    exerciseId: string,
+    reps: number,
+    weightKg: number,
+    type: SetType,
+  ) {
     setState((s) =>
       s.activeWorkout
         ? {
@@ -329,7 +384,10 @@ function App() {
               ...s.activeWorkout,
               exercises: s.activeWorkout.exercises.map((e) =>
                 e.id === exerciseId
-                  ? { ...e, sets: [...e.sets, { id: newId(), reps, weightKg }] }
+                  ? {
+                      ...e,
+                      sets: [...e.sets, { id: newId(), reps, weightKg, type }],
+                    }
                   : e,
               ),
             },
@@ -381,6 +439,22 @@ function App() {
               ...s.activeWorkout,
               exercises: s.activeWorkout.exercises.map((e) =>
                 e.id === exerciseId ? { ...e, name } : e,
+              ),
+            },
+          }
+        : s,
+    )
+  }
+
+  function changeExerciseUnit(exerciseId: string, unit: ExerciseUnit) {
+    setState((s) =>
+      s.activeWorkout
+        ? {
+            ...s,
+            activeWorkout: {
+              ...s.activeWorkout,
+              exercises: s.activeWorkout.exercises.map((e) =>
+                e.id === exerciseId ? { ...e, unit } : e,
               ),
             },
           }
@@ -591,6 +665,7 @@ function App() {
         onRemoveSet={removeSet}
         onRemoveExercise={removeExercise}
         onRenameExercise={renameExercise}
+        onChangeUnit={changeExerciseUnit}
         onDiscard={discardWorkout}
         onFinish={finishWorkout}
         recentExercises={recentExercises}
@@ -827,6 +902,7 @@ function WorkoutScreen({
   onRemoveSet,
   onRemoveExercise,
   onRenameExercise,
+  onChangeUnit,
   onDiscard,
   onFinish,
   recentExercises,
@@ -834,10 +910,16 @@ function WorkoutScreen({
 }: {
   workout: Workout
   onAddExercise: (name: string) => void
-  onAddSet: (exerciseId: string, reps: number, weightKg: number) => void
+  onAddSet: (
+    exerciseId: string,
+    reps: number,
+    weightKg: number,
+    type: SetType,
+  ) => void
   onRemoveSet: (exerciseId: string, setId: string) => void
   onRemoveExercise: (exerciseId: string) => void
   onRenameExercise: (exerciseId: string, name: string) => void
+  onChangeUnit: (exerciseId: string, unit: ExerciseUnit) => void
   onDiscard: () => void
   onFinish: () => void
   recentExercises: string[]
@@ -920,10 +1002,13 @@ function WorkoutScreen({
           <ExerciseCard
             key={exercise.id}
             exercise={exercise}
-            onAddSet={(reps, weightKg) => onAddSet(exercise.id, reps, weightKg)}
+            onAddSet={(reps, weightKg, type) =>
+              onAddSet(exercise.id, reps, weightKg, type)
+            }
             onRemoveSet={(setId) => onRemoveSet(exercise.id, setId)}
             onRemove={() => onRemoveExercise(exercise.id)}
             onRename={(name) => onRenameExercise(exercise.id, name)}
+            onChangeUnit={(unit) => onChangeUnit(exercise.id, unit)}
             sessions={sessions}
             collapsed={collapsedExerciseIds.has(exercise.id)}
             onToggleCollapsed={() => toggleExerciseCollapsed(exercise.id)}
@@ -1037,21 +1122,24 @@ function ExerciseCard({
   onRemoveSet,
   onRemove,
   onRename,
+  onChangeUnit,
   sessions,
   collapsed,
   onToggleCollapsed,
 }: {
   exercise: Exercise
-  onAddSet: (reps: number, weightKg: number) => void
+  onAddSet: (reps: number, weightKg: number, type: SetType) => void
   onRemoveSet: (setId: string) => void
   onRemove: () => void
   onRename: (name: string) => void
+  onChangeUnit: (unit: ExerciseUnit) => void
   sessions: Workout[]
   collapsed: boolean
   onToggleCollapsed: () => void
 }) {
   const [reps, setReps] = useState('')
   const [weight, setWeight] = useState('')
+  const [setType, setSetType] = useState<SetType>('working')
   const [error, setError] = useState<string | null>(null)
   const [editingName, setEditingName] = useState(false)
   const [nameDraft, setNameDraft] = useState('')
@@ -1061,9 +1149,13 @@ function ExerciseCard({
   const previousSetCount = useRef(exercise.sets.length)
 
   const lastSet = exercise.sets[exercise.sets.length - 1]
+  let lastWorkingSet: WorkoutSet | undefined
+  for (const set of exercise.sets) {
+    if (set.type === 'working') lastWorkingSet = set
+  }
   const previous = useMemo(
-    () => lastSet ?? findLastSessionSet(sessions, exercise.name),
-    [lastSet, sessions, exercise.name],
+    () => lastWorkingSet ?? findLastSessionSet(sessions, exercise.name),
+    [lastWorkingSet, sessions, exercise.name],
   )
 
   useEffect(() => {
@@ -1086,16 +1178,27 @@ function ExerciseCard({
   function handleSubmit(event: FormEvent) {
     event.preventDefault()
     const repsValue = Number(reps)
-    const weightValue = Number(weight)
     if (!Number.isInteger(repsValue) || repsValue < 1) {
       setError('Reps must be a whole number of at least 1.')
       return
     }
-    if (!Number.isFinite(weightValue) || weightValue < 0) {
-      setError('Weight must be 0 or a positive number.')
-      return
+    let weightValue = 0
+    if (exercise.unit === 'bodyweight') {
+      weightValue = 0
+    } else if (exercise.unit === 'plate') {
+      weightValue = Number(weight)
+      if (!Number.isInteger(weightValue) || weightValue < 0) {
+        setError('Plate count must be a whole number of at least 0.')
+        return
+      }
+    } else {
+      weightValue = Number(weight)
+      if (!Number.isFinite(weightValue) || weightValue < 0) {
+        setError('Weight must be 0 or a positive number.')
+        return
+      }
     }
-    onAddSet(repsValue, weightValue)
+    onAddSet(repsValue, weightValue, setType)
     setReps(String(repsValue))
     setWeight(String(weightValue))
     setError(null)
@@ -1120,8 +1223,11 @@ function ExerciseCard({
   }
 
   const setCount = exercise.sets.length
+  const lastSetWeight = lastSet
+    ? formatSetWeight(exercise.unit, lastSet.weightKg)
+    : null
   const lastSetSummary = lastSet
-    ? `Last: ${lastSet.reps} reps · ${lastSet.weightKg} kg`
+    ? `Last: ${lastSet.reps} reps${lastSetWeight ? ` · ${lastSetWeight}` : ''}`
     : 'No sets yet'
 
   return (
@@ -1190,25 +1296,35 @@ function ExerciseCard({
         <p className="muted">No sets yet.</p>
       ) : (
         <ul className="sets">
-          {exercise.sets.map((set, index) => (
-            <li
-              key={set.id}
-              ref={index === exercise.sets.length - 1 ? lastSetRef : undefined}
-              className={highlightedSetId === set.id ? 'set-highlight' : ''}
-            >
-              <span>Set {index + 1}</span>
-              <span>
-                {set.reps} reps · {set.weightKg} kg
-              </span>
-              <button
-                type="button"
-                className="btn-sm secondary"
-                onClick={() => onRemoveSet(set.id)}
+          {exercise.sets.map((set, index) => {
+            const weightText = formatSetWeight(exercise.unit, set.weightKg)
+            return (
+              <li
+                key={set.id}
+                ref={index === exercise.sets.length - 1 ? lastSetRef : undefined}
+                className={highlightedSetId === set.id ? 'set-highlight' : ''}
               >
-                Remove
-              </button>
-            </li>
-          ))}
+                <span>
+                  Set {index + 1}
+                  {set.type !== 'working' && (
+                    <span className={`set-badge ${set.type}`}>
+                      {SET_TYPE_LABELS[set.type]}
+                    </span>
+                  )}
+                </span>
+                <span>
+                  {set.reps} reps{weightText ? ` · ${weightText}` : ''}
+                </span>
+                <button
+                  type="button"
+                  className="btn-sm secondary"
+                  onClick={() => onRemoveSet(set.id)}
+                >
+                  Remove
+                </button>
+              </li>
+            )
+          })}
         </ul>
       )}
 
@@ -1217,11 +1333,35 @@ function ExerciseCard({
           <button
             type="button"
             className="primary"
-            onClick={() => onAddSet(previous.reps, previous.weightKg)}
+            onClick={() => onAddSet(previous.reps, previous.weightKg, 'working')}
           >
             Repeat last set
           </button>
         )}
+        <div className="set-form-meta">
+          <div className="set-type-row" role="group" aria-label="Set type">
+            {SET_TYPES.map((type) => (
+              <button
+                key={type}
+                type="button"
+                className={`set-type-btn${setType === type ? ' active' : ''}`}
+                onClick={() => setSetType(type)}
+              >
+                {SET_TYPE_LABELS[type]}
+              </button>
+            ))}
+          </div>
+          <select
+            className="unit-select"
+            value={exercise.unit}
+            onChange={(e) => onChangeUnit(e.target.value as ExerciseUnit)}
+            aria-label="Weight unit"
+          >
+            <option value="kg">kg</option>
+            <option value="plate">plates</option>
+            <option value="bodyweight">bodyweight</option>
+          </select>
+        </div>
         <div className="field">
           <label htmlFor={`reps-${exercise.id}`}>Reps</label>
           <input
@@ -1238,22 +1378,26 @@ function ExerciseCard({
             placeholder="10"
           />
         </div>
-        <div className="field">
-          <label htmlFor={`weight-${exercise.id}`}>Weight (kg)</label>
-          <input
-            id={`weight-${exercise.id}`}
-            type="number"
-            min={0}
-            step="any"
-            inputMode="decimal"
-            value={weight}
-            onChange={(e) => {
-              setWeight(e.target.value)
-              setError(null)
-            }}
-            placeholder="60"
-          />
-        </div>
+        {exercise.unit !== 'bodyweight' && (
+          <div className="field">
+            <label htmlFor={`weight-${exercise.id}`}>
+              {exercise.unit === 'plate' ? 'Plates' : 'Weight (kg)'}
+            </label>
+            <input
+              id={`weight-${exercise.id}`}
+              type="number"
+              min={0}
+              step={exercise.unit === 'plate' ? 1 : 'any'}
+              inputMode={exercise.unit === 'plate' ? 'numeric' : 'decimal'}
+              value={weight}
+              onChange={(e) => {
+                setWeight(e.target.value)
+                setError(null)
+              }}
+              placeholder={exercise.unit === 'plate' ? '2' : '60'}
+            />
+          </div>
+        )}
         {error && <p className="error">{error}</p>}
         <button type="submit" className="primary">
           Add set
@@ -1901,14 +2045,24 @@ function SummaryScreen({
         <section key={exercise.id} className="card">
           <h3>{exercise.name}</h3>
           <ul className="sets">
-            {exercise.sets.map((set, index) => (
-              <li key={set.id}>
-                <span>Set {index + 1}</span>
-                <span>
-                  {set.reps} reps · {set.weightKg} kg
-                </span>
-              </li>
-            ))}
+            {exercise.sets.map((set, index) => {
+              const weightText = formatSetWeight(exercise.unit, set.weightKg)
+              return (
+                <li key={set.id}>
+                  <span>
+                    Set {index + 1}
+                    {set.type !== 'working' && (
+                      <span className={`set-badge ${set.type}`}>
+                        {SET_TYPE_LABELS[set.type]}
+                      </span>
+                    )}
+                  </span>
+                  <span>
+                    {set.reps} reps{weightText ? ` · ${weightText}` : ''}
+                  </span>
+                </li>
+              )
+            })}
           </ul>
         </section>
       ))}
@@ -1929,6 +2083,12 @@ function SummaryScreen({
 
 function countSets(workout: Workout): number {
   return workout.exercises.reduce((sum, exercise) => sum + exercise.sets.length, 0)
+}
+
+function formatSetWeight(unit: ExerciseUnit, weightKg: number): string | null {
+  if (unit === 'bodyweight') return null
+  if (unit === 'plate') return `${weightKg} plates`
+  return `${weightKg} kg`
 }
 
 function formatTime(iso: string): string {
