@@ -603,6 +603,19 @@ button.danger {
   }
 }
 
+.about {
+  h2,
+  p {
+    margin: 0;
+  }
+}
+
+.feedback-saved {
+  color: var(--positive);
+  font-size: 14px;
+  font-weight: 600;
+}
+
 .backup {
   h2,
   p {

@@ -138,6 +138,9 @@ type BackupMessage = {
 
 const STORAGE_KEY = 'gym-tracker.state.v2'
 const STORAGE_KEY_V1 = 'gym-tracker.state.v1'
+const FEEDBACK_KEY = 'gym-tracker.feedback'
+const GITHUB_URL = 'https://github.com/sinardunia/gym-tracker'
+const SAWERIA_URL = 'https://saweria.co/'
 
 type LibraryExercise = {
   name: string
@@ -1102,7 +1105,109 @@ function HomeScreen({
       </section>
 
       <BackupControls state={backupState} onImport={onImportBackup} />
+
+      <section className="card about">
+        <h2>About</h2>
+        <p className="muted">
+          Gym Tracker v{__APP_VERSION__} — free, open source, all data stays on
+          your device.
+        </p>
+        <div className="backup-actions">
+          <a
+            className="file-button"
+            href={GITHUB_URL}
+            target="_blank"
+            rel="noreferrer"
+          >
+            GitHub
+          </a>
+          <a
+            className="file-button"
+            href={SAWERIA_URL}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Support (Saweria)
+          </a>
+        </div>
+        <FeedbackCard />
+      </section>
     </main>
+  )
+}
+
+type FeedbackEntry = {
+  id: string
+  date: string
+  message: string
+}
+
+function FeedbackCard() {
+  const [open, setOpen] = useState(false)
+  const [message, setMessage] = useState('')
+  const [saved, setSaved] = useState(false)
+
+  function submit() {
+    const trimmed = message.trim()
+    if (!trimmed) return
+    try {
+      const raw = localStorage.getItem(FEEDBACK_KEY)
+      const entries: FeedbackEntry[] = raw ? JSON.parse(raw) : []
+      entries.push({ id: newId(), date: new Date().toISOString(), message: trimmed })
+      localStorage.setItem(FEEDBACK_KEY, JSON.stringify(entries))
+    } catch {
+      // Storage unavailable; keep in memory.
+    }
+    setMessage('')
+    setSaved(true)
+    setTimeout(() => setSaved(false), 3000)
+  }
+
+  return (
+    <>
+      <button type="button" className="secondary" onClick={() => setOpen(true)}>
+        Send feedback
+      </button>
+      {open && (
+        <div className="confirm-dialog" role="dialog" aria-modal="true">
+          <div className="confirm-card">
+            <h3>Feedback & suggestions</h3>
+            <p className="muted">
+              Anything annoying or missing? Write it here — it is saved on
+              your device. Prefer public discussion? Open a GitHub issue.
+            </p>
+            <textarea
+              className="note-field"
+              rows={4}
+              value={message}
+              placeholder="Ide, masalah, atau kritik-saran…"
+              onChange={(e) => setMessage(e.target.value)}
+            />
+            {saved && <p className="feedback-saved">Thanks, noted!</p>}
+            <div className="confirm-actions">
+              <button type="button" className="positive" onClick={submit}>
+                Save feedback
+              </button>
+              <a
+                className="file-button"
+                href={`${GITHUB_URL}/issues/new`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Open GitHub issue
+              </a>
+              <button
+                type="button"
+                className="secondary"
+                onClick={() => setOpen(false)}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   )
 }
 
