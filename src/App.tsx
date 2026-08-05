@@ -1,6 +1,66 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from 'react'
 import './App.css'
 
+type IconName =
+  | 'trash'
+  | 'pencil'
+  | 'repeat'
+  | 'chevron-down'
+  | 'chevron-up'
+  | 'arrow-up'
+  | 'arrow-down'
+  | 'arrow-left'
+  | 'plus'
+
+const ICON_PATHS: Record<IconName, string[]> = {
+  trash: [
+    'M3 6h18',
+    'M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2',
+    'M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6',
+    'M10 11v6',
+    'M14 11v6',
+  ],
+  pencil: ['M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z'],
+  repeat: [
+    'm17 1 4 4-4 4',
+    'M3 11V9a4 4 0 0 1 4-4h14',
+    'm7 23-4-4 4-4',
+    'M21 13v2a4 4 0 0 1-4 4H3',
+  ],
+  'chevron-down': ['m6 9 6 6 6-6'],
+  'chevron-up': ['m18 15-6-6-6 6'],
+  'arrow-up': ['M12 19V5', 'm5 12 7-7 7 7'],
+  'arrow-down': ['M12 5v14', 'm19 12-7 7-7-7'],
+  'arrow-left': ['M19 12H5', 'm12 19-7-7 7-7'],
+  plus: ['M5 12h14', 'M12 5v14'],
+}
+
+function Icon({
+  name,
+  size = 18,
+}: {
+  name: IconName
+  size?: number
+}) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      {ICON_PATHS[name].map((d) => (
+        <path key={d} d={d} />
+      ))}
+    </svg>
+  )
+}
+
 type SetType = 'working' | 'warmup' | 'dropset'
 type ExerciseUnit = 'kg' | 'plate' | 'bodyweight'
 
@@ -311,6 +371,10 @@ function App() {
   const [state, setState] = useState<PersistedState>(loadState)
   const [viewedSession, setViewedSession] = useState<Workout | null>(null)
   const [routinesOpen, setRoutinesOpen] = useState(false)
+  const [workoutPaused, setWorkoutPaused] = useState(false)
+  const [collapsedExerciseIds, setCollapsedExerciseIds] = useState<Set<string>>(
+    () => new Set(),
+  )
 
   const activeWorkout = state.activeWorkout
   const recentExercises = deriveRecentExercises(state)
@@ -337,6 +401,8 @@ function App() {
       },
     }))
     setViewedSession(null)
+    setWorkoutPaused(false)
+    setCollapsedExerciseIds(new Set())
   }
 
   function finishWorkout() {
@@ -351,6 +417,8 @@ function App() {
       sessions: [finished, ...s.sessions],
     }))
     setViewedSession(finished)
+    setWorkoutPaused(false)
+    setCollapsedExerciseIds(new Set())
   }
 
   function addExercise(name: string) {
@@ -465,6 +533,20 @@ function App() {
   function discardWorkout() {
     setState((s) => ({ ...s, activeWorkout: null }))
     setViewedSession(null)
+    setWorkoutPaused(false)
+    setCollapsedExerciseIds(new Set())
+  }
+
+  function toggleExerciseCollapsed(exerciseId: string) {
+    setCollapsedExerciseIds((ids) => {
+      const next = new Set(ids)
+      if (next.has(exerciseId)) {
+        next.delete(exerciseId)
+      } else {
+        next.add(exerciseId)
+      }
+      return next
+    })
   }
 
   function addRoutine() {
@@ -656,7 +738,7 @@ function App() {
     setViewedSession(null)
   }
 
-  if (activeWorkout) {
+  if (activeWorkout && !workoutPaused) {
     return (
       <WorkoutScreen
         workout={activeWorkout}
@@ -666,10 +748,13 @@ function App() {
         onRemoveExercise={removeExercise}
         onRenameExercise={renameExercise}
         onChangeUnit={changeExerciseUnit}
+        onExit={() => setWorkoutPaused(true)}
         onDiscard={discardWorkout}
         onFinish={finishWorkout}
         recentExercises={recentExercises}
         sessions={state.sessions}
+        collapsedExerciseIds={collapsedExerciseIds}
+        onToggleCollapsed={toggleExerciseCollapsed}
       />
     )
   }
@@ -708,6 +793,8 @@ function App() {
     <HomeScreen
       sessions={state.sessions}
       routines={state.routines}
+      activeWorkout={activeWorkout}
+      onResumeWorkout={() => setWorkoutPaused(false)}
       onStart={() => startWorkout()}
       onStartWithExercises={(names) => startWorkout(names)}
       onViewSession={setViewedSession}
@@ -721,6 +808,8 @@ function App() {
 function HomeScreen({
   sessions,
   routines,
+  activeWorkout,
+  onResumeWorkout,
   onStart,
   onStartWithExercises,
   onViewSession,
@@ -730,6 +819,8 @@ function HomeScreen({
 }: {
   sessions: Workout[]
   routines: Routine[]
+  activeWorkout: Workout | null
+  onResumeWorkout: () => void
   onStart: () => void
   onStartWithExercises: (exerciseNames: string[]) => void
   onViewSession: (session: Workout) => void
@@ -747,6 +838,18 @@ function HomeScreen({
         <h1>Gym Tracker</h1>
         <p className="muted">Log your workout, one exercise and set at a time.</p>
       </header>
+
+      {activeWorkout && (
+        <section className="card resume-card">
+          <h2>Workout in progress</h2>
+          <p className="muted">
+            Started at {formatTime(activeWorkout.startedAt)}
+          </p>
+          <button type="button" className="primary" onClick={onResumeWorkout}>
+            Resume workout
+          </button>
+        </section>
+      )}
 
       <section className="card today-card">
         <h2>Today's workout</h2>
@@ -903,10 +1006,13 @@ function WorkoutScreen({
   onRemoveExercise,
   onRenameExercise,
   onChangeUnit,
+  onExit,
   onDiscard,
   onFinish,
   recentExercises,
   sessions,
+  collapsedExerciseIds,
+  onToggleCollapsed,
 }: {
   workout: Workout
   onAddExercise: (name: string) => void
@@ -920,35 +1026,17 @@ function WorkoutScreen({
   onRemoveExercise: (exerciseId: string) => void
   onRenameExercise: (exerciseId: string, name: string) => void
   onChangeUnit: (exerciseId: string, unit: ExerciseUnit) => void
+  onExit: () => void
   onDiscard: () => void
   onFinish: () => void
   recentExercises: string[]
   sessions: Workout[]
+  collapsedExerciseIds: Set<string>
+  onToggleCollapsed: (exerciseId: string) => void
 }) {
-  const [confirmingDiscard, setConfirmingDiscard] = useState(false)
-  const [collapsedExerciseIds, setCollapsedExerciseIds] = useState<Set<string>>(
-    () => new Set(),
-  )
+  const [confirmingExit, setConfirmingExit] = useState(false)
   const hasSet = workout.exercises.some((e) => e.sets.length > 0)
   const canFinish = workout.exercises.length > 0 && hasSet
-
-  function toggleExerciseCollapsed(exerciseId: string) {
-    setCollapsedExerciseIds((ids) => {
-      const next = new Set(ids)
-      if (next.has(exerciseId)) {
-        next.delete(exerciseId)
-      } else {
-        next.add(exerciseId)
-      }
-      return next
-    })
-  }
-
-  useEffect(() => {
-    if (!confirmingDiscard) return
-    const timer = setTimeout(() => setConfirmingDiscard(false), 3000)
-    return () => clearTimeout(timer)
-  }, [confirmingDiscard])
 
   return (
     <main className="screen">
@@ -960,39 +1048,59 @@ function WorkoutScreen({
       <div className="workout-actions">
         <button
           type="button"
-          className="primary finish"
+          className="icon-btn"
+          onClick={() => setConfirmingExit(true)}
+          aria-label="Back to home"
+        >
+          <Icon name="arrow-left" />
+        </button>
+        <button
+          type="button"
+          className="positive finish"
           onClick={onFinish}
           disabled={!canFinish}
         >
           Finish workout
         </button>
-        {confirmingDiscard ? (
-          <div className="discard-confirm">
-            <button type="button" className="btn-sm danger" onClick={onDiscard}>
-              Confirm discard
-            </button>
-            <button
-              type="button"
-              className="btn-sm secondary"
-              onClick={() => setConfirmingDiscard(false)}
-            >
-              Cancel
-            </button>
-          </div>
-        ) : (
-          <button
-            type="button"
-            className="btn-sm danger discard-action"
-            onClick={() => setConfirmingDiscard(true)}
-          >
-            Cancel workout
-          </button>
-        )}
       </div>
       {!canFinish && (
         <p className="error hint">
           Add at least one exercise with a set to finish the workout.
         </p>
+      )}
+
+      {confirmingExit && (
+        <div className="confirm-dialog" role="dialog" aria-modal="true">
+          <div className="confirm-card">
+            <h3>Exit workout?</h3>
+            <p className="muted">
+              Your progress is saved. Go home and resume anytime, or discard
+              the workout.
+            </p>
+            <div className="confirm-actions">
+              <button
+                type="button"
+                className="primary"
+                onClick={() => {
+                  setConfirmingExit(false)
+                  onExit()
+                }}
+              >
+                Go home
+              </button>
+              <button
+                type="button"
+                className="danger"
+                onClick={() => {
+                  setConfirmingExit(false)
+                  onDiscard()
+                }}
+              >
+                Discard workout
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {workout.exercises.length === 0 ? (
@@ -1011,7 +1119,7 @@ function WorkoutScreen({
             onChangeUnit={(unit) => onChangeUnit(exercise.id, unit)}
             sessions={sessions}
             collapsed={collapsedExerciseIds.has(exercise.id)}
-            onToggleCollapsed={() => toggleExerciseCollapsed(exercise.id)}
+            onToggleCollapsed={() => onToggleCollapsed(exercise.id)}
           />
         ))
       )}
@@ -1147,7 +1255,6 @@ function ExerciseCard({
   const [highlightedSetId, setHighlightedSetId] = useState<string | null>(null)
   const lastSetRef = useRef<HTMLLIElement | null>(null)
   const previousSetCount = useRef(exercise.sets.length)
-
   const lastSet = exercise.sets[exercise.sets.length - 1]
   let lastWorkingSet: WorkoutSet | undefined
   for (const set of exercise.sets) {
@@ -1165,12 +1272,22 @@ function ExerciseCard({
   }, [previous])
 
   useEffect(() => {
+    if (exercise.unit === 'bodyweight') setWeight('')
+  }, [exercise.unit])
+
+  useEffect(() => {
     const previousLength = previousSetCount.current
     previousSetCount.current = exercise.sets.length
     if (exercise.sets.length <= previousLength) return
     const added = exercise.sets[exercise.sets.length - 1]
     setHighlightedSetId(added.id)
-    lastSetRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+    const node = lastSetRef.current
+    if (node) {
+      const rect = node.getBoundingClientRect()
+      if (rect.bottom > window.innerHeight) {
+        node.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+      }
+    }
     const timer = setTimeout(() => setHighlightedSetId(null), 1200)
     return () => clearTimeout(timer)
   }, [exercise.sets])
@@ -1233,34 +1350,57 @@ function ExerciseCard({
   return (
     <section className="card exercise">
       <div className="exercise-head">
-        <div>
+        <button
+          type="button"
+          className="collapse-toggle"
+          onClick={onToggleCollapsed}
+          aria-label={collapsed ? 'Expand exercise' : 'Collapse exercise'}
+        >
+          <Icon name={collapsed ? 'chevron-down' : 'chevron-up'} size={18} />
+        </button>
+        <div className="exercise-title">
           <h3>{exercise.name}</h3>
           <p className="exercise-summary">
             {setCount} {setCount === 1 ? 'set' : 'sets'} · {lastSetSummary}
           </p>
         </div>
-        <div className="exercise-actions">
-          <button
-            type="button"
-            className="btn-sm secondary"
-            onClick={onToggleCollapsed}
-          >
-            {collapsed ? 'Expand' : 'Collapse'}
-          </button>
-          {!collapsed && (
-            <>
-              <button type="button" className="btn-sm secondary" onClick={startRename}>
-                Rename
-              </button>
-              <button type="button" className="btn-sm danger" onClick={onRemove}>
-                Remove
-              </button>
-            </>
-          )}
-        </div>
+        {!collapsed && (
+          <div className="exercise-actions">
+            <button
+              type="button"
+              className="icon-btn"
+              onClick={startRename}
+              aria-label="Rename exercise"
+            >
+              <Icon name="pencil" size={16} />
+            </button>
+            <button
+              type="button"
+              className="icon-btn danger"
+              onClick={onRemove}
+              aria-label="Remove exercise"
+            >
+              <Icon name="trash" size={16} />
+            </button>
+          </div>
+        )}
       </div>
 
-      {collapsed && <p className="muted collapsed-hint">Tap Expand to log sets.</p>}
+      {collapsed && (
+        <div className="collapsed-actions">
+          <p className="muted collapsed-hint">Tap the arrow to log sets.</p>
+          {previous && (
+            <button
+              type="button"
+              className="positive repeat-btn"
+              onClick={() => onAddSet(previous.reps, previous.weightKg, 'working')}
+            >
+              <Icon name="repeat" size={16} />
+              Repeat last set
+            </button>
+          )}
+        </div>
+      )}
 
       {!collapsed && (
         <>
@@ -1273,6 +1413,12 @@ function ExerciseCard({
             onChange={(e) => {
               setNameDraft(e.target.value)
               setNameError(null)
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') {
+                e.preventDefault()
+                setEditingName(false)
+              }
             }}
             autoFocus
           />
@@ -1317,10 +1463,11 @@ function ExerciseCard({
                 </span>
                 <button
                   type="button"
-                  className="btn-sm secondary"
+                  className="icon-btn danger set-remove"
                   onClick={() => onRemoveSet(set.id)}
+                  aria-label={`Remove set ${index + 1}`}
                 >
-                  Remove
+                  <Icon name="trash" size={16} />
                 </button>
               </li>
             )
@@ -1332,9 +1479,10 @@ function ExerciseCard({
         {previous && (
           <button
             type="button"
-            className="primary"
+            className="positive repeat-btn"
             onClick={() => onAddSet(previous.reps, previous.weightKg, 'working')}
           >
+            <Icon name="repeat" size={16} />
             Repeat last set
           </button>
         )}
@@ -1525,6 +1673,12 @@ function InlineRename({
           onChange={(e) => {
             setDraft(e.target.value)
             setError(null)
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') {
+              e.preventDefault()
+              onCancel()
+            }
           }}
         />
         <button type="submit" className="btn-sm primary">
@@ -1741,10 +1895,11 @@ function RoutineCard({
             <div className="exercise-actions">
               <button
                 type="button"
-                className="btn-sm secondary"
+                className="icon-btn"
                 onClick={() => setRenaming(true)}
+                aria-label="Rename routine"
               >
-                Rename
+                <Icon name="pencil" size={16} />
               </button>
               {confirmDelete ? (
                 <span className="inline-confirm">
@@ -1766,10 +1921,11 @@ function RoutineCard({
               ) : (
                 <button
                   type="button"
-                  className="btn-sm danger"
+                  className="icon-btn danger"
                   onClick={() => setConfirmDelete(true)}
+                  aria-label="Delete routine"
                 >
-                  Delete
+                  <Icon name="trash" size={16} />
                 </button>
               )}
             </div>
@@ -1808,7 +1964,17 @@ function RoutineCard({
                       className="day-toggle"
                       onClick={() => toggleDay(day.id)}
                     >
-                      <span>{day.name}</span>
+                      <span className="day-toggle-main">
+                        <span>{day.name}</span>
+                        <Icon
+                          name={
+                            expandedDayId === day.id
+                              ? 'chevron-up'
+                              : 'chevron-down'
+                          }
+                          size={18}
+                        />
+                      </span>
                       <span className="muted">
                         {day.exerciseNames.length}{' '}
                         {day.exerciseNames.length === 1 ? 'exercise' : 'exercises'}
@@ -1817,33 +1983,37 @@ function RoutineCard({
                     <div className="exercise-actions">
                       <button
                         type="button"
-                        className="btn-sm secondary"
+                        className="icon-btn"
                         disabled={dayIndex === 0}
                         onClick={() => onMoveDay(day.id, -1)}
+                        aria-label="Move day up"
                       >
-                        Up
+                        <Icon name="arrow-up" size={16} />
                       </button>
                       <button
                         type="button"
-                        className="btn-sm secondary"
+                        className="icon-btn"
                         disabled={dayIndex === routine.days.length - 1}
                         onClick={() => onMoveDay(day.id, 1)}
+                        aria-label="Move day down"
                       >
-                        Down
+                        <Icon name="arrow-down" size={16} />
                       </button>
                       <button
                         type="button"
-                        className="btn-sm secondary"
+                        className="icon-btn"
                         onClick={() => setRenamingDayId(day.id)}
+                        aria-label="Rename day"
                       >
-                        Rename
+                        <Icon name="pencil" size={16} />
                       </button>
                       <button
                         type="button"
-                        className="btn-sm danger"
+                        className="icon-btn danger"
                         onClick={() => onRemoveDay(day.id)}
+                        aria-label="Remove day"
                       >
-                        Remove
+                        <Icon name="trash" size={16} />
                       </button>
                     </div>
                   </div>
@@ -1862,26 +2032,29 @@ function RoutineCard({
                         <div className="exercise-actions">
                           <button
                             type="button"
-                            className="btn-sm secondary"
+                            className="icon-btn"
                             disabled={index === 0}
                             onClick={() => onMoveExercise(day.id, index, -1)}
+                            aria-label="Move exercise up"
                           >
-                            Up
+                            <Icon name="arrow-up" size={16} />
                           </button>
                           <button
                             type="button"
-                            className="btn-sm secondary"
+                            className="icon-btn"
                             disabled={index === day.exerciseNames.length - 1}
                             onClick={() => onMoveExercise(day.id, index, 1)}
+                            aria-label="Move exercise down"
                           >
-                            Down
+                            <Icon name="arrow-down" size={16} />
                           </button>
                           <button
                             type="button"
-                            className="btn-sm danger"
+                            className="icon-btn danger"
                             onClick={() => onRemoveExercise(day.id, index)}
+                            aria-label="Remove exercise"
                           >
-                            Remove
+                            <Icon name="trash" size={16} />
                           </button>
                         </div>
                       </div>

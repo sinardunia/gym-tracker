@@ -194,6 +194,16 @@ button.primary {
   }
 }
 
+button.positive {
+  background: var(--positive);
+  color: #fff;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
 button.secondary {
   background: transparent;
   border-color: var(--border);
@@ -214,6 +224,53 @@ button.danger {
   }
 }
 
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-h);
+  cursor: pointer;
+
+  &:hover {
+    border-color: var(--accent);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+
+  &:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+
+  &.danger {
+    color: var(--danger);
+    border-color: var(--danger);
+
+    &:hover {
+      background: var(--danger-bg);
+    }
+  }
+
+  &.positive {
+    color: var(--positive);
+    border-color: var(--positive);
+
+    &:hover {
+      background: var(--positive-bg);
+    }
+  }
+}
+
 .btn-sm {
   font-size: 13px;
   padding: 6px 10px;
@@ -222,9 +279,39 @@ button.danger {
 
 .exercise-head {
   display: flex;
-  justify-content: space-between;
   align-items: flex-start;
   gap: 8px;
+}
+
+.collapse-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  margin-top: 2px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+
+  &:hover {
+    background: var(--row-bg);
+    color: var(--text-h);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+}
+
+.exercise-title {
+  flex: 1;
+  min-width: 0;
 }
 
 .exercise-actions {
@@ -232,6 +319,30 @@ button.danger {
   gap: 8px;
   flex-wrap: wrap;
   justify-content: flex-end;
+  align-items: center;
+}
+
+.collapsed-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+
+  button {
+    width: 100%;
+  }
+}
+
+.repeat-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.set-remove {
+  width: 32px;
+  height: 32px;
 }
 
 .exercise-summary,
@@ -261,15 +372,57 @@ button.danger {
   }
 }
 
-.discard-confirm {
+.confirm-dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.confirm-card {
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.2);
+
+  p {
+    margin: 0;
+  }
+}
+
+.confirm-actions {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
-  justify-content: flex-end;
+
+  button {
+    flex: 1;
+  }
 }
 
-.discard-action {
-  flex-shrink: 0;
+.resume-card {
+  h2,
+  p {
+    margin: 0;
+  }
+}
+
+.day-toggle-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
 }
 
 .rename-form {
@@ -281,16 +434,6 @@ button.danger {
 .rename-actions {
   display: flex;
   gap: 8px;
-}
-
-.discard {
-  display: flex;
-  gap: 8px;
-  margin-top: 8px;
-
-  button {
-    flex: 1;
-  }
 }
 
 .start {
