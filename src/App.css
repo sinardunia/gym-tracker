@@ -393,10 +393,22 @@ button.danger {
 }
 
 .exercise-summary,
-.collapsed-hint {
+.collapsed-hint,
+.collapsed-note {
   margin: 4px 0 0;
   color: var(--text);
   font-size: 14px;
+}
+
+.collapsed-note {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  padding: 6px 10px;
+  background: var(--row-bg);
+  border-radius: 8px;
+  font-style: italic;
 }
 
 .workout-actions {

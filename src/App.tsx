@@ -345,25 +345,6 @@ function isPersistedState(value: unknown): value is PersistedState {
   )
 }
 
-function deriveRecentExercises(state: PersistedState): string[] {
-  const seen = new Set<string>()
-  const recent: string[] = []
-
-  function add(name: string) {
-    const key = name.trim().toLowerCase()
-    if (seen.has(key)) return
-    seen.add(key)
-    recent.push(name.trim())
-  }
-
-  state.activeWorkout?.exercises.forEach((e) => add(e.name))
-  state.sessions.forEach((session) => {
-    session.exercises.forEach((e) => add(e.name))
-  })
-
-  return recent
-}
-
 function findLastSessionSet(
   sessions: Workout[],
   exerciseName: string,
@@ -478,7 +459,6 @@ function AppContent({
   )
 
   const activeWorkout = state.activeWorkout
-  const recentExercises = deriveRecentExercises(state)
 
   useEffect(() => {
     try {
@@ -509,10 +489,10 @@ function AppContent({
 
   function finishWorkout() {
     if (!activeWorkout) return
-    const finished: Workout = {
+    const finished: Workout = normalizeWorkout({
       ...activeWorkout,
       finishedAt: new Date().toISOString(),
-    }
+    })
     setState((s) => ({
       ...s,
       activeWorkout: null,
@@ -637,7 +617,7 @@ function AppContent({
       s.activeWorkout
         ? {
             ...s,
-            activeWorkout: { ...s.activeWorkout, note },
+            activeWorkout: { ...s.activeWorkout, note: note.trim() ? note : undefined },
           }
         : s,
     )
@@ -651,7 +631,9 @@ function AppContent({
             activeWorkout: {
               ...s.activeWorkout,
               exercises: s.activeWorkout.exercises.map((e) =>
-                e.id === exerciseId ? { ...e, note } : e,
+                e.id === exerciseId
+                  ? { ...e, note: note.trim() ? note : undefined }
+                  : e,
               ),
             },
           }
@@ -883,7 +865,6 @@ function AppContent({
         onExit={() => setWorkoutPaused(true)}
         onDiscard={discardWorkout}
         onFinish={finishWorkout}
-        recentExercises={recentExercises}
         sessions={state.sessions}
         collapsedExerciseIds={collapsedExerciseIds}
         onToggleCollapsed={toggleExerciseCollapsed}
@@ -1256,7 +1237,6 @@ function WorkoutScreen({
   onExit,
   onDiscard,
   onFinish,
-  recentExercises,
   sessions,
   collapsedExerciseIds,
   onToggleCollapsed,
@@ -1278,7 +1258,6 @@ function WorkoutScreen({
   onExit: () => void
   onDiscard: () => void
   onFinish: () => void
-  recentExercises: string[]
   sessions: Workout[]
   collapsedExerciseIds: Set<string>
   onToggleCollapsed: (exerciseId: string) => void
@@ -1301,6 +1280,7 @@ function WorkoutScreen({
         value={workout.note ?? ''}
         onChange={onUpdateWorkoutNote}
         placeholder={tr('workout.notesPlaceholder')}
+        label={tr('workout.notes')}
       />
 
       <div className="workout-actions">
@@ -1381,7 +1361,7 @@ function WorkoutScreen({
         ))
       )}
 
-      <AddExerciseForm onAdd={onAddExercise} recentExercises={recentExercises} />
+      <AddExerciseForm onAdd={onAddExercise} />
     </main>
   )
 }
@@ -1393,17 +1373,20 @@ function NoteField({
   onChange,
   placeholder,
   compact,
+  label,
 }: {
   value: string
   onChange: (note: string) => void
   placeholder: string
   compact?: boolean
+  label: string
 }) {
   return (
     <textarea
       className={`note-field${compact ? ' compact' : ''}`}
       value={value}
       placeholder={placeholder}
+      aria-label={label}
       rows={compact ? 1 : 2}
       onChange={(e) => onChange(e.target.value)}
     />
@@ -1904,6 +1887,9 @@ function ExerciseCard({
 
       {collapsed && (
         <div className="collapsed-actions">
+          {exercise.note && (
+            <p className="muted collapsed-note">{exercise.note}</p>
+          )}
           <p className="muted collapsed-hint">{tr('ex.collapseHint')}</p>
           {previous && (
             <button
@@ -1925,6 +1911,7 @@ function ExerciseCard({
         onChange={onUpdateNote}
         placeholder={tr('ex.notePlaceholder')}
         compact
+        label={tr('ex.note')}
       />
 
       {editingName && (
@@ -2081,10 +2068,8 @@ function ExerciseCard({
 
 function AddExerciseForm({
   onAdd,
-  recentExercises,
 }: {
   onAdd: (name: string) => void
-  recentExercises: string[]
 }) {
   const { tr } = useI18n()
   const [name, setName] = useState('')
@@ -2103,11 +2088,6 @@ function AddExerciseForm({
   }
 
   const query = name.trim().toLowerCase()
-  const matches = query
-    ? recentExercises.filter((exercise) =>
-        exercise.toLowerCase().includes(query),
-      )
-    : recentExercises
   const libraryMatches = findLibraryMatches(query)
 
   return (
@@ -2128,35 +2108,6 @@ function AddExerciseForm({
         />
         {error && <p className="error">{error}</p>}
       </div>
-
-      {recentExercises.length > 0 && (
-        <div className="recent-exercises">
-          <span className="recent-label">
-            {query ? tr('addEx.matches') : tr('addEx.recent')}
-          </span>
-          {matches.length === 0 ? (
-            <p className="muted">{tr('addEx.noMatch')}</p>
-          ) : (
-            <ul className="recent-list">
-              {matches.map((exercise) => (
-                <li key={exercise}>
-                  <button
-                    type="button"
-                    className="recent-item"
-                    onClick={() => {
-                      onAdd(exercise)
-                      setName('')
-                      setError(null)
-                    }}
-                  >
-                    {exercise}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      )}
 
       {query && libraryMatches.length > 0 && (
         <div className="recent-exercises">

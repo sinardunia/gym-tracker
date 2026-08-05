@@ -45,6 +45,7 @@ const ID: Record<string, string> = {
   'workout.notesPlaceholder':
     'Catatan workout… (mis. dada terasa kuat saat bench)',
   'workout.backHome': 'Kembali ke home',
+  'workout.notes': 'Catatan workout',
 
   'timer.rest': 'Istirahat',
   'timer.start': 'Mulai',
@@ -77,6 +78,7 @@ const ID: Record<string, string> = {
   'ex.expand': 'Buka exercise',
   'ex.unitLabel': 'Satuan berat',
   'ex.setTypeLabel': 'Tipe set',
+  'ex.note': 'Catatan exercise',
 
   'setType.working': 'Working',
   'setType.warmup': 'Pemanasan',
@@ -89,9 +91,6 @@ const ID: Record<string, string> = {
   'addEx.title': 'Tambah exercise',
   'addEx.nameLabel': 'Nama exercise',
   'addEx.namePlaceholder': 'mis. Bench Press',
-  'addEx.matches': 'Cocok',
-  'addEx.recent': 'Exercise terakhir',
-  'addEx.noMatch': 'Tidak ada yang cocok. Ketik nama lalu tap Tambah exercise.',
   'addEx.library': 'Pustaka exercise',
   'addEx.add': 'Tambah exercise',
 
@@ -210,6 +209,7 @@ const EN: Record<string, string> = {
   'workout.noExercises': 'No exercises yet. Add your first one below.',
   'workout.notesPlaceholder': 'Workout notes… (e.g. felt strong on bench)',
   'workout.backHome': 'Back to home',
+  'workout.notes': 'Workout notes',
 
   'timer.rest': 'Rest',
   'timer.start': 'Start',
@@ -242,6 +242,7 @@ const EN: Record<string, string> = {
   'ex.expand': 'Expand exercise',
   'ex.unitLabel': 'Weight unit',
   'ex.setTypeLabel': 'Set type',
+  'ex.note': 'Exercise note',
 
   'setType.working': 'Working',
   'setType.warmup': 'Warmup',
@@ -254,9 +255,6 @@ const EN: Record<string, string> = {
   'addEx.title': 'Add exercise',
   'addEx.nameLabel': 'Exercise name',
   'addEx.namePlaceholder': 'e.g. Bench Press',
-  'addEx.matches': 'Matches',
-  'addEx.recent': 'Recent exercises',
-  'addEx.noMatch': 'No match. Type the name and tap Add exercise.',
   'addEx.library': 'Exercise library',
   'addEx.add': 'Add exercise',
 
