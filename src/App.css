@@ -14,6 +14,18 @@
   }
 }
 
+.header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.lang-toggle {
+  flex-shrink: 0;
+  min-width: 44px;
+}
+
 .muted {
   color: var(--text);
 }

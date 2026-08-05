@@ -1,0 +1,387 @@
+import { createContext, useContext, type ReactNode } from 'react'
+
+export type Lang = 'id' | 'en'
+
+export const LANG_KEY = 'gym-tracker.lang'
+
+type Vars = Record<string, string | number>
+
+const ID: Record<string, string> = {
+  'home.tagline': 'Catat workout-mu, satu exercise dan set pada satu waktu.',
+  'home.today': 'Latihan hari ini',
+  'home.todayNoExercises': 'Hari ini belum ada exercise.',
+  'home.todayScheduled': 'Tidak ada latihan terjadwal hari ini.',
+  'home.startWorkout': 'Mulai workout',
+  'home.startEmpty': 'Mulai workout kosong',
+  'home.pickRoutine': 'Pilih routine',
+  'home.noRoutines': 'Belum ada routine. Buat dulu di menu Routines.',
+  'home.workoutInProgress': 'Workout sedang berjalan',
+  'home.startedAt': 'Mulai {time}',
+  'home.resumeWorkout': 'Lanjutkan workout',
+  'home.recentSessions': 'Sesi terakhir',
+  'home.noSessions': 'Belum ada sesi yang selesai.',
+  'home.sessionSummary': '{count} exercise · {sets} set',
+  'home.routines': 'Routines',
+  'home.noDaysInRoutine': 'Belum ada hari di routine ini.',
+
+  'count.days.one': 'hari',
+  'count.days.other': 'hari',
+  'count.exercises.one': 'exercise',
+  'count.exercises.other': 'exercise',
+  'count.sets.one': 'set',
+  'count.sets.other': 'set',
+
+  'workout.title': 'Workout',
+  'workout.startedAt': 'Mulai {time}',
+  'workout.finish': 'Selesai workout',
+  'workout.finishHint':
+    'Tambahkan minimal satu exercise dengan set untuk menyelesaikan workout.',
+  'workout.exitTitle': 'Keluar dari workout?',
+  'workout.exitBody':
+    'Progresmu tersimpan. Ke home dan lanjutkan kapan saja, atau buang workout ini.',
+  'workout.goHome': 'Ke home',
+  'workout.discard': 'Buang workout',
+  'workout.noExercises': 'Belum ada exercise. Tambahkan yang pertama di bawah.',
+  'workout.notesPlaceholder':
+    'Catatan workout… (mis. dada terasa kuat saat bench)',
+  'workout.backHome': 'Kembali ke home',
+
+  'timer.rest': 'Istirahat',
+  'timer.start': 'Mulai',
+  'timer.reset': 'Reset',
+  'timer.restart': 'Ulangi',
+  'timer.timeUp': 'Waktu habis!',
+  'timer.customMinutes': 'Menit istirahat custom',
+  'timer.resetAria': 'Reset timer istirahat',
+  'timer.restartAria': 'Ulangi timer istirahat',
+
+  'ex.sets': 'set',
+  'ex.lastSet': 'Terakhir: {reps} reps{weight}',
+  'ex.noSets': 'Belum ada set.',
+  'ex.collapseHint': 'Ketuk panah untuk mencatat set.',
+  'ex.repeatLastSet': 'Ulangi set terakhir',
+  'ex.setLabel': 'Set {n}',
+  'ex.reps': 'Reps',
+  'ex.weightKg': 'Berat (kg)',
+  'ex.plates': 'Plat',
+  'ex.addSet': 'Tambah set',
+  'ex.repsError': 'Reps harus bilangan bulat minimal 1.',
+  'ex.plateError': 'Jumlah plat harus bilangan bulat minimal 0.',
+  'ex.weightError': 'Berat harus 0 atau angka positif.',
+  'ex.nameRequired': 'Nama exercise wajib diisi.',
+  'ex.notePlaceholder': 'Catatan… (posisi seat, form cue, dropset)',
+  'ex.rename': 'Ubah nama exercise',
+  'ex.remove': 'Hapus exercise',
+  'ex.removeSet': 'Hapus set {n}',
+  'ex.collapse': 'Tutup exercise',
+  'ex.expand': 'Buka exercise',
+  'ex.unitLabel': 'Satuan berat',
+  'ex.setTypeLabel': 'Tipe set',
+
+  'setType.working': 'Working',
+  'setType.warmup': 'Pemanasan',
+  'setType.dropset': 'Dropset',
+
+  'save': 'Simpan',
+  'cancel': 'Batal',
+  'nameRequired': 'Nama wajib diisi.',
+
+  'addEx.title': 'Tambah exercise',
+  'addEx.nameLabel': 'Nama exercise',
+  'addEx.namePlaceholder': 'mis. Bench Press',
+  'addEx.matches': 'Cocok',
+  'addEx.recent': 'Exercise terakhir',
+  'addEx.noMatch': 'Tidak ada yang cocok. Ketik nama lalu tap Tambah exercise.',
+  'addEx.library': 'Pustaka exercise',
+  'addEx.add': 'Tambah exercise',
+
+  'backup.title': 'Cadangan',
+  'backup.desc': 'Ekspor atau pulihkan semua data Gym Tracker lokal.',
+  'backup.export': 'Ekspor JSON',
+  'backup.import': 'Impor JSON',
+  'backup.exported': 'Cadangan diunduh.',
+  'backup.invalid': 'File cadangan tidak valid. Data yang ada tidak diubah.',
+  'backup.importWarning':
+    'Mengimpor cadangan ini akan menggantikan semua data lokal, termasuk workout aktif dan sesi terakhir.',
+  'backup.confirmImport': 'Konfirmasi impor',
+  'backup.imported': 'Cadangan diimpor.',
+
+  'routine.title': 'Routines',
+  'routine.desc': 'Siapkan hari dan exercise workout lebih awal.',
+  'routine.back': 'Kembali',
+  'routine.addRoutine': 'Tambah routine',
+  'routine.noRoutines': 'Belum ada routine. Buat satu untuk merencanakan minggumu.',
+  'routine.newName': 'Routine baru',
+  'routine.newDayName': 'Hari baru',
+  'routine.noDays': 'Belum ada hari. Tambahkan hari pertama.',
+  'routine.addDay': 'Tambah hari',
+  'routine.weekday': 'Hari',
+  'routine.notScheduled': 'Tidak dijadwalkan',
+  'routine.conflict':
+    '{weekday} sudah dijadwalkan untuk {routine} / {day}. Ganti?',
+  'routine.replace': 'Ganti',
+  'routine.noExercises': 'Belum ada exercise.',
+  'routine.addExercise': 'Tambah exercise',
+  'routine.exercisePlaceholder': 'Nama exercise',
+  'routine.duplicate': 'Exercise sudah ada di hari ini.',
+  'routine.rename': 'Ubah nama routine',
+  'routine.delete': 'Hapus routine',
+  'routine.renameDay': 'Ubah nama hari',
+  'routine.removeDay': 'Hapus hari',
+  'routine.moveDayUp': 'Pindah hari ke atas',
+  'routine.moveDayDown': 'Pindah hari ke bawah',
+  'routine.moveExUp': 'Pindah exercise ke atas',
+  'routine.moveExDown': 'Pindah exercise ke bawah',
+  'routine.removeEx': 'Hapus exercise',
+  'routine.confirm': 'Konfirmasi',
+  'routine.day.one': 'hari',
+  'routine.day.other': 'hari',
+  'routine.exercise.one': 'exercise',
+  'routine.exercise.other': 'exercise',
+
+  'weekday.0': 'Minggu',
+  'weekday.1': 'Senin',
+  'weekday.2': 'Selasa',
+  'weekday.3': 'Rabu',
+  'weekday.4': 'Kamis',
+  'weekday.5': 'Jumat',
+  'weekday.6': 'Sabtu',
+
+  'summary.title': 'Workout selesai',
+  'summary.startAnother': 'Mulai workout lain',
+  'summary.back': 'Kembali',
+  'summary.count': '{count} exercise · {sets} set',
+
+  'about.title': 'Tentang',
+  'about.desc':
+    'Gym Tracker v{version} — gratis, open source, semua data tetap di perangkatmu.',
+  'about.github': 'GitHub',
+  'about.support': 'Dukung (Saweria)',
+
+  'feedback.send': 'Kirim masukan',
+  'feedback.title': 'Masukan & saran',
+  'feedback.body':
+    'Ada yang mengganggu atau kurang? Tulis di sini — tersimpan di perangkatmu. Lebih suka diskusi publik? Buka issue di GitHub.',
+  'feedback.placeholder': 'Ide, masalah, atau kritik-saran…',
+  'feedback.saved': 'Terima kasih, tercatat!',
+  'feedback.save': 'Simpan masukan',
+  'feedback.openIssue': 'Buka issue GitHub',
+  'feedback.close': 'Tutup',
+
+  'unit.kg': 'kg',
+  'unit.plates': 'plat',
+}
+
+const EN: Record<string, string> = {
+  'home.tagline': 'Log your workout, one exercise and set at a time.',
+  'home.today': "Today's workout",
+  'home.todayNoExercises': 'This day has no exercises yet.',
+  'home.todayScheduled': 'No workout scheduled today.',
+  'home.startWorkout': 'Start workout',
+  'home.startEmpty': 'Start empty workout',
+  'home.pickRoutine': 'Pick a routine',
+  'home.noRoutines': 'No routines yet. Create one in Routines first.',
+  'home.workoutInProgress': 'Workout in progress',
+  'home.startedAt': 'Started at {time}',
+  'home.resumeWorkout': 'Resume workout',
+  'home.recentSessions': 'Recent sessions',
+  'home.noSessions': 'No completed sessions yet.',
+  'home.sessionSummary': '{count} exercises · {sets} sets',
+  'home.routines': 'Routines',
+  'home.noDaysInRoutine': 'No days in this routine yet.',
+
+  'count.days.one': 'day',
+  'count.days.other': 'days',
+  'count.exercises.one': 'exercise',
+  'count.exercises.other': 'exercises',
+  'count.sets.one': 'set',
+  'count.sets.other': 'sets',
+
+  'workout.title': 'Workout',
+  'workout.startedAt': 'Started at {time}',
+  'workout.finish': 'Finish workout',
+  'workout.finishHint':
+    'Add at least one exercise with a set to finish the workout.',
+  'workout.exitTitle': 'Exit workout?',
+  'workout.exitBody':
+    'Your progress is saved. Go home and resume anytime, or discard the workout.',
+  'workout.goHome': 'Go home',
+  'workout.discard': 'Discard workout',
+  'workout.noExercises': 'No exercises yet. Add your first one below.',
+  'workout.notesPlaceholder': 'Workout notes… (e.g. felt strong on bench)',
+  'workout.backHome': 'Back to home',
+
+  'timer.rest': 'Rest',
+  'timer.start': 'Start',
+  'timer.reset': 'Reset',
+  'timer.restart': 'Restart',
+  'timer.timeUp': "Time's up!",
+  'timer.customMinutes': 'Custom rest minutes',
+  'timer.resetAria': 'Reset rest timer',
+  'timer.restartAria': 'Restart rest timer',
+
+  'ex.sets': 'sets',
+  'ex.lastSet': 'Last: {reps} reps{weight}',
+  'ex.noSets': 'No sets yet.',
+  'ex.collapseHint': 'Tap the arrow to log sets.',
+  'ex.repeatLastSet': 'Repeat last set',
+  'ex.setLabel': 'Set {n}',
+  'ex.reps': 'Reps',
+  'ex.weightKg': 'Weight (kg)',
+  'ex.plates': 'Plates',
+  'ex.addSet': 'Add set',
+  'ex.repsError': 'Reps must be a whole number of at least 1.',
+  'ex.plateError': 'Plate count must be a whole number of at least 0.',
+  'ex.weightError': 'Weight must be 0 or a positive number.',
+  'ex.nameRequired': 'Exercise name is required.',
+  'ex.notePlaceholder': 'Note… (seat position, form cue, dropset)',
+  'ex.rename': 'Rename exercise',
+  'ex.remove': 'Remove exercise',
+  'ex.removeSet': 'Remove set {n}',
+  'ex.collapse': 'Collapse exercise',
+  'ex.expand': 'Expand exercise',
+  'ex.unitLabel': 'Weight unit',
+  'ex.setTypeLabel': 'Set type',
+
+  'setType.working': 'Working',
+  'setType.warmup': 'Warmup',
+  'setType.dropset': 'Dropset',
+
+  'save': 'Save',
+  'cancel': 'Cancel',
+  'nameRequired': 'Name is required.',
+
+  'addEx.title': 'Add exercise',
+  'addEx.nameLabel': 'Exercise name',
+  'addEx.namePlaceholder': 'e.g. Bench Press',
+  'addEx.matches': 'Matches',
+  'addEx.recent': 'Recent exercises',
+  'addEx.noMatch': 'No match. Type the name and tap Add exercise.',
+  'addEx.library': 'Exercise library',
+  'addEx.add': 'Add exercise',
+
+  'backup.title': 'Backup',
+  'backup.desc': 'Export or restore all local Gym Tracker data.',
+  'backup.export': 'Export JSON',
+  'backup.import': 'Import JSON',
+  'backup.exported': 'Backup downloaded.',
+  'backup.invalid': 'Backup file is invalid. Existing data was not changed.',
+  'backup.importWarning':
+    'Importing this backup will replace all current local data, including any active workout and recent sessions.',
+  'backup.confirmImport': 'Confirm import',
+  'backup.imported': 'Backup imported.',
+
+  'routine.title': 'Routines',
+  'routine.desc': 'Prepare workout days and exercises ahead of time.',
+  'routine.back': 'Back',
+  'routine.addRoutine': 'Add routine',
+  'routine.noRoutines': 'No routines yet. Create one to plan your week.',
+  'routine.newName': 'New routine',
+  'routine.newDayName': 'New day',
+  'routine.noDays': 'No days yet. Add your first day.',
+  'routine.addDay': 'Add day',
+  'routine.weekday': 'Weekday',
+  'routine.notScheduled': 'Not scheduled',
+  'routine.conflict':
+    '{weekday} is already scheduled for {routine} / {day}. Replace it?',
+  'routine.replace': 'Replace',
+  'routine.noExercises': 'No exercises yet.',
+  'routine.addExercise': 'Add exercise',
+  'routine.exercisePlaceholder': 'Exercise name',
+  'routine.duplicate': 'Exercise already in this day.',
+  'routine.rename': 'Rename routine',
+  'routine.delete': 'Delete routine',
+  'routine.renameDay': 'Rename day',
+  'routine.removeDay': 'Remove day',
+  'routine.moveDayUp': 'Move day up',
+  'routine.moveDayDown': 'Move day down',
+  'routine.moveExUp': 'Move exercise up',
+  'routine.moveExDown': 'Move exercise down',
+  'routine.removeEx': 'Remove exercise',
+  'routine.confirm': 'Confirm',
+  'routine.day.one': 'day',
+  'routine.day.other': 'days',
+  'routine.exercise.one': 'exercise',
+  'routine.exercise.other': 'exercises',
+
+  'weekday.0': 'Sunday',
+  'weekday.1': 'Monday',
+  'weekday.2': 'Tuesday',
+  'weekday.3': 'Wednesday',
+  'weekday.4': 'Thursday',
+  'weekday.5': 'Friday',
+  'weekday.6': 'Saturday',
+
+  'summary.title': 'Workout complete',
+  'summary.startAnother': 'Start another workout',
+  'summary.back': 'Back',
+  'summary.count': '{count} exercises · {sets} sets',
+
+  'about.title': 'About',
+  'about.desc':
+    'Gym Tracker v{version} — free, open source, all data stays on your device.',
+  'about.github': 'GitHub',
+  'about.support': 'Support (Saweria)',
+
+  'feedback.send': 'Send feedback',
+  'feedback.title': 'Feedback & suggestions',
+  'feedback.body':
+    'Anything annoying or missing? Write it here — it is saved on your device. Prefer public discussion? Open a GitHub issue.',
+  'feedback.placeholder': 'Ideas, problems, or feedback…',
+  'feedback.saved': 'Thanks, noted!',
+  'feedback.save': 'Save feedback',
+  'feedback.openIssue': 'Open GitHub issue',
+  'feedback.close': 'Close',
+
+  'unit.kg': 'kg',
+  'unit.plates': 'plates',
+}
+
+const DICTS: Record<Lang, Record<string, string>> = { id: ID, en: EN }
+
+function interpolate(template: string, vars?: Vars): string {
+  if (!vars) return template
+  return template.replace(/\{(\w+)\}/g, (match, key) =>
+    key in vars ? String(vars[key]) : match,
+  )
+}
+
+type I18n = {
+  lang: Lang
+  tr: (key: string, vars?: Vars) => string
+  p: (count: number, key: string) => string
+}
+
+const I18nContext = createContext<I18n | null>(null)
+
+export function I18nProvider({
+  lang,
+  children,
+}: {
+  lang: Lang
+  children: ReactNode
+}) {
+  const value: I18n = {
+    lang,
+    tr: (key, vars) =>
+      interpolate(DICTS[lang][key] ?? DICTS.en[key] ?? key, vars),
+    p: (count, key) =>
+      interpolate(
+        DICTS[lang][`${key}.${count === 1 ? 'one' : 'other'}`] ??
+          DICTS.en[`${key}.${count === 1 ? 'one' : 'other'}`] ??
+          key,
+        { count },
+      ),
+  }
+  return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>
+}
+
+export function useI18n(): I18n {
+  const ctx = useContext(I18nContext)
+  if (!ctx) throw new Error('useI18n must be used within I18nProvider')
+  return ctx
+}
+
+export function localeOf(lang: Lang): string {
+  return lang === 'id' ? 'id-ID' : 'en-US'
+}

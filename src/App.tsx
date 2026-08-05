@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from 'react'
+import { I18nProvider, useI18n, localeOf, LANG_KEY, type Lang } from './i18n'
 import './App.css'
 
 type IconName =
@@ -66,11 +67,7 @@ type ExerciseUnit = 'kg' | 'plate' | 'bodyweight'
 
 const SET_TYPES: readonly SetType[] = ['working', 'warmup', 'dropset']
 
-const SET_TYPE_LABELS: Record<SetType, string> = {
-  working: 'Working',
-  warmup: 'Warmup',
-  dropset: 'Dropset',
-}
+const WEEKDAY_KEYS = ['0', '1', '2', '3', '4', '5', '6'] as const
 
 type WorkoutSet = {
   id: string
@@ -102,16 +99,6 @@ type RoutineDay = {
 }
 
 type Weekday = 0 | 1 | 2 | 3 | 4 | 5 | 6
-
-const WEEKDAY_NAMES = [
-  'Sunday',
-  'Monday',
-  'Tuesday',
-  'Wednesday',
-  'Thursday',
-  'Friday',
-  'Saturday',
-] as const
 
 type Routine = {
   id: string
@@ -450,6 +437,38 @@ function loadState(): PersistedState {
 }
 
 function App() {
+  const [lang, setLang] = useState<Lang>(() => {
+    try {
+      return localStorage.getItem(LANG_KEY) === 'en' ? 'en' : 'id'
+    } catch {
+      return 'id'
+    }
+  })
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(LANG_KEY, lang)
+      document.documentElement.lang = lang
+    } catch {
+      // Storage unavailable.
+    }
+  }, [lang])
+
+  return (
+    <I18nProvider lang={lang}>
+      <AppContent lang={lang} onToggleLang={() => setLang((cur) => (cur === 'id' ? 'en' : 'id'))} />
+    </I18nProvider>
+  )
+}
+
+function AppContent({
+  lang,
+  onToggleLang,
+}: {
+  lang: Lang
+  onToggleLang: () => void
+}) {
+  const { tr } = useI18n()
   const [state, setState] = useState<PersistedState>(loadState)
   const [viewedSession, setViewedSession] = useState<Workout | null>(null)
   const [routinesOpen, setRoutinesOpen] = useState(false)
@@ -665,7 +684,7 @@ function App() {
       ...s,
       routines: [
         ...s.routines,
-        { id: newId(), name: 'New routine', days: [], schedule: {} },
+        { id: newId(), name: tr('routine.newName'), days: [], schedule: {} },
       ],
     }))
   }
@@ -695,7 +714,7 @@ function App() {
               ...r,
               days: [
                 ...r.days,
-                { id: newId(), name: 'New day', exerciseNames: [] },
+                { id: newId(), name: tr('routine.newDayName'), exerciseNames: [] },
               ],
             }
           : r,
@@ -914,6 +933,8 @@ function App() {
       onOpenRoutines={() => setRoutinesOpen(true)}
       backupState={state}
       onImportBackup={importBackup}
+      lang={lang}
+      onToggleLang={onToggleLang}
     />
   )
 }
@@ -929,6 +950,8 @@ function HomeScreen({
   onOpenRoutines,
   backupState,
   onImportBackup,
+  lang,
+  onToggleLang,
 }: {
   sessions: Workout[]
   routines: Routine[]
@@ -940,38 +963,51 @@ function HomeScreen({
   onOpenRoutines: () => void
   backupState: PersistedState
   onImportBackup: (state: PersistedState) => void
+  lang: Lang
+  onToggleLang: () => void
 }) {
+  const { tr, p } = useI18n()
   const [pickingRoutine, setPickingRoutine] = useState(false)
   const [pickedRoutineId, setPickedRoutineId] = useState<string | null>(null)
   const today = findTodayWorkout(routines)
 
   return (
     <main className="screen">
-      <header className="screen-header">
-        <h1>Gym Tracker</h1>
-        <p className="muted">Log your workout, one exercise and set at a time.</p>
+      <header className="screen-header header-row">
+        <div>
+          <h1>Gym Tracker</h1>
+          <p className="muted">{tr('home.tagline')}</p>
+        </div>
+        <button
+          type="button"
+          className="btn-sm secondary lang-toggle"
+          onClick={onToggleLang}
+          aria-label={lang === 'id' ? 'Switch to English' : 'Ganti ke Bahasa Indonesia'}
+        >
+          {lang === 'id' ? 'EN' : 'ID'}
+        </button>
       </header>
 
       {activeWorkout && (
         <section className="card resume-card">
-          <h2>Workout in progress</h2>
+          <h2>{tr('home.workoutInProgress')}</h2>
           <p className="muted">
-            Started at {formatTime(activeWorkout.startedAt)}
+            {tr('home.startedAt', { time: formatTime(activeWorkout.startedAt, lang) })}
           </p>
           <button type="button" className="primary" onClick={onResumeWorkout}>
-            Resume workout
+            {tr('home.resumeWorkout')}
           </button>
         </section>
       )}
 
       <section className="card today-card">
-        <h2>Today's workout</h2>
+        <h2>{tr('home.today')}</h2>
         {today ? (
           <>
             <h3>{today.day.name}</h3>
             <p className="muted exercise-summary">{today.routine.name}</p>
             {today.day.exerciseNames.length === 0 ? (
-              <p className="muted">This day has no exercises yet.</p>
+              <p className="muted">{tr('home.todayNoExercises')}</p>
             ) : (
               <ul className="today-exercises">
                 {today.day.exerciseNames.map((name) => (
@@ -984,15 +1020,15 @@ function HomeScreen({
               className="primary"
               onClick={() => onStartWithExercises(today.day.exerciseNames)}
             >
-              Start workout
+              {tr('home.startWorkout')}
             </button>
             <button type="button" className="secondary" onClick={onStart}>
-              Start empty workout
+              {tr('home.startEmpty')}
             </button>
           </>
         ) : (
           <>
-            <p className="muted">No workout scheduled today.</p>
+            <p className="muted">{tr('home.todayScheduled')}</p>
             <div className="backup-actions">
               <button
                 type="button"
@@ -1002,10 +1038,10 @@ function HomeScreen({
                   setPickedRoutineId(null)
                 }}
               >
-                Pick a routine
+                {tr('home.pickRoutine')}
               </button>
               <button type="button" className="secondary" onClick={onStart}>
-                Start empty workout
+                {tr('home.startEmpty')}
               </button>
             </div>
           </>
@@ -1014,11 +1050,9 @@ function HomeScreen({
 
       {pickingRoutine && (
         <section className="card">
-          <h3>Pick a routine</h3>
+          <h3>{tr('home.pickRoutine')}</h3>
           {routines.length === 0 ? (
-            <p className="muted">
-              No routines yet. Create one in Routines first.
-            </p>
+            <p className="muted">{tr('home.noRoutines')}</p>
           ) : (
             <ul className="days">
               {routines.map((routine) => (
@@ -1034,14 +1068,13 @@ function HomeScreen({
                   >
                     <span>{routine.name}</span>
                     <span className="muted">
-                      {routine.days.length}{' '}
-                      {routine.days.length === 1 ? 'day' : 'days'}
+                      {routine.days.length} {p(routine.days.length, 'count.days')}
                     </span>
                   </button>
                   {pickedRoutineId === routine.id && (
                     <div className="day-body">
                       {routine.days.length === 0 ? (
-                        <p className="muted">No days in this routine.</p>
+                        <p className="muted">{tr('home.noDaysInRoutine')}</p>
                       ) : (
                         routine.days.map((day) => (
                           <button
@@ -1057,9 +1090,7 @@ function HomeScreen({
                             <span>{day.name}</span>
                             <span className="muted">
                               {day.exerciseNames.length}{' '}
-                              {day.exerciseNames.length === 1
-                                ? 'exercise'
-                                : 'exercises'}
+                              {p(day.exerciseNames.length, 'count.exercises')}
                             </span>
                           </button>
                         ))
@@ -1078,13 +1109,13 @@ function HomeScreen({
         className="secondary"
         onClick={onOpenRoutines}
       >
-        Routines
+        {tr('home.routines')}
       </button>
 
       <section className="recent">
-        <h2>Recent sessions</h2>
+        <h2>{tr('home.recentSessions')}</h2>
         {sessions.length === 0 ? (
-          <p className="muted">No completed sessions yet.</p>
+          <p className="muted">{tr('home.noSessions')}</p>
         ) : (
           <ul className="session-list">
             {sessions.map((session) => (
@@ -1094,10 +1125,12 @@ function HomeScreen({
                   className="session-item"
                   onClick={() => onViewSession(session)}
                 >
-                  <span>{formatDate(session.startedAt)}</span>
+                  <span>{formatDate(session.startedAt, lang)}</span>
                   <span className="muted">
-                    {session.exercises.length} exercises ·{' '}
-                    {countSets(session)} sets
+                    {tr('home.sessionSummary', {
+                      count: session.exercises.length,
+                      sets: countSets(session),
+                    })}
                   </span>
                 </button>
               </li>
@@ -1109,10 +1142,9 @@ function HomeScreen({
       <BackupControls state={backupState} onImport={onImportBackup} />
 
       <section className="card about">
-        <h2>About</h2>
+        <h2>{tr('about.title')}</h2>
         <p className="muted">
-          Gym Tracker v{__APP_VERSION__} — free, open source, all data stays on
-          your device.
+          {tr('about.desc', { version: __APP_VERSION__ })}
         </p>
         <div className="backup-actions">
           <a
@@ -1121,7 +1153,7 @@ function HomeScreen({
             target="_blank"
             rel="noreferrer"
           >
-            GitHub
+            {tr('about.github')}
           </a>
           <a
             className="file-button"
@@ -1129,7 +1161,7 @@ function HomeScreen({
             target="_blank"
             rel="noreferrer"
           >
-            Support (Saweria)
+            {tr('about.support')}
           </a>
         </div>
         <FeedbackCard />
@@ -1145,6 +1177,7 @@ type FeedbackEntry = {
 }
 
 function FeedbackCard() {
+  const { tr } = useI18n()
   const [open, setOpen] = useState(false)
   const [message, setMessage] = useState('')
   const [saved, setSaved] = useState(false)
@@ -1168,27 +1201,24 @@ function FeedbackCard() {
   return (
     <>
       <button type="button" className="secondary" onClick={() => setOpen(true)}>
-        Send feedback
+        {tr('feedback.send')}
       </button>
       {open && (
         <div className="confirm-dialog" role="dialog" aria-modal="true">
           <div className="confirm-card">
-            <h3>Feedback & suggestions</h3>
-            <p className="muted">
-              Anything annoying or missing? Write it here — it is saved on
-              your device. Prefer public discussion? Open a GitHub issue.
-            </p>
+            <h3>{tr('feedback.title')}</h3>
+            <p className="muted">{tr('feedback.body')}</p>
             <textarea
               className="note-field"
               rows={4}
               value={message}
-              placeholder="Ide, masalah, atau kritik-saran…"
+              placeholder={tr('feedback.placeholder')}
               onChange={(e) => setMessage(e.target.value)}
             />
-            {saved && <p className="feedback-saved">Thanks, noted!</p>}
+            {saved && <p className="feedback-saved">{tr('feedback.saved')}</p>}
             <div className="confirm-actions">
               <button type="button" className="positive" onClick={submit}>
-                Save feedback
+                {tr('feedback.save')}
               </button>
               <a
                 className="file-button"
@@ -1196,14 +1226,14 @@ function FeedbackCard() {
                 target="_blank"
                 rel="noreferrer"
               >
-                Open GitHub issue
+                {tr('feedback.openIssue')}
               </a>
               <button
                 type="button"
                 className="secondary"
                 onClick={() => setOpen(false)}
               >
-                Close
+                {tr('feedback.close')}
               </button>
             </div>
           </div>
@@ -1253,6 +1283,7 @@ function WorkoutScreen({
   collapsedExerciseIds: Set<string>
   onToggleCollapsed: (exerciseId: string) => void
 }) {
+  const { tr, lang } = useI18n()
   const [confirmingExit, setConfirmingExit] = useState(false)
   const hasSet = workout.exercises.some((e) => e.sets.length > 0)
   const canFinish = workout.exercises.length > 0 && hasSet
@@ -1260,14 +1291,16 @@ function WorkoutScreen({
   return (
     <main className="screen">
       <header className="screen-header">
-        <h1>Workout</h1>
-        <p className="muted">Started at {formatTime(workout.startedAt)}</p>
+        <h1>{tr('workout.title')}</h1>
+        <p className="muted">
+          {tr('workout.startedAt', { time: formatTime(workout.startedAt, lang) })}
+        </p>
       </header>
 
       <NoteField
         value={workout.note ?? ''}
         onChange={onUpdateWorkoutNote}
-        placeholder="Workout notes… (e.g. felt strong on bench)"
+        placeholder={tr('workout.notesPlaceholder')}
       />
 
       <div className="workout-actions">
@@ -1276,7 +1309,7 @@ function WorkoutScreen({
             type="button"
             className="icon-btn"
             onClick={() => setConfirmingExit(true)}
-            aria-label="Back to home"
+            aria-label={tr('workout.backHome')}
           >
             <Icon name="arrow-left" />
           </button>
@@ -1286,25 +1319,20 @@ function WorkoutScreen({
             onClick={onFinish}
             disabled={!canFinish}
           >
-            Finish workout
+            {tr('workout.finish')}
           </button>
         </div>
         <RestTimer workoutId={workout.id} />
       </div>
       {!canFinish && (
-        <p className="error hint">
-          Add at least one exercise with a set to finish the workout.
-        </p>
+        <p className="error hint">{tr('workout.finishHint')}</p>
       )}
 
       {confirmingExit && (
         <div className="confirm-dialog" role="dialog" aria-modal="true">
           <div className="confirm-card">
-            <h3>Exit workout?</h3>
-            <p className="muted">
-              Your progress is saved. Go home and resume anytime, or discard
-              the workout.
-            </p>
+            <h3>{tr('workout.exitTitle')}</h3>
+            <p className="muted">{tr('workout.exitBody')}</p>
             <div className="confirm-actions">
               <button
                 type="button"
@@ -1314,7 +1342,7 @@ function WorkoutScreen({
                   onExit()
                 }}
               >
-                Go home
+                {tr('workout.goHome')}
               </button>
               <button
                 type="button"
@@ -1324,7 +1352,7 @@ function WorkoutScreen({
                   onDiscard()
                 }}
               >
-                Discard workout
+                {tr('workout.discard')}
               </button>
             </div>
           </div>
@@ -1332,7 +1360,7 @@ function WorkoutScreen({
       )}
 
       {workout.exercises.length === 0 ? (
-        <p className="muted empty">No exercises yet. Add your first one below.</p>
+        <p className="muted empty">{tr('workout.noExercises')}</p>
       ) : (
         workout.exercises.map((exercise) => (
           <ExerciseCard
@@ -1439,6 +1467,7 @@ function clearTimerSnapshots() {
 }
 
 function RestTimer({ workoutId }: { workoutId: string }) {
+  const { tr } = useI18n()
   const [status, setStatus] = useState<TimerStatus>('idle')
   const [duration, setDuration] = useState(90)
   const [remaining, setRemaining] = useState(90)
@@ -1543,7 +1572,7 @@ function RestTimer({ workoutId }: { workoutId: string }) {
             type="button"
             className="timer-display-btn"
             onClick={reset}
-            aria-label="Reset rest timer"
+            aria-label={tr('timer.resetAria')}
           >
             <span className="timer-display" role="timer">
               {formatTimer(remaining)}
@@ -1553,7 +1582,7 @@ function RestTimer({ workoutId }: { workoutId: string }) {
             <div style={{ width: `${progress}%` }} />
           </div>
           <button type="button" className="btn-sm secondary" onClick={reset}>
-            Reset
+            {tr('timer.reset')}
           </button>
         </>
       ) : status === 'done' ? (
@@ -1562,24 +1591,24 @@ function RestTimer({ workoutId }: { workoutId: string }) {
             type="button"
             className="timer-display-btn"
             onClick={() => start(duration)}
-            aria-label="Restart rest timer"
+            aria-label={tr('timer.restartAria')}
           >
             <span className="timer-display" role="timer">
               0:00
             </span>
           </button>
-          <span className="timer-done-msg">Time's up!</span>
+          <span className="timer-done-msg">{tr('timer.timeUp')}</span>
           <button
             type="button"
             className="btn-sm positive"
             onClick={() => start(duration)}
           >
-            Restart
+            {tr('timer.restart')}
           </button>
         </>
       ) : (
         <>
-          <span className="timer-label">Rest</span>
+          <span className="timer-label">{tr('timer.rest')}</span>
           {REST_PRESETS.map((seconds) => (
             <button
               key={seconds}
@@ -1597,11 +1626,11 @@ function RestTimer({ workoutId }: { workoutId: string }) {
             inputMode="decimal"
             className="timer-custom"
             value={customMinutes}
-            aria-label="Custom rest minutes"
+            aria-label={tr('timer.customMinutes')}
             onChange={(e) => setCustomMinutes(e.target.value)}
           />
           <button type="button" className="btn-sm primary" onClick={startCustom}>
-            Start
+            {tr('timer.start')}
           </button>
         </>
       )}
@@ -1622,6 +1651,7 @@ function BackupControls({
   state: PersistedState
   onImport: (state: PersistedState) => void
 }) {
+  const { tr } = useI18n()
   const [pendingImport, setPendingImport] = useState<PersistedState | null>(null)
   const [message, setMessage] = useState<BackupMessage | null>(null)
 
@@ -1637,7 +1667,7 @@ function BackupControls({
     link.click()
     link.remove()
     URL.revokeObjectURL(url)
-    setMessage({ kind: 'info', text: 'Backup downloaded.' })
+    setMessage({ kind: 'info', text: tr('backup.exported') })
   }
 
   async function handleImportFile(event: ChangeEvent<HTMLInputElement>) {
@@ -1650,7 +1680,7 @@ function BackupControls({
       setPendingImport(null)
       setMessage({
         kind: 'error',
-        text: 'Backup file is invalid. Existing data was not changed.',
+        text: tr('backup.invalid'),
       })
       return
     }
@@ -1663,39 +1693,36 @@ function BackupControls({
     if (!pendingImport) return
     onImport(pendingImport)
     setPendingImport(null)
-    setMessage({ kind: 'info', text: 'Backup imported.' })
+    setMessage({ kind: 'info', text: tr('backup.imported') })
   }
 
   return (
     <section className="card backup">
-      <h2>Backup</h2>
-      <p className="muted">Export or restore all local Gym Tracker data.</p>
+      <h2>{tr('backup.title')}</h2>
+      <p className="muted">{tr('backup.desc')}</p>
       <div className="backup-actions">
         <button type="button" className="secondary" onClick={handleExport}>
-          Export JSON
+          {tr('backup.export')}
         </button>
         <label className="file-button">
-          Import JSON
+          {tr('backup.import')}
           <input type="file" accept="application/json,.json" onChange={handleImportFile} />
         </label>
       </div>
 
       {pendingImport && (
         <div className="import-confirm">
-          <p>
-            Importing this backup will replace all current local data, including
-            any active workout and recent sessions.
-          </p>
+          <p>{tr('backup.importWarning')}</p>
           <div className="backup-actions">
             <button type="button" className="danger" onClick={confirmImport}>
-              Confirm import
+              {tr('backup.confirmImport')}
             </button>
             <button
               type="button"
               className="secondary"
               onClick={() => setPendingImport(null)}
             >
-              Cancel
+              {tr('cancel')}
             </button>
           </div>
         </div>
@@ -1733,6 +1760,7 @@ function ExerciseCard({
   collapsed: boolean
   onToggleCollapsed: () => void
 }) {
+  const { tr, p } = useI18n()
   const [reps, setReps] = useState('')
   const [weight, setWeight] = useState('')
   const [setType, setSetType] = useState<SetType>('working')
@@ -1784,7 +1812,7 @@ function ExerciseCard({
     event.preventDefault()
     const repsValue = Number(reps)
     if (!Number.isInteger(repsValue) || repsValue < 1) {
-      setError('Reps must be a whole number of at least 1.')
+      setError(tr('ex.repsError'))
       return
     }
     let weightValue = 0
@@ -1793,13 +1821,13 @@ function ExerciseCard({
     } else if (exercise.unit === 'plate') {
       weightValue = Number(weight)
       if (!Number.isInteger(weightValue) || weightValue < 0) {
-        setError('Plate count must be a whole number of at least 0.')
+        setError(tr('ex.plateError'))
         return
       }
     } else {
       weightValue = Number(weight)
       if (!Number.isFinite(weightValue) || weightValue < 0) {
-        setError('Weight must be 0 or a positive number.')
+        setError(tr('ex.weightError'))
         return
       }
     }
@@ -1819,7 +1847,7 @@ function ExerciseCard({
     event.preventDefault()
     const trimmed = nameDraft.trim()
     if (!trimmed) {
-      setNameError('Exercise name is required.')
+      setNameError(tr('ex.nameRequired'))
       return
     }
     onRename(trimmed)
@@ -1829,11 +1857,11 @@ function ExerciseCard({
 
   const setCount = exercise.sets.length
   const lastSetWeight = lastSet
-    ? formatSetWeight(exercise.unit, lastSet.weightKg)
+    ? formatSetWeight(exercise.unit, lastSet.weightKg, tr)
     : null
   const lastSetSummary = lastSet
-    ? `Last: ${lastSet.reps} reps${lastSetWeight ? ` · ${lastSetWeight}` : ''}`
-    : 'No sets yet'
+    ? tr('ex.lastSet', { reps: lastSet.reps, weight: lastSetWeight ? ` · ${lastSetWeight}` : '' })
+    : tr('ex.noSets')
 
   return (
     <section className="card exercise">
@@ -1842,14 +1870,14 @@ function ExerciseCard({
           type="button"
           className="collapse-toggle"
           onClick={onToggleCollapsed}
-          aria-label={collapsed ? 'Expand exercise' : 'Collapse exercise'}
+          aria-label={collapsed ? tr('ex.expand') : tr('ex.collapse')}
         >
           <Icon name={collapsed ? 'chevron-down' : 'chevron-up'} size={18} />
         </button>
         <div className="exercise-title">
           <h3>{exercise.name}</h3>
           <p className="exercise-summary">
-            {setCount} {setCount === 1 ? 'set' : 'sets'} · {lastSetSummary}
+            {setCount} {p(setCount, 'count.sets')} · {lastSetSummary}
           </p>
         </div>
         {!collapsed && (
@@ -1858,7 +1886,7 @@ function ExerciseCard({
               type="button"
               className="icon-btn"
               onClick={startRename}
-              aria-label="Rename exercise"
+              aria-label={tr('ex.rename')}
             >
               <Icon name="pencil" size={16} />
             </button>
@@ -1866,7 +1894,7 @@ function ExerciseCard({
               type="button"
               className="icon-btn danger"
               onClick={onRemove}
-              aria-label="Remove exercise"
+              aria-label={tr('ex.remove')}
             >
               <Icon name="trash" size={16} />
             </button>
@@ -1876,7 +1904,7 @@ function ExerciseCard({
 
       {collapsed && (
         <div className="collapsed-actions">
-          <p className="muted collapsed-hint">Tap the arrow to log sets.</p>
+          <p className="muted collapsed-hint">{tr('ex.collapseHint')}</p>
           {previous && (
             <button
               type="button"
@@ -1884,7 +1912,7 @@ function ExerciseCard({
               onClick={() => onAddSet(previous.reps, previous.weightKg, 'working')}
             >
               <Icon name="repeat" size={16} />
-              Repeat last set
+              {tr('ex.repeatLastSet')}
             </button>
           )}
         </div>
@@ -1895,7 +1923,7 @@ function ExerciseCard({
       <NoteField
         value={exercise.note ?? ''}
         onChange={onUpdateNote}
-        placeholder="Note… (seat position, form cue, dropset)"
+        placeholder={tr('ex.notePlaceholder')}
         compact
       />
 
@@ -1918,14 +1946,14 @@ function ExerciseCard({
           />
           <div className="rename-actions">
             <button type="submit" className="btn-sm secondary">
-              Save
+              {tr('save')}
             </button>
             <button
               type="button"
               className="btn-sm secondary"
               onClick={() => setEditingName(false)}
             >
-              Cancel
+              {tr('cancel')}
             </button>
           </div>
           {nameError && <p className="error">{nameError}</p>}
@@ -1933,11 +1961,11 @@ function ExerciseCard({
       )}
 
       {exercise.sets.length === 0 ? (
-        <p className="muted">No sets yet.</p>
+        <p className="muted">{tr('ex.noSets')}</p>
       ) : (
         <ul className="sets">
           {exercise.sets.map((set, index) => {
-            const weightText = formatSetWeight(exercise.unit, set.weightKg)
+            const weightText = formatSetWeight(exercise.unit, set.weightKg, tr)
             return (
               <li
                 key={set.id}
@@ -1945,10 +1973,10 @@ function ExerciseCard({
                 className={highlightedSetId === set.id ? 'set-highlight' : ''}
               >
                 <span>
-                  Set {index + 1}
+                  {tr('ex.setLabel', { n: index + 1 })}
                   {set.type !== 'working' && (
                     <span className={`set-badge ${set.type}`}>
-                      {SET_TYPE_LABELS[set.type]}
+                      {tr(`setType.${set.type}`)}
                     </span>
                   )}
                 </span>
@@ -1959,7 +1987,7 @@ function ExerciseCard({
                   type="button"
                   className="icon-btn danger set-remove"
                   onClick={() => onRemoveSet(set.id)}
-                  aria-label={`Remove set ${index + 1}`}
+                  aria-label={tr('ex.removeSet', { n: index + 1 })}
                 >
                   <Icon name="trash" size={16} />
                 </button>
@@ -1977,11 +2005,11 @@ function ExerciseCard({
             onClick={() => onAddSet(previous.reps, previous.weightKg, 'working')}
           >
             <Icon name="repeat" size={16} />
-            Repeat last set
+            {tr('ex.repeatLastSet')}
           </button>
         )}
         <div className="set-form-meta">
-          <div className="set-type-row" role="group" aria-label="Set type">
+          <div className="set-type-row" role="group" aria-label={tr('ex.setTypeLabel')}>
             {SET_TYPES.map((type) => (
               <button
                 key={type}
@@ -1989,7 +2017,7 @@ function ExerciseCard({
                 className={`set-type-btn${setType === type ? ' active' : ''}`}
                 onClick={() => setSetType(type)}
               >
-                {SET_TYPE_LABELS[type]}
+                {tr(`setType.${type}`)}
               </button>
             ))}
           </div>
@@ -1997,15 +2025,15 @@ function ExerciseCard({
             className="unit-select"
             value={exercise.unit}
             onChange={(e) => onChangeUnit(e.target.value as ExerciseUnit)}
-            aria-label="Weight unit"
+            aria-label={tr('ex.unitLabel')}
           >
-            <option value="kg">kg</option>
-            <option value="plate">plates</option>
+            <option value="kg">{tr('unit.kg')}</option>
+            <option value="plate">{tr('unit.plates')}</option>
             <option value="bodyweight">bodyweight</option>
           </select>
         </div>
         <div className="field">
-          <label htmlFor={`reps-${exercise.id}`}>Reps</label>
+          <label htmlFor={`reps-${exercise.id}`}>{tr('ex.reps')}</label>
           <input
             id={`reps-${exercise.id}`}
             type="number"
@@ -2023,7 +2051,7 @@ function ExerciseCard({
         {exercise.unit !== 'bodyweight' && (
           <div className="field">
             <label htmlFor={`weight-${exercise.id}`}>
-              {exercise.unit === 'plate' ? 'Plates' : 'Weight (kg)'}
+              {exercise.unit === 'plate' ? tr('ex.plates') : tr('ex.weightKg')}
             </label>
             <input
               id={`weight-${exercise.id}`}
@@ -2042,7 +2070,7 @@ function ExerciseCard({
         )}
         {error && <p className="error">{error}</p>}
         <button type="submit" className="primary">
-          Add set
+          {tr('ex.addSet')}
         </button>
       </form>
         </>
@@ -2058,6 +2086,7 @@ function AddExerciseForm({
   onAdd: (name: string) => void
   recentExercises: string[]
 }) {
+  const { tr } = useI18n()
   const [name, setName] = useState('')
   const [error, setError] = useState<string | null>(null)
 
@@ -2065,7 +2094,7 @@ function AddExerciseForm({
     event.preventDefault()
     const trimmed = name.trim()
     if (!trimmed) {
-      setError('Exercise name is required.')
+      setError(tr('ex.nameRequired'))
       return
     }
     onAdd(trimmed)
@@ -2083,9 +2112,9 @@ function AddExerciseForm({
 
   return (
     <form onSubmit={handleSubmit} className="card add-exercise">
-      <h3>Add exercise</h3>
+      <h3>{tr('addEx.title')}</h3>
       <div className="field">
-        <label htmlFor="exercise-name">Exercise name</label>
+        <label htmlFor="exercise-name">{tr('addEx.nameLabel')}</label>
         <input
           id="exercise-name"
           type="text"
@@ -2094,7 +2123,7 @@ function AddExerciseForm({
             setName(e.target.value)
             setError(null)
           }}
-          placeholder="e.g. Bench Press"
+          placeholder={tr('addEx.namePlaceholder')}
           autoComplete="off"
         />
         {error && <p className="error">{error}</p>}
@@ -2103,10 +2132,10 @@ function AddExerciseForm({
       {recentExercises.length > 0 && (
         <div className="recent-exercises">
           <span className="recent-label">
-            {query ? 'Matches' : 'Recent exercises'}
+            {query ? tr('addEx.matches') : tr('addEx.recent')}
           </span>
           {matches.length === 0 ? (
-            <p className="muted">No match. Type the name and tap Add exercise.</p>
+            <p className="muted">{tr('addEx.noMatch')}</p>
           ) : (
             <ul className="recent-list">
               {matches.map((exercise) => (
@@ -2131,7 +2160,7 @@ function AddExerciseForm({
 
       {query && libraryMatches.length > 0 && (
         <div className="recent-exercises">
-          <span className="recent-label">Exercise library</span>
+          <span className="recent-label">{tr('addEx.library')}</span>
           <ul className="recent-list">
             {libraryMatches.slice(0, 10).map((exercise) => (
               <li key={exercise.name}>
@@ -2153,7 +2182,7 @@ function AddExerciseForm({
       )}
 
       <button type="submit" className="primary">
-        Add exercise
+        {tr('addEx.add')}
       </button>
     </form>
   )
@@ -2168,6 +2197,7 @@ function InlineRename({
   onSave: (name: string) => void
   onCancel: () => void
 }) {
+  const { tr } = useI18n()
   const [draft, setDraft] = useState(value)
   const [error, setError] = useState<string | null>(null)
 
@@ -2175,7 +2205,7 @@ function InlineRename({
     event.preventDefault()
     const trimmed = draft.trim()
     if (!trimmed) {
-      setError('Name is required.')
+      setError(tr('nameRequired'))
       return
     }
     onSave(trimmed)
@@ -2200,10 +2230,10 @@ function InlineRename({
           }}
         />
         <button type="submit" className="btn-sm primary">
-          Save
+          {tr('save')}
         </button>
         <button type="button" className="btn-sm secondary" onClick={onCancel}>
-          Cancel
+          {tr('cancel')}
         </button>
       </div>
       {error && <p className="error">{error}</p>}
@@ -2218,6 +2248,7 @@ function AddRoutineExerciseForm({
   onAdd: (name: string) => void
   existing: string[]
 }) {
+  const { tr } = useI18n()
   const [name, setName] = useState('')
   const [error, setError] = useState<string | null>(null)
 
@@ -2225,13 +2256,13 @@ function AddRoutineExerciseForm({
     event.preventDefault()
     const trimmed = name.trim()
     if (!trimmed) {
-      setError('Exercise name is required.')
+      setError(tr('ex.nameRequired'))
       return
     }
     if (
       existing.some((n) => n.trim().toLowerCase() === trimmed.toLowerCase())
     ) {
-      setError('Exercise already in this day.')
+      setError(tr('routine.duplicate'))
       return
     }
     onAdd(trimmed)
@@ -2244,7 +2275,7 @@ function AddRoutineExerciseForm({
       <input
         type="text"
         value={name}
-        placeholder="Exercise name"
+        placeholder={tr('routine.exercisePlaceholder')}
         autoComplete="off"
         onChange={(e) => {
           setName(e.target.value)
@@ -2252,7 +2283,7 @@ function AddRoutineExerciseForm({
         }}
       />
       <button type="submit" className="btn-sm primary">
-        Add exercise
+        {tr('addEx.add')}
       </button>
       {error && <p className="error">{error}</p>}
     </form>
@@ -2270,6 +2301,7 @@ function DayScheduleSelect({
   getConflict: (weekday: Weekday) => ScheduleConflict | null
   onSchedule: (weekday: Weekday | null) => void
 }) {
+  const { tr } = useI18n()
   const [draft, setDraft] = useState(assignedWeekday)
   const [pending, setPending] = useState<{
     weekday: Weekday
@@ -2299,21 +2331,21 @@ function DayScheduleSelect({
   return (
     <div className="schedule-row">
       <label htmlFor={`weekday-${assignedWeekday}`} className="muted">
-        Weekday
+        {tr('routine.weekday')}
       </label>
       <select
         id={`weekday-${assignedWeekday}`}
         value={draft}
         onChange={(e) => handleChange(e.target.value)}
       >
-        <option value="">Not scheduled</option>
-        {WEEKDAY_NAMES.map((name, w) => (
+        <option value="">{tr('routine.notScheduled')}</option>
+        {WEEKDAY_KEYS.map((key, w) => (
           <option
-            key={name}
+            key={key}
             value={String(w)}
             disabled={takenWeekdays.includes(w) && String(w) !== draft}
           >
-            {name}
+            {tr(`weekday.${key}`)}
           </option>
         ))}
       </select>
@@ -2321,9 +2353,11 @@ function DayScheduleSelect({
       {pending && (
         <div className="import-confirm">
           <p>
-            {WEEKDAY_NAMES[pending.weekday]} is already scheduled for{' '}
-            {pending.conflict.routineName} / {pending.conflict.dayName}.
-            Replace it?
+            {tr('routine.conflict', {
+              weekday: tr(`weekday.${WEEKDAY_KEYS[pending.weekday]}`),
+              routine: pending.conflict.routineName,
+              day: pending.conflict.dayName,
+            })}
           </p>
           <div className="backup-actions">
             <button
@@ -2334,7 +2368,7 @@ function DayScheduleSelect({
                 setPending(null)
               }}
             >
-              Replace
+              {tr('routine.replace')}
             </button>
             <button
               type="button"
@@ -2344,7 +2378,7 @@ function DayScheduleSelect({
                 setPending(null)
               }}
             >
-              Cancel
+              {tr('cancel')}
             </button>
           </div>
         </div>
@@ -2380,6 +2414,7 @@ function RoutineCard({
   onSetSchedule: (dayId: string, weekday: Weekday | null) => void
   getConflict: (weekday: Weekday, dayId: string) => ScheduleConflict | null
 }) {
+  const { tr, p } = useI18n()
   const [renaming, setRenaming] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [renamingDayId, setRenamingDayId] = useState<string | null>(null)
@@ -2406,8 +2441,7 @@ function RoutineCard({
             <div className="routine-title">
               <h3>{routine.name}</h3>
               <p className="muted exercise-summary">
-                {routine.days.length}{' '}
-                {routine.days.length === 1 ? 'day' : 'days'}
+                {routine.days.length} {p(routine.days.length, 'routine.day')}
               </p>
             </div>
             <div className="exercise-actions">
@@ -2415,7 +2449,7 @@ function RoutineCard({
                 type="button"
                 className="icon-btn"
                 onClick={() => setRenaming(true)}
-                aria-label="Rename routine"
+                aria-label={tr('routine.rename')}
               >
                 <Icon name="pencil" size={16} />
               </button>
@@ -2426,14 +2460,14 @@ function RoutineCard({
                     className="btn-sm danger"
                     onClick={onDelete}
                   >
-                    Confirm
+                    {tr('routine.confirm')}
                   </button>
                   <button
                     type="button"
                     className="btn-sm secondary"
                     onClick={() => setConfirmDelete(false)}
                   >
-                    Cancel
+                    {tr('cancel')}
                   </button>
                 </span>
               ) : (
@@ -2441,7 +2475,7 @@ function RoutineCard({
                   type="button"
                   className="icon-btn danger"
                   onClick={() => setConfirmDelete(true)}
-                  aria-label="Delete routine"
+                  aria-label={tr('routine.delete')}
                 >
                   <Icon name="trash" size={16} />
                 </button>
@@ -2452,7 +2486,7 @@ function RoutineCard({
       </div>
 
       {routine.days.length === 0 && (
-        <p className="muted collapsed-hint">No days yet. Add your first day.</p>
+        <p className="muted collapsed-hint">{tr('routine.noDays')}</p>
       )}
 
       {routine.days.length > 0 && (
@@ -2495,7 +2529,7 @@ function RoutineCard({
                       </span>
                       <span className="muted">
                         {day.exerciseNames.length}{' '}
-                        {day.exerciseNames.length === 1 ? 'exercise' : 'exercises'}
+                        {p(day.exerciseNames.length, 'routine.exercise')}
                       </span>
                     </button>
                     <div className="exercise-actions">
@@ -2504,7 +2538,7 @@ function RoutineCard({
                         className="icon-btn"
                         disabled={dayIndex === 0}
                         onClick={() => onMoveDay(day.id, -1)}
-                        aria-label="Move day up"
+                        aria-label={tr('routine.moveDayUp')}
                       >
                         <Icon name="arrow-up" size={16} />
                       </button>
@@ -2513,7 +2547,7 @@ function RoutineCard({
                         className="icon-btn"
                         disabled={dayIndex === routine.days.length - 1}
                         onClick={() => onMoveDay(day.id, 1)}
-                        aria-label="Move day down"
+                        aria-label={tr('routine.moveDayDown')}
                       >
                         <Icon name="arrow-down" size={16} />
                       </button>
@@ -2521,7 +2555,7 @@ function RoutineCard({
                         type="button"
                         className="icon-btn"
                         onClick={() => setRenamingDayId(day.id)}
-                        aria-label="Rename day"
+                        aria-label={tr('routine.renameDay')}
                       >
                         <Icon name="pencil" size={16} />
                       </button>
@@ -2529,7 +2563,7 @@ function RoutineCard({
                         type="button"
                         className="icon-btn danger"
                         onClick={() => onRemoveDay(day.id)}
-                        aria-label="Remove day"
+                        aria-label={tr('routine.removeDay')}
                       >
                         <Icon name="trash" size={16} />
                       </button>
@@ -2540,7 +2574,7 @@ function RoutineCard({
                 {expandedDayId === day.id && (
                   <div className="day-body">
                     {day.exerciseNames.length === 0 && (
-                      <p className="muted">No exercises yet.</p>
+                      <p className="muted">{tr('routine.noExercises')}</p>
                     )}
                     {day.exerciseNames.map((name, index) => (
                       <div key={`${name}-${index}`} className="exercise-row">
@@ -2553,7 +2587,7 @@ function RoutineCard({
                             className="icon-btn"
                             disabled={index === 0}
                             onClick={() => onMoveExercise(day.id, index, -1)}
-                            aria-label="Move exercise up"
+                            aria-label={tr('routine.moveExUp')}
                           >
                             <Icon name="arrow-up" size={16} />
                           </button>
@@ -2562,7 +2596,7 @@ function RoutineCard({
                             className="icon-btn"
                             disabled={index === day.exerciseNames.length - 1}
                             onClick={() => onMoveExercise(day.id, index, 1)}
-                            aria-label="Move exercise down"
+                            aria-label={tr('routine.moveExDown')}
                           >
                             <Icon name="arrow-down" size={16} />
                           </button>
@@ -2570,7 +2604,7 @@ function RoutineCard({
                             type="button"
                             className="icon-btn danger"
                             onClick={() => onRemoveExercise(day.id, index)}
-                            aria-label="Remove exercise"
+                            aria-label={tr('routine.removeEx')}
                           >
                             <Icon name="trash" size={16} />
                           </button>
@@ -2596,7 +2630,7 @@ function RoutineCard({
       )}
 
       <button type="button" className="btn-sm secondary" onClick={onAddDay}>
-        Add day
+        {tr('routine.addDay')}
       </button>
     </section>
   )
@@ -2640,6 +2674,7 @@ function RoutineEditorScreen({
     weekday: Weekday | null,
   ) => void
 }) {
+  const { tr } = useI18n()
   const owners = useMemo(() => {
     const map = new Map<number, ScheduleConflict>()
     for (const routine of routines) {
@@ -2669,22 +2704,20 @@ function RoutineEditorScreen({
   return (
     <main className="screen">
       <header className="screen-header">
-        <h1>Routines</h1>
-        <p className="muted">Prepare workout days and exercises ahead of time.</p>
+        <h1>{tr('routine.title')}</h1>
+        <p className="muted">{tr('routine.desc')}</p>
       </header>
 
       <button type="button" className="btn-sm secondary" onClick={onBack}>
-        Back
+        {tr('routine.back')}
       </button>
 
       <button type="button" className="primary" onClick={onAddRoutine}>
-        Add routine
+        {tr('routine.addRoutine')}
       </button>
 
       {routines.length === 0 && (
-        <p className="muted empty">
-          No routines yet. Create one to plan your week.
-        </p>
+        <p className="muted empty">{tr('routine.noRoutines')}</p>
       )}
 
       {routines.map((routine) => (
@@ -2725,11 +2758,12 @@ function SummaryScreen({
   onStartAnother: () => void
   onBack: () => void
 }) {
+  const { tr, lang } = useI18n()
   return (
     <main className="screen">
       <header className="screen-header">
-        <h1>Workout complete</h1>
-        <p className="muted">{formatDate(workout.startedAt)}</p>
+        <h1>{tr('summary.title')}</h1>
+        <p className="muted">{formatDate(workout.startedAt, lang)}</p>
       </header>
 
       {workout.note && (
@@ -2742,14 +2776,14 @@ function SummaryScreen({
           {exercise.note && <p className="summary-note">{exercise.note}</p>}
           <ul className="sets">
             {exercise.sets.map((set, index) => {
-              const weightText = formatSetWeight(exercise.unit, set.weightKg)
+              const weightText = formatSetWeight(exercise.unit, set.weightKg, tr)
               return (
                 <li key={set.id}>
                   <span>
-                    Set {index + 1}
+                    {tr('ex.setLabel', { n: index + 1 })}
                     {set.type !== 'working' && (
                       <span className={`set-badge ${set.type}`}>
-                        {SET_TYPE_LABELS[set.type]}
+                        {tr(`setType.${set.type}`)}
                       </span>
                     )}
                   </span>
@@ -2764,14 +2798,17 @@ function SummaryScreen({
       ))}
 
       <p className="summary-count">
-        {workout.exercises.length} exercises · {countSets(workout)} sets
+        {tr('summary.count', {
+          count: workout.exercises.length,
+          sets: countSets(workout),
+        })}
       </p>
 
       <button type="button" className="primary" onClick={onStartAnother}>
-        Start another workout
+        {tr('summary.startAnother')}
       </button>
       <button type="button" className="secondary" onClick={onBack}>
-        Back
+        {tr('summary.back')}
       </button>
     </main>
   )
@@ -2781,21 +2818,25 @@ function countSets(workout: Workout): number {
   return workout.exercises.reduce((sum, exercise) => sum + exercise.sets.length, 0)
 }
 
-function formatSetWeight(unit: ExerciseUnit, weightKg: number): string | null {
+function formatSetWeight(
+  unit: ExerciseUnit,
+  weightKg: number,
+  tr: (key: string, vars?: Record<string, string | number>) => string,
+): string | null {
   if (unit === 'bodyweight') return null
-  if (unit === 'plate') return `${weightKg} plates`
-  return `${weightKg} kg`
+  if (unit === 'plate') return `${weightKg} ${tr('unit.plates')}`
+  return `${weightKg} ${tr('unit.kg')}`
 }
 
-function formatTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString([], {
+function formatTime(iso: string, lang: Lang): string {
+  return new Date(iso).toLocaleTimeString(localeOf(lang), {
     hour: '2-digit',
     minute: '2-digit',
   })
 }
 
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleString([], {
+function formatDate(iso: string, lang: Lang): string {
+  return new Date(iso).toLocaleString(localeOf(lang), {
     weekday: 'short',
     day: 'numeric',
     month: 'short',
