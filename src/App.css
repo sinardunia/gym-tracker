@@ -357,7 +357,7 @@ button.danger {
   top: 0;
   z-index: 1;
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 8px;
   padding: 10px;
   margin: -4px -4px 0;
@@ -370,6 +370,87 @@ button.danger {
     flex: 1;
     margin: 0;
   }
+}
+
+.workout-actions-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rest-timer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+  width: 100%;
+
+  &.done .timer-display {
+    color: var(--positive);
+  }
+}
+
+.timer-label {
+  font-size: 13px;
+  color: var(--text);
+}
+
+.timer-display {
+  font-size: 26px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-h);
+  min-width: 66px;
+  line-height: 1;
+}
+
+.timer-progress {
+  flex: 1;
+  min-width: 48px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--row-bg);
+  overflow: hidden;
+
+  div {
+    height: 100%;
+    background: var(--positive);
+    transition: width 0.25s linear;
+  }
+}
+
+.timer-chip {
+  font-size: 13px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-h);
+  cursor: pointer;
+
+  &:hover,
+  &.active {
+    border-color: var(--positive);
+    color: var(--positive);
+  }
+
+  &.active {
+    background: var(--positive-bg);
+  }
+}
+
+.timer-custom {
+  width: 56px;
+  padding: 6px 8px;
+  font-size: 14px;
+}
+
+.timer-done-msg {
+  color: var(--positive);
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .confirm-dialog {

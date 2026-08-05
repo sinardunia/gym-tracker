@@ -1046,22 +1046,25 @@ function WorkoutScreen({
       </header>
 
       <div className="workout-actions">
-        <button
-          type="button"
-          className="icon-btn"
-          onClick={() => setConfirmingExit(true)}
-          aria-label="Back to home"
-        >
-          <Icon name="arrow-left" />
-        </button>
-        <button
-          type="button"
-          className="positive finish"
-          onClick={onFinish}
-          disabled={!canFinish}
-        >
-          Finish workout
-        </button>
+        <div className="workout-actions-row">
+          <button
+            type="button"
+            className="icon-btn"
+            onClick={() => setConfirmingExit(true)}
+            aria-label="Back to home"
+          >
+            <Icon name="arrow-left" />
+          </button>
+          <button
+            type="button"
+            className="positive finish"
+            onClick={onFinish}
+            disabled={!canFinish}
+          >
+            Finish workout
+          </button>
+        </div>
+        <RestTimer />
       </div>
       {!canFinish && (
         <p className="error hint">
@@ -1127,6 +1130,154 @@ function WorkoutScreen({
       <AddExerciseForm onAdd={onAddExercise} recentExercises={recentExercises} />
     </main>
   )
+}
+
+const REST_PRESETS = [60, 90, 120]
+
+function RestTimer() {
+  const [duration, setDuration] = useState(90)
+  const [remaining, setRemaining] = useState(90)
+  const [running, setRunning] = useState(false)
+  const [customMinutes, setCustomMinutes] = useState('2')
+  const [doneFlash, setDoneFlash] = useState(false)
+  const endAtRef = useRef(0)
+  const audioRef = useRef<AudioContext | null>(null)
+  const flashTimersRef = useRef<Set<number>>(new Set())
+
+  useEffect(
+    () => () => {
+      for (const id of flashTimersRef.current) clearTimeout(id)
+    },
+    [],
+  )
+
+  useEffect(() => {
+    if (!running) return
+    const timer = setInterval(() => {
+      const left = Math.max(
+        0,
+        Math.round((endAtRef.current - Date.now()) / 1000),
+      )
+      setRemaining(left)
+      if (left <= 0) {
+        setRunning(false)
+        setDoneFlash(true)
+        playDoneBeep()
+        navigator.vibrate?.([200, 100, 200, 100, 200])
+        const flashTimer = setTimeout(() => setDoneFlash(false), 3000)
+        flashTimersRef.current.add(flashTimer)
+      }
+    }, 250)
+    return () => clearInterval(timer)
+  }, [running])
+
+  function warmAudio() {
+    try {
+      if (!audioRef.current) audioRef.current = new AudioContext()
+      if (audioRef.current.state === 'suspended') {
+        void audioRef.current.resume()
+      }
+    } catch {
+      // Audio unavailable.
+    }
+  }
+
+  function playDoneBeep() {
+    const ctx = audioRef.current
+    if (!ctx) return
+    try {
+      const now = ctx.currentTime
+      for (let i = 0; i < 3; i++) {
+        const osc = ctx.createOscillator()
+        const gain = ctx.createGain()
+        osc.connect(gain)
+        gain.connect(ctx.destination)
+        osc.frequency.value = 880
+        gain.gain.setValueAtTime(0.0001, now + i * 0.25)
+        gain.gain.exponentialRampToValueAtTime(0.3, now + i * 0.25 + 0.02)
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.25 + 0.2)
+        osc.start(now + i * 0.25)
+        osc.stop(now + i * 0.25 + 0.22)
+      }
+    } catch {
+      // Audio unavailable; vibration/visual still work.
+    }
+  }
+
+  function start(seconds: number) {
+    warmAudio()
+    setDuration(seconds)
+    setRemaining(seconds)
+    endAtRef.current = Date.now() + seconds * 1000
+    setRunning(true)
+    setDoneFlash(false)
+  }
+
+  function startCustom() {
+    const minutes = Number(customMinutes)
+    const seconds = Math.max(5, Math.round((Number.isFinite(minutes) ? minutes : 0) * 60))
+    start(seconds)
+  }
+
+  function reset() {
+    setRunning(false)
+    setRemaining(duration)
+    setDoneFlash(false)
+  }
+
+  const progress = duration > 0 ? (remaining / duration) * 100 : 0
+
+  return (
+    <div className={`rest-timer${doneFlash ? ' done' : ''}`}>
+      {running ? (
+        <>
+          <span className="timer-display" role="timer">
+            {formatTimer(remaining)}
+          </span>
+          <div className="timer-progress" aria-hidden="true">
+            <div style={{ width: `${progress}%` }} />
+          </div>
+          <button type="button" className="btn-sm secondary" onClick={reset}>
+            Reset
+          </button>
+        </>
+      ) : (
+        <>
+          <span className="timer-label">Rest</span>
+          {REST_PRESETS.map((seconds) => (
+            <button
+              key={seconds}
+              type="button"
+              className={`timer-chip${duration === seconds ? ' active' : ''}`}
+              onClick={() => start(seconds)}
+            >
+              {formatTimer(seconds)}
+            </button>
+          ))}
+          <input
+            type="number"
+            min={0.1}
+            step={0.5}
+            inputMode="decimal"
+            className="timer-custom"
+            value={customMinutes}
+            aria-label="Custom rest minutes"
+            onChange={(e) => setCustomMinutes(e.target.value)}
+          />
+          <button type="button" className="btn-sm primary" onClick={startCustom}>
+            Start
+          </button>
+        </>
+      )}
+      {doneFlash && <span className="timer-done-msg">Time's up!</span>}
+    </div>
+  )
+}
+
+function formatTimer(totalSeconds: number): string {
+  const minutes = Math.floor(totalSeconds / 60)
+  const seconds = totalSeconds % 60
+  return `${minutes}:${String(seconds).padStart(2, '0')}`
 }
 
 function BackupControls({
