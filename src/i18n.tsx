@@ -162,6 +162,7 @@ const ID: Record<string, string> = {
   'feedback.body':
     'Ada yang mengganggu atau kurang? Tulis di sini — tersimpan di perangkatmu. Lebih suka diskusi publik? Buka issue di GitHub.',
   'feedback.placeholder': 'Ide, masalah, atau kritik-saran…',
+  'feedback.messageLabel': 'Pesan masukan',
   'feedback.saved': 'Terima kasih, tercatat!',
   'feedback.save': 'Simpan masukan',
   'feedback.openIssue': 'Buka issue GitHub',
@@ -326,6 +327,7 @@ const EN: Record<string, string> = {
   'feedback.body':
     'Anything annoying or missing? Write it here — it is saved on your device. Prefer public discussion? Open a GitHub issue.',
   'feedback.placeholder': 'Ideas, problems, or feedback…',
+  'feedback.messageLabel': 'Feedback message',
   'feedback.saved': 'Thanks, noted!',
   'feedback.save': 'Save feedback',
   'feedback.openIssue': 'Open GitHub issue',

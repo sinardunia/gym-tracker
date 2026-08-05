@@ -127,7 +127,7 @@ const STORAGE_KEY = 'gym-tracker.state.v2'
 const STORAGE_KEY_V1 = 'gym-tracker.state.v1'
 const FEEDBACK_KEY = 'gym-tracker.feedback'
 const GITHUB_URL = 'https://github.com/sinardunia/gym-tracker'
-const SAWERIA_URL = 'https://saweria.co/'
+const SAWERIA_URL = 'https://saweria.co/waltahh'
 
 type LibraryExercise = {
   name: string
@@ -1192,13 +1192,20 @@ function FeedbackCard() {
             <textarea
               className="note-field"
               rows={4}
+              autoFocus
               value={message}
               placeholder={tr('feedback.placeholder')}
+              aria-label={tr('feedback.messageLabel')}
               onChange={(e) => setMessage(e.target.value)}
             />
             {saved && <p className="feedback-saved">{tr('feedback.saved')}</p>}
             <div className="confirm-actions">
-              <button type="button" className="positive" onClick={submit}>
+              <button
+                type="button"
+                className="positive"
+                disabled={!message.trim()}
+                onClick={submit}
+              >
                 {tr('feedback.save')}
               </button>
               <a
