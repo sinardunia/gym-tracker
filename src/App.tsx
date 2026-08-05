@@ -485,6 +485,7 @@ function App() {
     setViewedSession(null)
     setWorkoutPaused(false)
     setCollapsedExerciseIds(new Set())
+    clearTimerSnapshots()
   }
 
   function finishWorkout() {
@@ -644,6 +645,7 @@ function App() {
     setViewedSession(null)
     setWorkoutPaused(false)
     setCollapsedExerciseIds(new Set())
+    clearTimerSnapshots()
   }
 
   function toggleExerciseCollapsed(exerciseId: string) {
@@ -1287,7 +1289,7 @@ function WorkoutScreen({
             Finish workout
           </button>
         </div>
-        <RestTimer />
+        <RestTimer workoutId={workout.id} />
       </div>
       {!canFinish && (
         <p className="error hint">
@@ -1380,25 +1382,87 @@ function NoteField({
   )
 }
 
-function RestTimer() {
+type TimerStatus = 'idle' | 'running' | 'done'
+
+type TimerSnapshot = {
+  duration: number
+  endAt: number
+}
+
+const REST_TIMER_PREFIX = 'gym-tracker.rest.'
+
+function timerStorageKey(workoutId: string): string {
+  return `${REST_TIMER_PREFIX}${workoutId}`
+}
+
+function loadTimerSnapshot(workoutId: string): TimerSnapshot | null {
+  try {
+    const raw = sessionStorage.getItem(timerStorageKey(workoutId))
+    if (!raw) return null
+    const parsed: unknown = JSON.parse(raw)
+    if (typeof parsed !== 'object' || parsed === null) return null
+    const snapshot = parsed as Record<string, unknown>
+    if (
+      typeof snapshot.duration !== 'number' ||
+      !Number.isFinite(snapshot.duration) ||
+      typeof snapshot.endAt !== 'number' ||
+      !Number.isFinite(snapshot.endAt)
+    ) {
+      return null
+    }
+    return { duration: snapshot.duration, endAt: snapshot.endAt }
+  } catch {
+    return null
+  }
+}
+
+function saveTimerSnapshot(workoutId: string, snapshot: TimerSnapshot | null) {
+  try {
+    if (snapshot) {
+      sessionStorage.setItem(timerStorageKey(workoutId), JSON.stringify(snapshot))
+    } else {
+      sessionStorage.removeItem(timerStorageKey(workoutId))
+    }
+  } catch {
+    // sessionStorage unavailable; timer keeps running in memory.
+  }
+}
+
+function clearTimerSnapshots() {
+  try {
+    for (const key of Object.keys(sessionStorage)) {
+      if (key.startsWith(REST_TIMER_PREFIX)) sessionStorage.removeItem(key)
+    }
+  } catch {
+    // sessionStorage unavailable.
+  }
+}
+
+function RestTimer({ workoutId }: { workoutId: string }) {
+  const [status, setStatus] = useState<TimerStatus>('idle')
   const [duration, setDuration] = useState(90)
   const [remaining, setRemaining] = useState(90)
-  const [running, setRunning] = useState(false)
   const [customMinutes, setCustomMinutes] = useState('2')
-  const [doneFlash, setDoneFlash] = useState(false)
   const endAtRef = useRef(0)
   const audioRef = useRef<AudioContext | null>(null)
-  const flashTimersRef = useRef<Set<number>>(new Set())
-
-  useEffect(
-    () => () => {
-      for (const id of flashTimersRef.current) clearTimeout(id)
-    },
-    [],
-  )
+  const restoredRef = useRef(false)
 
   useEffect(() => {
-    if (!running) return
+    if (restoredRef.current) return
+    restoredRef.current = true
+    const snapshot = loadTimerSnapshot(workoutId)
+    if (!snapshot) return
+    const left = Math.max(0, Math.round((snapshot.endAt - Date.now()) / 1000))
+    setDuration(snapshot.duration)
+    setRemaining(left)
+    if (left > 0) {
+      endAtRef.current = snapshot.endAt
+      setStatus('running')
+    }
+  }, [workoutId])
+
+  useEffect(() => {
+    if (status !== 'running') return
     const timer = setInterval(() => {
       const left = Math.max(
         0,
@@ -1406,16 +1470,14 @@ function RestTimer() {
       )
       setRemaining(left)
       if (left <= 0) {
-        setRunning(false)
-        setDoneFlash(true)
+        setStatus('done')
+        saveTimerSnapshot(workoutId, null)
         playDoneBeep()
         navigator.vibrate?.([200, 100, 200, 100, 200])
-        const flashTimer = setTimeout(() => setDoneFlash(false), 3000)
-        flashTimersRef.current.add(flashTimer)
       }
     }, 250)
     return () => clearInterval(timer)
-  }, [running])
+  }, [status, workoutId])
 
   function warmAudio() {
     try {
@@ -1455,8 +1517,8 @@ function RestTimer() {
     setDuration(seconds)
     setRemaining(seconds)
     endAtRef.current = Date.now() + seconds * 1000
-    setRunning(true)
-    setDoneFlash(false)
+    setStatus('running')
+    saveTimerSnapshot(workoutId, { duration: seconds, endAt: endAtRef.current })
   }
 
   function startCustom() {
@@ -1466,25 +1528,53 @@ function RestTimer() {
   }
 
   function reset() {
-    setRunning(false)
+    setStatus('idle')
     setRemaining(duration)
-    setDoneFlash(false)
+    saveTimerSnapshot(workoutId, null)
   }
 
   const progress = duration > 0 ? (remaining / duration) * 100 : 0
 
   return (
-    <div className={`rest-timer${doneFlash ? ' done' : ''}`}>
-      {running ? (
+    <div className={`rest-timer${status === 'done' ? ' done' : ''}`}>
+      {status === 'running' ? (
         <>
-          <span className="timer-display" role="timer">
-            {formatTimer(remaining)}
-          </span>
+          <button
+            type="button"
+            className="timer-display-btn"
+            onClick={reset}
+            aria-label="Reset rest timer"
+          >
+            <span className="timer-display" role="timer">
+              {formatTimer(remaining)}
+            </span>
+          </button>
           <div className="timer-progress" aria-hidden="true">
             <div style={{ width: `${progress}%` }} />
           </div>
           <button type="button" className="btn-sm secondary" onClick={reset}>
             Reset
+          </button>
+        </>
+      ) : status === 'done' ? (
+        <>
+          <button
+            type="button"
+            className="timer-display-btn"
+            onClick={() => start(duration)}
+            aria-label="Restart rest timer"
+          >
+            <span className="timer-display" role="timer">
+              0:00
+            </span>
+          </button>
+          <span className="timer-done-msg">Time's up!</span>
+          <button
+            type="button"
+            className="btn-sm positive"
+            onClick={() => start(duration)}
+          >
+            Restart
           </button>
         </>
       ) : (
@@ -1515,7 +1605,6 @@ function RestTimer() {
           </button>
         </>
       )}
-      {doneFlash && <span className="timer-done-msg">Time's up!</span>}
     </div>
   )
 }
