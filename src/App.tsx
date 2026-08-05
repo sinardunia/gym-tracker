@@ -139,6 +139,73 @@ type BackupMessage = {
 const STORAGE_KEY = 'gym-tracker.state.v2'
 const STORAGE_KEY_V1 = 'gym-tracker.state.v1'
 
+type LibraryExercise = {
+  name: string
+  aliases: string[]
+}
+
+const EXERCISE_LIBRARY: LibraryExercise[] = [
+  { name: 'Bench Press', aliases: ['barbell bench', 'bench'] },
+  { name: 'Incline Bench Press', aliases: ['incline bench'] },
+  { name: 'Dumbbell Bench Press', aliases: ['db bench'] },
+  { name: 'Chest Press Machine', aliases: ['machine press'] },
+  { name: 'Chest Fly', aliases: ['pec fly', 'pec deck', 'dumbbell fly'] },
+  { name: 'Push-Up', aliases: ['pushup', 'press up'] },
+  { name: 'Dips', aliases: ['chest dip', 'tricep dip'] },
+  { name: 'Pull-Up', aliases: ['pullup', 'chin-up', 'chin up'] },
+  { name: 'Lat Pulldown', aliases: ['lat pull down', 'pulldown'] },
+  { name: 'Seated Cable Row', aliases: ['cable row', 'seated row'] },
+  { name: 'Barbell Row', aliases: ['bent over row', 'barbell bent over row'] },
+  { name: 'Dumbbell Row', aliases: ['db row', 'one arm row'] },
+  { name: 'T-Bar Row', aliases: [] },
+  { name: 'Face Pull', aliases: ['rear delt face pull'] },
+  { name: 'Rear Delt Fly', aliases: ['reverse fly', 'reverse pec deck'] },
+  { name: 'Squat', aliases: ['barbell squat', 'back squat'] },
+  { name: 'Front Squat', aliases: [] },
+  { name: 'Leg Press', aliases: ['leg press machine'] },
+  { name: 'Leg Extension', aliases: ['quad extension'] },
+  { name: 'Leg Curl', aliases: ['hamstring curl', 'lying leg curl', 'seated leg curl'] },
+  { name: 'Romanian Deadlift', aliases: ['rdl', 'romanian deadlift'] },
+  { name: 'Deadlift', aliases: ['conventional deadlift'] },
+  { name: 'Lunge', aliases: ['walking lunge', 'reverse lunge'] },
+  { name: 'Bulgarian Split Squat', aliases: ['split squat'] },
+  { name: 'Hip Thrust', aliases: ['glute bridge', 'barbell hip thrust'] },
+  { name: 'Calf Raise', aliases: ['standing calf raise', 'seated calf raise'] },
+  { name: 'Overhead Press', aliases: ['ohp', 'military press', 'shoulder press'] },
+  { name: 'Dumbbell Shoulder Press', aliases: ['db press', 'seated shoulder press'] },
+  { name: 'Lateral Raise', aliases: ['side raise', 'side lateral raise'] },
+  { name: 'Front Raise', aliases: [] },
+  { name: 'Shrug', aliases: ['dumbbell shrug', 'barbell shrug'] },
+  { name: 'Bicep Curl', aliases: ['barbell curl', 'dumbbell curl'] },
+  { name: 'Hammer Curl', aliases: [] },
+  { name: 'Preacher Curl', aliases: [] },
+  { name: 'Tricep Pushdown', aliases: ['cable pushdown', 'pushdown'] },
+  { name: 'Skull Crusher', aliases: ['lying tricep extension'] },
+  { name: 'Overhead Tricep Extension', aliases: ['tricep extension'] },
+  { name: 'Kettlebell Swing', aliases: ['kb swing'] },
+  { name: 'Good Morning', aliases: [] },
+  { name: 'Back Extension', aliases: ['hyperextension'] },
+  { name: 'Crunch', aliases: ['sit up', 'situp'] },
+  { name: 'Plank', aliases: ['front plank'] },
+  { name: 'Hanging Leg Raise', aliases: ['leg raise', 'hanging knee raise'] },
+  { name: 'Russian Twist', aliases: [] },
+  { name: 'Cable Crunch', aliases: ['kneeling crunch'] },
+  { name: 'Burpee', aliases: [] },
+  { name: 'Mountain Climber', aliases: [] },
+  { name: 'Step-Up', aliases: [] },
+  { name: "Farmer's Carry", aliases: ['farmer walk'] },
+  { name: 'Pullover', aliases: ['dumbbell pullover'] },
+]
+
+function findLibraryMatches(query: string): LibraryExercise[] {
+  if (!query) return []
+  return EXERCISE_LIBRARY.filter((exercise) =>
+    [exercise.name, ...exercise.aliases].some((alias) =>
+      alias.toLowerCase().includes(query),
+    ),
+  )
+}
+
 const EMPTY_STATE: PersistedState = {
   activeWorkout: null,
   sessions: [],
@@ -1818,6 +1885,7 @@ function AddExerciseForm({
         exercise.toLowerCase().includes(query),
       )
     : recentExercises
+  const libraryMatches = findLibraryMatches(query)
 
   return (
     <form onSubmit={handleSubmit} className="card add-exercise">
@@ -1864,6 +1932,29 @@ function AddExerciseForm({
               ))}
             </ul>
           )}
+        </div>
+      )}
+
+      {query && libraryMatches.length > 0 && (
+        <div className="recent-exercises">
+          <span className="recent-label">Exercise library</span>
+          <ul className="recent-list">
+            {libraryMatches.slice(0, 10).map((exercise) => (
+              <li key={exercise.name}>
+                <button
+                  type="button"
+                  className="recent-item"
+                  onClick={() => {
+                    onAdd(exercise.name)
+                    setName('')
+                    setError(null)
+                  }}
+                >
+                  {exercise.name}
+                </button>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 
