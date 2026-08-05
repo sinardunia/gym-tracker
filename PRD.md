@@ -1,6 +1,6 @@
 # Gym Tracker PRD
 
-Status: Living document · Owner: waltahh · Updated: 2026-08-05
+Status: Living document · Owner: waltahh · Updated: 2026-08-06
 
 ## Product vision
 Gym Tracker: pencatatan workout mobile-first yang sangat cepat sehingga tidak
@@ -62,11 +62,9 @@ app sampai set tercatat, tanpa mengetik ulang data yang sudah pernah ada.
 
 ## Non-goals (saat ini)
 - Backend/cloud sync, akun, AI, dan analytics.
-- i18n (Bahasa Indonesia default + opsi English) — bukan Day 2.
 - Set-type modeling: warmup/dropset/bodyweight/plate-based machine — butuh
   perubahan data model, bukan Day 2.
 - Visual polish.
 - Rest timer aktif (notification) — kebutuhan baru saja ditemukan, belum
   diprioritaskan.
-- Notes untuk workout/exercise.
 - Multi-user / multi-device.
