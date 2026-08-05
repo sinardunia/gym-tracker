@@ -84,6 +84,7 @@ type Exercise = {
   name: string
   sets: WorkoutSet[]
   unit: ExerciseUnit
+  note?: string
 }
 
 type Workout = {
@@ -91,6 +92,7 @@ type Workout = {
   startedAt: string
   finishedAt: string | null
   exercises: Exercise[]
+  note?: string
 }
 
 type RoutineDay = {
@@ -168,10 +170,12 @@ function isWorkout(value: unknown): value is Workout {
   if (typeof workout.id !== 'string' || typeof workout.startedAt !== 'string') {
     return false
   }
-  if (
-    workout.finishedAt !== null &&
+  if (workout.finishedAt !== null &&
     typeof workout.finishedAt !== 'string'
   ) {
+    return false
+  }
+  if (workout.note !== undefined && typeof workout.note !== 'string') {
     return false
   }
   if (!Array.isArray(workout.exercises)) return false
@@ -179,6 +183,9 @@ function isWorkout(value: unknown): value is Workout {
     if (typeof exercise !== 'object' || exercise === null) return false
     const entry = exercise as Record<string, unknown>
     if (typeof entry.id !== 'string' || typeof entry.name !== 'string') {
+      return false
+    }
+    if (entry.note !== undefined && typeof entry.note !== 'string') {
       return false
     }
     if (entry.unit !== undefined && !isExerciseUnit(entry.unit)) {
@@ -252,12 +259,17 @@ function normalizeExercise(exercise: Exercise): Exercise {
   return {
     ...exercise,
     unit: exercise.unit ?? 'kg',
+    note: exercise.note?.trim() ? exercise.note : undefined,
     sets: exercise.sets.map(normalizeSet),
   }
 }
 
 function normalizeWorkout(workout: Workout): Workout {
-  return { ...workout, exercises: workout.exercises.map(normalizeExercise) }
+  return {
+    ...workout,
+    note: workout.note?.trim() ? workout.note : undefined,
+    exercises: workout.exercises.map(normalizeExercise),
+  }
 }
 
 function isPersistedState(value: unknown): value is PersistedState {
@@ -530,6 +542,33 @@ function App() {
     )
   }
 
+  function updateWorkoutNote(note: string) {
+    setState((s) =>
+      s.activeWorkout
+        ? {
+            ...s,
+            activeWorkout: { ...s.activeWorkout, note },
+          }
+        : s,
+    )
+  }
+
+  function updateExerciseNote(exerciseId: string, note: string) {
+    setState((s) =>
+      s.activeWorkout
+        ? {
+            ...s,
+            activeWorkout: {
+              ...s.activeWorkout,
+              exercises: s.activeWorkout.exercises.map((e) =>
+                e.id === exerciseId ? { ...e, note } : e,
+              ),
+            },
+          }
+        : s,
+    )
+  }
+
   function discardWorkout() {
     setState((s) => ({ ...s, activeWorkout: null }))
     setViewedSession(null)
@@ -748,6 +787,8 @@ function App() {
         onRemoveExercise={removeExercise}
         onRenameExercise={renameExercise}
         onChangeUnit={changeExerciseUnit}
+        onUpdateWorkoutNote={updateWorkoutNote}
+        onUpdateExerciseNote={updateExerciseNote}
         onExit={() => setWorkoutPaused(true)}
         onDiscard={discardWorkout}
         onFinish={finishWorkout}
@@ -1006,6 +1047,8 @@ function WorkoutScreen({
   onRemoveExercise,
   onRenameExercise,
   onChangeUnit,
+  onUpdateWorkoutNote,
+  onUpdateExerciseNote,
   onExit,
   onDiscard,
   onFinish,
@@ -1026,6 +1069,8 @@ function WorkoutScreen({
   onRemoveExercise: (exerciseId: string) => void
   onRenameExercise: (exerciseId: string, name: string) => void
   onChangeUnit: (exerciseId: string, unit: ExerciseUnit) => void
+  onUpdateWorkoutNote: (note: string) => void
+  onUpdateExerciseNote: (exerciseId: string, note: string) => void
   onExit: () => void
   onDiscard: () => void
   onFinish: () => void
@@ -1044,6 +1089,12 @@ function WorkoutScreen({
         <h1>Workout</h1>
         <p className="muted">Started at {formatTime(workout.startedAt)}</p>
       </header>
+
+      <NoteField
+        value={workout.note ?? ''}
+        onChange={onUpdateWorkoutNote}
+        placeholder="Workout notes… (e.g. felt strong on bench)"
+      />
 
       <div className="workout-actions">
         <div className="workout-actions-row">
@@ -1120,6 +1171,7 @@ function WorkoutScreen({
             onRemove={() => onRemoveExercise(exercise.id)}
             onRename={(name) => onRenameExercise(exercise.id, name)}
             onChangeUnit={(unit) => onChangeUnit(exercise.id, unit)}
+            onUpdateNote={(note) => onUpdateExerciseNote(exercise.id, note)}
             sessions={sessions}
             collapsed={collapsedExerciseIds.has(exercise.id)}
             onToggleCollapsed={() => onToggleCollapsed(exercise.id)}
@@ -1133,6 +1185,28 @@ function WorkoutScreen({
 }
 
 const REST_PRESETS = [60, 90, 120]
+
+function NoteField({
+  value,
+  onChange,
+  placeholder,
+  compact,
+}: {
+  value: string
+  onChange: (note: string) => void
+  placeholder: string
+  compact?: boolean
+}) {
+  return (
+    <textarea
+      className={`note-field${compact ? ' compact' : ''}`}
+      value={value}
+      placeholder={placeholder}
+      rows={compact ? 1 : 2}
+      onChange={(e) => onChange(e.target.value)}
+    />
+  )
+}
 
 function RestTimer() {
   const [duration, setDuration] = useState(90)
@@ -1382,6 +1456,7 @@ function ExerciseCard({
   onRemove,
   onRename,
   onChangeUnit,
+  onUpdateNote,
   sessions,
   collapsed,
   onToggleCollapsed,
@@ -1392,6 +1467,7 @@ function ExerciseCard({
   onRemove: () => void
   onRename: (name: string) => void
   onChangeUnit: (unit: ExerciseUnit) => void
+  onUpdateNote: (note: string) => void
   sessions: Workout[]
   collapsed: boolean
   onToggleCollapsed: () => void
@@ -1555,6 +1631,12 @@ function ExerciseCard({
 
       {!collapsed && (
         <>
+      <NoteField
+        value={exercise.note ?? ''}
+        onChange={onUpdateNote}
+        placeholder="Note… (seat position, form cue, dropset)"
+        compact
+      />
 
       {editingName && (
         <form onSubmit={handleRenameSubmit} className="rename-form">
@@ -2365,9 +2447,14 @@ function SummaryScreen({
         <p className="muted">{formatDate(workout.startedAt)}</p>
       </header>
 
+      {workout.note && (
+        <p className="summary-note">{workout.note}</p>
+      )}
+
       {workout.exercises.map((exercise) => (
         <section key={exercise.id} className="card">
           <h3>{exercise.name}</h3>
+          {exercise.note && <p className="summary-note">{exercise.note}</p>}
           <ul className="sets">
             {exercise.sets.map((set, index) => {
               const weightText = formatSetWeight(exercise.unit, set.weightKg)
