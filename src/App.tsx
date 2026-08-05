@@ -963,7 +963,7 @@ function HomeScreen({
           type="button"
           className="btn-sm secondary lang-toggle"
           onClick={onToggleLang}
-          aria-label={lang === 'id' ? 'Switch to English' : 'Ganti ke Bahasa Indonesia'}
+          aria-label={lang === 'id' ? tr('lang.switchToEn') : tr('lang.switchToId')}
         >
           {lang === 'id' ? 'EN' : 'ID'}
         </button>
@@ -1108,10 +1108,8 @@ function HomeScreen({
                 >
                   <span>{formatDate(session.startedAt, lang)}</span>
                   <span className="muted">
-                    {tr('home.sessionSummary', {
-                      count: session.exercises.length,
-                      sets: countSets(session),
-                    })}
+                    {p(session.exercises.length, 'count.exercises')} ·{' '}
+                    {p(countSets(session), 'count.sets')}
                   </span>
                 </button>
               </li>
@@ -1975,7 +1973,8 @@ function ExerciseCard({
                   )}
                 </span>
                 <span>
-                  {set.reps} reps{weightText ? ` · ${weightText}` : ''}
+                  {tr('ex.repsCount', { reps: set.reps })}
+                  {weightText ? ` · ${weightText}` : ''}
                 </span>
                 <button
                   type="button"
@@ -2716,7 +2715,7 @@ function SummaryScreen({
   onStartAnother: () => void
   onBack: () => void
 }) {
-  const { tr, lang } = useI18n()
+  const { tr, p, lang } = useI18n()
   return (
     <main className="screen">
       <header className="screen-header">
@@ -2746,7 +2745,8 @@ function SummaryScreen({
                     )}
                   </span>
                   <span>
-                    {set.reps} reps{weightText ? ` · ${weightText}` : ''}
+                    {tr('ex.repsCount', { reps: set.reps })}
+                    {weightText ? ` · ${weightText}` : ''}
                   </span>
                 </li>
               )
@@ -2756,10 +2756,8 @@ function SummaryScreen({
       ))}
 
       <p className="summary-count">
-        {tr('summary.count', {
-          count: workout.exercises.length,
-          sets: countSets(workout),
-        })}
+        {p(workout.exercises.length, 'count.exercises')} ·{' '}
+        {p(countSets(workout), 'count.sets')}
       </p>
 
       <button type="button" className="primary" onClick={onStartAnother}>

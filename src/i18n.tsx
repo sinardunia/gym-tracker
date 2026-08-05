@@ -1,3 +1,4 @@
+/* eslint-disable react/only-export-components */
 import { createContext, useContext, type ReactNode } from 'react'
 
 export type Lang = 'id' | 'en'
@@ -20,9 +21,10 @@ const ID: Record<string, string> = {
   'home.resumeWorkout': 'Lanjutkan workout',
   'home.recentSessions': 'Sesi terakhir',
   'home.noSessions': 'Belum ada sesi yang selesai.',
-  'home.sessionSummary': '{count} exercise · {sets} set',
   'home.routines': 'Routines',
   'home.noDaysInRoutine': 'Belum ada hari di routine ini.',
+  'lang.switchToEn': 'Switch to English',
+  'lang.switchToId': 'Ganti ke Bahasa Indonesia',
 
   'count.days.one': 'hari',
   'count.days.other': 'hari',
@@ -63,6 +65,7 @@ const ID: Record<string, string> = {
   'ex.repeatLastSet': 'Ulangi set terakhir',
   'ex.setLabel': 'Set {n}',
   'ex.reps': 'Reps',
+  'ex.repsCount': '{reps} reps',
   'ex.weightKg': 'Berat (kg)',
   'ex.plates': 'Plat',
   'ex.addSet': 'Tambah set',
@@ -149,7 +152,6 @@ const ID: Record<string, string> = {
   'summary.title': 'Workout selesai',
   'summary.startAnother': 'Mulai workout lain',
   'summary.back': 'Kembali',
-  'summary.count': '{count} exercise · {sets} set',
 
   'about.title': 'Tentang',
   'about.desc':
@@ -186,9 +188,10 @@ const EN: Record<string, string> = {
   'home.resumeWorkout': 'Resume workout',
   'home.recentSessions': 'Recent sessions',
   'home.noSessions': 'No completed sessions yet.',
-  'home.sessionSummary': '{count} exercises · {sets} sets',
   'home.routines': 'Routines',
   'home.noDaysInRoutine': 'No days in this routine yet.',
+  'lang.switchToEn': 'Switch to English',
+  'lang.switchToId': 'Ganti ke Bahasa Indonesia',
 
   'count.days.one': 'day',
   'count.days.other': 'days',
@@ -228,6 +231,7 @@ const EN: Record<string, string> = {
   'ex.repeatLastSet': 'Repeat last set',
   'ex.setLabel': 'Set {n}',
   'ex.reps': 'Reps',
+  'ex.repsCount': '{reps} reps',
   'ex.weightKg': 'Weight (kg)',
   'ex.plates': 'Plates',
   'ex.addSet': 'Add set',
@@ -314,7 +318,6 @@ const EN: Record<string, string> = {
   'summary.title': 'Workout complete',
   'summary.startAnother': 'Start another workout',
   'summary.back': 'Back',
-  'summary.count': '{count} exercises · {sets} sets',
 
   'about.title': 'About',
   'about.desc':
@@ -338,6 +341,12 @@ const EN: Record<string, string> = {
 }
 
 const DICTS: Record<Lang, Record<string, string>> = { id: ID, en: EN }
+
+function warnMissing(key: string) {
+  if (import.meta.env.DEV) {
+    console.warn(`[i18n] Missing key: "${key}"`)
+  }
+}
 
 function interpolate(template: string, vars?: Vars): string {
   if (!vars) return template
@@ -363,15 +372,18 @@ export function I18nProvider({
 }) {
   const value: I18n = {
     lang,
-    tr: (key, vars) =>
-      interpolate(DICTS[lang][key] ?? DICTS.en[key] ?? key, vars),
-    p: (count, key) =>
-      interpolate(
+    tr: (key, vars) => {
+      const template = DICTS[lang][key] ?? DICTS.en[key]
+      if (template === undefined) warnMissing(key)
+      return interpolate(template ?? key, vars)
+    },
+    p: (count, key) => {
+      const template =
         DICTS[lang][`${key}.${count === 1 ? 'one' : 'other'}`] ??
-          DICTS.en[`${key}.${count === 1 ? 'one' : 'other'}`] ??
-          key,
-        { count },
-      ),
+        DICTS.en[`${key}.${count === 1 ? 'one' : 'other'}`]
+      if (template === undefined) warnMissing(key)
+      return interpolate(template ?? key, { count })
+    },
   }
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>
 }
