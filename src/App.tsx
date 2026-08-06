@@ -1854,15 +1854,17 @@ function RestTimer({ workoutId }: { workoutId: string }) {
         </>
       ) : (
         <>
-          <button
-            type="button"
-            className="timer-chip"
-            onClick={() => setIdleExpanded(true)}
-            aria-label={tr('timer.setRest')}
-          >
-            {tr('timer.rest')}{' '}
-            <span className="timer-chip-duration">{formatTimer(duration)}</span>
-          </button>
+          {!idleExpanded && (
+            <button
+              type="button"
+              className="timer-chip"
+              onClick={() => setIdleExpanded(true)}
+              aria-label={tr('timer.setRest')}
+            >
+              {tr('timer.rest')}{' '}
+              <span className="timer-chip-duration">{formatTimer(duration)}</span>
+            </button>
+          )}
           {idleExpanded && (
             <>
               <span className="timer-label">{tr('timer.rest')}</span>
