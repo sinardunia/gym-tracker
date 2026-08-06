@@ -528,9 +528,9 @@ function findPreviousExercise(
   for (const session of sessions) {
     if (session.finishedAt === null) continue
     for (const exercise of session.exercises) {
-      if (exercise.name.trim().toLowerCase() === name) {
-        return { finishedAt: session.finishedAt, sets: exercise.sets }
-      }
+      if (exercise.name.trim().toLowerCase() !== name) continue
+      if (exercise.sets.length === 0) continue
+      return { finishedAt: session.finishedAt, sets: exercise.sets }
     }
   }
   return null
