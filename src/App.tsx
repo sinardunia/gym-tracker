@@ -1311,8 +1311,10 @@ function WorkoutScreen({
 }) {
   const { tr, lang } = useI18n()
   const [confirmingExit, setConfirmingExit] = useState(false)
+  const [noteExpanded, setNoteExpanded] = useState(false)
   const hasSet = workout.exercises.some((e) => e.sets.length > 0)
   const canFinish = workout.exercises.length > 0 && hasSet
+  const noteOpen = noteExpanded || (workout.note ?? '').trim() !== ''
 
   return (
     <main className="screen">
@@ -1325,9 +1327,15 @@ function WorkoutScreen({
 
       <NoteField
         value={workout.note ?? ''}
-        onChange={onUpdateWorkoutNote}
+        onChange={(note) => {
+          onUpdateWorkoutNote(note)
+          setNoteExpanded(true)
+        }}
         placeholder={tr('workout.notesPlaceholder')}
         label={tr('workout.notes')}
+        compact={!noteOpen}
+        onFocus={() => setNoteExpanded(true)}
+        onBlur={() => setNoteExpanded(false)}
       />
 
       <div className="workout-actions">
@@ -1421,12 +1429,16 @@ function NoteField({
   placeholder,
   compact,
   label,
+  onFocus,
+  onBlur,
 }: {
   value: string
   onChange: (note: string) => void
   placeholder: string
   compact?: boolean
   label: string
+  onFocus?: () => void
+  onBlur?: () => void
 }) {
   return (
     <textarea
@@ -1436,6 +1448,8 @@ function NoteField({
       aria-label={label}
       rows={compact ? 1 : 2}
       onChange={(e) => onChange(e.target.value)}
+      onFocus={onFocus}
+      onBlur={onBlur}
     />
   )
 }
@@ -1502,6 +1516,7 @@ function RestTimer({ workoutId }: { workoutId: string }) {
   const [duration, setDuration] = useState(90)
   const [remaining, setRemaining] = useState(90)
   const [customMinutes, setCustomMinutes] = useState('2')
+  const [idleExpanded, setIdleExpanded] = useState(false)
   const endAtRef = useRef(0)
   const audioRef = useRef<AudioContext | null>(null)
   const restoredRef = useRef(false)
@@ -1595,7 +1610,11 @@ function RestTimer({ workoutId }: { workoutId: string }) {
   const progress = duration > 0 ? (remaining / duration) * 100 : 0
 
   return (
-    <div className={`rest-timer${status === 'done' ? ' done' : ''}`}>
+    <div
+      className={`rest-timer${status === 'done' ? ' done' : ''}${
+        status === 'idle' && !idleExpanded ? ' compact' : ''
+      }`}
+    >
       {status === 'running' ? (
         <>
           <button
@@ -1638,30 +1657,47 @@ function RestTimer({ workoutId }: { workoutId: string }) {
         </>
       ) : (
         <>
-          <span className="timer-label">{tr('timer.rest')}</span>
-          {REST_PRESETS.map((seconds) => (
-            <button
-              key={seconds}
-              type="button"
-              className={`timer-chip${duration === seconds ? ' active' : ''}`}
-              onClick={() => start(seconds)}
-            >
-              {formatTimer(seconds)}
-            </button>
-          ))}
-          <input
-            type="number"
-            min={0.1}
-            step={0.5}
-            inputMode="decimal"
-            className="timer-custom"
-            value={customMinutes}
-            aria-label={tr('timer.customMinutes')}
-            onChange={(e) => setCustomMinutes(e.target.value)}
-          />
-          <button type="button" className="btn-sm primary" onClick={startCustom}>
-            {tr('timer.start')}
+          <button
+            type="button"
+            className="timer-chip"
+            onClick={() => setIdleExpanded(true)}
+            aria-label={tr('timer.setRest')}
+          >
+            {tr('timer.rest')}{' '}
+            <span className="timer-chip-duration">{formatTimer(duration)}</span>
           </button>
+          {idleExpanded && (
+            <>
+              <span className="timer-label">{tr('timer.rest')}</span>
+              {REST_PRESETS.map((seconds) => (
+                <button
+                  key={seconds}
+                  type="button"
+                  className={`timer-chip${duration === seconds ? ' active' : ''}`}
+                  onClick={() => start(seconds)}
+                >
+                  {formatTimer(seconds)}
+                </button>
+              ))}
+              <input
+                type="number"
+                min={0.1}
+                step={0.5}
+                inputMode="decimal"
+                className="timer-custom"
+                value={customMinutes}
+                aria-label={tr('timer.customMinutes')}
+                onChange={(e) => setCustomMinutes(e.target.value)}
+              />
+              <button
+                type="button"
+                className="btn-sm primary"
+                onClick={startCustom}
+              >
+                {tr('timer.start')}
+              </button>
+            </>
+          )}
         </>
       )}
     </div>

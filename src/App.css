@@ -479,9 +479,19 @@ button.danger {
   border-top: 1px solid var(--border);
   width: 100%;
 
+  &.compact {
+    padding-top: 0;
+    border-top: none;
+  }
+
   &.done .timer-display {
     color: var(--positive);
   }
+}
+
+.timer-chip-duration {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
 }
 
 .timer-label {

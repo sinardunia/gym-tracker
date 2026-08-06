@@ -50,6 +50,7 @@ const ID: Record<string, string> = {
   'workout.notes': 'Catatan workout',
 
   'timer.rest': 'Istirahat',
+  'timer.setRest': 'Atur timer istirahat',
   'timer.start': 'Mulai',
   'timer.reset': 'Reset',
   'timer.restart': 'Ulangi',
@@ -219,6 +220,7 @@ const EN: Record<string, string> = {
   'workout.notes': 'Workout notes',
 
   'timer.rest': 'Rest',
+  'timer.setRest': 'Set rest timer',
   'timer.start': 'Start',
   'timer.reset': 'Reset',
   'timer.restart': 'Restart',
