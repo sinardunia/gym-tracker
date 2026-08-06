@@ -82,6 +82,8 @@ const ID: Record<string, string> = {
   'ex.unitLabel': 'Satuan berat',
   'ex.setTypeLabel': 'Tipe set',
   'ex.note': 'Catatan exercise',
+  'ex.previous': 'Sebelumnya — {date}',
+  'ex.previousShort': 'Sebelumnya: {sets}',
 
   'setType.working': 'Working',
   'setType.warmup': 'Pemanasan',
@@ -248,6 +250,8 @@ const EN: Record<string, string> = {
   'ex.unitLabel': 'Weight unit',
   'ex.setTypeLabel': 'Set type',
   'ex.note': 'Exercise note',
+  'ex.previous': 'Previous — {date}',
+  'ex.previousShort': 'Prev: {sets}',
 
   'setType.working': 'Working',
   'setType.warmup': 'Warmup',

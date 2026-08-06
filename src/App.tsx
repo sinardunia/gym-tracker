@@ -364,6 +364,22 @@ function findLastSessionSet(
   return null
 }
 
+function findPreviousExercise(
+  sessions: Workout[],
+  exerciseName: string,
+): { finishedAt: string; sets: WorkoutSet[] } | null {
+  const name = exerciseName.trim().toLowerCase()
+  for (const session of sessions) {
+    if (session.finishedAt === null) continue
+    for (const exercise of session.exercises) {
+      if (exercise.name.trim().toLowerCase() === name) {
+        return { finishedAt: session.finishedAt, sets: exercise.sets }
+      }
+    }
+  }
+  return null
+}
+
 function findTodayWorkout(
   routines: Routine[],
 ): { routine: Routine; day: RoutineDay } | null {
@@ -1748,7 +1764,7 @@ function ExerciseCard({
   collapsed: boolean
   onToggleCollapsed: () => void
 }) {
-  const { tr, p } = useI18n()
+  const { tr, p, lang } = useI18n()
   const [reps, setReps] = useState('')
   const [weight, setWeight] = useState('')
   const [setType, setSetType] = useState<SetType>('working')
@@ -1767,6 +1783,10 @@ function ExerciseCard({
   const previous = useMemo(
     () => lastWorkingSet ?? findLastSessionSet(sessions, exercise.name),
     [lastWorkingSet, sessions, exercise.name],
+  )
+  const prevSession = useMemo(
+    () => findPreviousExercise(sessions, exercise.name),
+    [sessions, exercise.name],
   )
 
   useEffect(() => {
@@ -1850,6 +1870,17 @@ function ExerciseCard({
   const lastSetSummary = lastSet
     ? tr('ex.lastSet', { reps: lastSet.reps, weight: lastSetWeight ? ` · ${lastSetWeight}` : '' })
     : tr('ex.noSets')
+  const prevSessionSummary =
+    prevSession && prevSession.sets.length > 0
+      ? tr('ex.previousShort', {
+          sets: prevSession.sets
+            .map((set) => {
+              const weightText = formatSetWeight(exercise.unit, set.weightKg, tr)
+              return weightText ? `${weightText} × ${set.reps}` : String(set.reps)
+            })
+            .join(' · '),
+        })
+      : null
 
   return (
     <section className="card exercise">
@@ -1895,6 +1926,9 @@ function ExerciseCard({
           {exercise.note && (
             <p className="muted collapsed-note">{exercise.note}</p>
           )}
+          {prevSessionSummary && (
+            <p className="muted previous-summary">{prevSessionSummary}</p>
+          )}
           <p className="muted collapsed-hint">{tr('ex.collapseHint')}</p>
           {previous && (
             <button
@@ -1918,6 +1952,35 @@ function ExerciseCard({
         compact
         label={tr('ex.note')}
       />
+
+      {prevSession && prevSession.sets.length > 0 && (
+        <section className="previous-block">
+          <h4>
+            {tr('ex.previous', { date: formatDate(prevSession.finishedAt, lang) })}
+          </h4>
+          <ul className="sets">
+            {prevSession.sets.map((set, index) => {
+              const weightText = formatSetWeight(exercise.unit, set.weightKg, tr)
+              return (
+                <li key={set.id}>
+                  <span>
+                    {tr('ex.setLabel', { n: index + 1 })}
+                    {set.type !== 'working' && (
+                      <span className={`set-badge ${set.type}`}>
+                        {tr(`setType.${set.type}`)}
+                      </span>
+                    )}
+                  </span>
+                  <span>
+                    {tr('ex.repsCount', { reps: set.reps })}
+                    {weightText ? ` · ${weightText}` : ''}
+                  </span>
+                </li>
+              )
+            })}
+          </ul>
+        </section>
+      )}
 
       {editingName && (
         <form onSubmit={handleRenameSubmit} className="rename-form">

@@ -222,6 +222,34 @@ input {
   }
 }
 
+.previous-block {
+  padding: 10px;
+  background: var(--row-bg);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+
+  h4 {
+    margin: 0 0 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .sets li {
+    background: var(--bg);
+  }
+}
+
+.previous-summary {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  padding: 6px 10px;
+  background: var(--row-bg);
+  border-radius: 8px;
+}
+
 button {
   font-family: inherit;
   font-size: 16px;
