@@ -974,3 +974,49 @@ button.danger {
     background: var(--bg);
   }
 }
+
+.program-goal-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.program-goal,
+.program-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  text-align: left;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--card-bg);
+  color: var(--text-h);
+
+  h3 {
+    margin: 0;
+  }
+
+  p {
+    margin: 0;
+  }
+
+  &:hover {
+    border-color: var(--accent);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+}
+
+.program-card {
+  gap: 6px;
+}
+
+.program-meta {
+  font-size: 13px;
+  color: var(--text);
+}

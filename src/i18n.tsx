@@ -145,6 +145,60 @@ const ID: Record<string, string> = {
   'routine.exercise.one': 'exercise',
   'routine.exercise.other': 'exercise',
 
+  'home.chooseProgram': 'Pilih Program',
+  'program.title': 'Program',
+  'program.desc': 'Pilih program latihan yang sesuai dengan tujuanmu.',
+  'program.back': 'Kembali',
+  'program.chooseGoal': 'Apa tujuanmu?',
+  'program.goalHint': 'Kami akan menyarankan program yang paling cocok.',
+  'program.direction.beginner': 'Pemula',
+  'program.direction.beginner.desc':
+    'Baru mulai? Bangun kebiasaan dengan gerakan dasar 3x seminggu.',
+  'program.direction.aesthetic': 'Estetis',
+  'program.direction.aesthetic.desc':
+    'Bentuk tubuh proporsional dengan porsi latihan seimbang.',
+  'program.direction.strength': 'Kekuatan',
+  'program.direction.strength.desc':
+    'Fokus pada angkatan compound berat dengan progres bertahap.',
+  'program.direction.athletic': 'Atletis',
+  'program.direction.athletic.desc':
+    'Volume tinggi dan variasi gerakan untuk performa dan kebugaran.',
+  'program.changeGoal': 'Ganti tujuan',
+  'program.recommended': 'Rekomendasi untukmu',
+  'program.allPrograms': 'Semua program',
+  'program.fullbody.title': 'Full Body 3x',
+  'program.fullbody.desc':
+    'Tiga sesi full body per minggu untuk pemula — simpel dan efektif.',
+  'program.fullbody.dayA': 'Full Body A',
+  'program.fullbody.dayB': 'Full Body B',
+  'program.fullbody.dayC': 'Full Body C',
+  'program.upperlower.title': 'Upper/Lower 4x',
+  'program.upperlower.desc':
+    'Empat hari per minggu: atas dan bawah bergantian untuk otot seimbang.',
+  'program.upperlower.dayU1': 'Upper 1',
+  'program.upperlower.dayL1': 'Lower 1',
+  'program.upperlower.dayU2': 'Upper 2',
+  'program.upperlower.dayL2': 'Lower 2',
+  'program.ppl.title': 'PPL 6x',
+  'program.ppl.desc':
+    'Push, pull, dan legs — dua putaran per minggu, 6 hari latihan.',
+  'program.ppl.dayPush1': 'Push 1',
+  'program.ppl.dayPull1': 'Pull 1',
+  'program.ppl.dayLegs1': 'Legs 1',
+  'program.ppl.dayPush2': 'Push 2',
+  'program.ppl.dayPull2': 'Pull 2',
+  'program.ppl.dayLegs2': 'Legs 2',
+  'program.strength.title': 'Strength Foundation',
+  'program.strength.desc':
+    'Pondasi kekuatan: squat, bench, dan deadlift sebagai tulang punggung.',
+  'program.strength.daySquat': 'Squat Day',
+  'program.strength.dayBench': 'Bench Day',
+  'program.strength.dayDeadlift': 'Deadlift Day',
+  'program.previewSoonTitle': 'Segera hadir',
+  'program.previewSoon':
+    'Preview program dan cara memulainya akan tersedia di pembaruan berikutnya.',
+  'program.backToList': 'Kembali ke daftar program',
+
   'weekday.0': 'Minggu',
   'weekday.1': 'Senin',
   'weekday.2': 'Selasa',
@@ -314,6 +368,60 @@ const EN: Record<string, string> = {
   'routine.day.other': 'days',
   'routine.exercise.one': 'exercise',
   'routine.exercise.other': 'exercises',
+
+  'home.chooseProgram': 'Choose Program',
+  'program.title': 'Programs',
+  'program.desc': 'Pick a workout program that fits your goal.',
+  'program.back': 'Back',
+  'program.chooseGoal': 'What is your goal?',
+  'program.goalHint': 'We will recommend the best matching program.',
+  'program.direction.beginner': 'Beginner',
+  'program.direction.beginner.desc':
+    'Just starting out? Build the habit with basic movements 3x a week.',
+  'program.direction.aesthetic': 'Aesthetic',
+  'program.direction.aesthetic.desc':
+    'A balanced, proportional physique with even training volume.',
+  'program.direction.strength': 'Strength',
+  'program.direction.strength.desc':
+    'Focus on heavy compound lifts with steady progression.',
+  'program.direction.athletic': 'Athletic',
+  'program.direction.athletic.desc':
+    'High volume and varied movements for performance and fitness.',
+  'program.changeGoal': 'Change goal',
+  'program.recommended': 'Recommended for you',
+  'program.allPrograms': 'All programs',
+  'program.fullbody.title': 'Full Body 3x',
+  'program.fullbody.desc':
+    'Three full-body sessions per week for beginners — simple and effective.',
+  'program.fullbody.dayA': 'Full Body A',
+  'program.fullbody.dayB': 'Full Body B',
+  'program.fullbody.dayC': 'Full Body C',
+  'program.upperlower.title': 'Upper/Lower 4x',
+  'program.upperlower.desc':
+    'Four days a week: upper and lower alternating for balanced muscle.',
+  'program.upperlower.dayU1': 'Upper 1',
+  'program.upperlower.dayL1': 'Lower 1',
+  'program.upperlower.dayU2': 'Upper 2',
+  'program.upperlower.dayL2': 'Lower 2',
+  'program.ppl.title': 'PPL 6x',
+  'program.ppl.desc':
+    'Push, pull, and legs — two rounds per week, 6 training days.',
+  'program.ppl.dayPush1': 'Push 1',
+  'program.ppl.dayPull1': 'Pull 1',
+  'program.ppl.dayLegs1': 'Legs 1',
+  'program.ppl.dayPush2': 'Push 2',
+  'program.ppl.dayPull2': 'Pull 2',
+  'program.ppl.dayLegs2': 'Legs 2',
+  'program.strength.title': 'Strength Foundation',
+  'program.strength.desc':
+    'A strength base built around squat, bench, and deadlift.',
+  'program.strength.daySquat': 'Squat Day',
+  'program.strength.dayBench': 'Bench Day',
+  'program.strength.dayDeadlift': 'Deadlift Day',
+  'program.previewSoonTitle': 'Coming soon',
+  'program.previewSoon':
+    'Program preview and how to start will be available in an upcoming update.',
+  'program.backToList': 'Back to programs',
 
   'weekday.0': 'Sunday',
   'weekday.1': 'Monday',

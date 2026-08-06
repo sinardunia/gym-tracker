@@ -187,6 +187,162 @@ const EXERCISE_LIBRARY: LibraryExercise[] = [
   { name: 'Pullover', aliases: ['dumbbell pullover'] },
 ]
 
+type ProgramGoal = 'beginner' | 'aesthetic' | 'strength' | 'athletic'
+
+const PROGRAM_GOALS: readonly ProgramGoal[] = [
+  'beginner',
+  'aesthetic',
+  'strength',
+  'athletic',
+]
+
+type ProgramTemplate = {
+  id: string
+  title: string
+  description: string
+  goal: ProgramGoal
+  days: { name: string; exerciseNames: string[] }[]
+}
+
+const PROGRAM_TEMPLATES: ProgramTemplate[] = [
+  {
+    id: 'fullbody-3x',
+    title: 'program.fullbody.title',
+    description: 'program.fullbody.desc',
+    goal: 'beginner',
+    days: [
+      {
+        name: 'program.fullbody.dayA',
+        exerciseNames: ['Squat', 'Bench Press', 'Lat Pulldown', 'Plank', 'Calf Raise'],
+      },
+      {
+        name: 'program.fullbody.dayB',
+        exerciseNames: [
+          'Romanian Deadlift',
+          'Push-Up',
+          'Seated Cable Row',
+          'Lateral Raise',
+          'Crunch',
+        ],
+      },
+      {
+        name: 'program.fullbody.dayC',
+        exerciseNames: ['Leg Press', 'Overhead Press', 'Dumbbell Row', 'Plank', 'Hip Thrust'],
+      },
+    ],
+  },
+  {
+    id: 'upperlower-4x',
+    title: 'program.upperlower.title',
+    description: 'program.upperlower.desc',
+    goal: 'aesthetic',
+    days: [
+      {
+        name: 'program.upperlower.dayU1',
+        exerciseNames: [
+          'Bench Press',
+          'Barbell Row',
+          'Overhead Press',
+          'Lateral Raise',
+          'Bicep Curl',
+          'Tricep Pushdown',
+        ],
+      },
+      {
+        name: 'program.upperlower.dayL1',
+        exerciseNames: ['Squat', 'Romanian Deadlift', 'Leg Extension', 'Leg Curl', 'Calf Raise'],
+      },
+      {
+        name: 'program.upperlower.dayU2',
+        exerciseNames: [
+          'Incline Bench Press',
+          'Lat Pulldown',
+          'Dumbbell Shoulder Press',
+          'Face Pull',
+          'Hammer Curl',
+          'Skull Crusher',
+        ],
+      },
+      {
+        name: 'program.upperlower.dayL2',
+        exerciseNames: [
+          'Deadlift',
+          'Leg Press',
+          'Lunge',
+          'Leg Curl',
+          'Calf Raise',
+          'Hanging Leg Raise',
+        ],
+      },
+    ],
+  },
+  {
+    id: 'ppl-6x',
+    title: 'program.ppl.title',
+    description: 'program.ppl.desc',
+    goal: 'athletic',
+    days: [
+      {
+        name: 'program.ppl.dayPush1',
+        exerciseNames: ['Bench Press', 'Overhead Press', 'Dips', 'Lateral Raise', 'Tricep Pushdown'],
+      },
+      {
+        name: 'program.ppl.dayPull1',
+        exerciseNames: ['Deadlift', 'Pull-Up', 'Barbell Row', 'Face Pull', 'Bicep Curl'],
+      },
+      {
+        name: 'program.ppl.dayLegs1',
+        exerciseNames: ['Squat', 'Romanian Deadlift', 'Leg Press', 'Leg Curl', 'Calf Raise'],
+      },
+      {
+        name: 'program.ppl.dayPush2',
+        exerciseNames: [
+          'Incline Bench Press',
+          'Dumbbell Shoulder Press',
+          'Chest Fly',
+          'Skull Crusher',
+          'Front Raise',
+        ],
+      },
+      {
+        name: 'program.ppl.dayPull2',
+        exerciseNames: ['Lat Pulldown', 'Seated Cable Row', 'Rear Delt Fly', 'Hammer Curl', 'Shrug'],
+      },
+      {
+        name: 'program.ppl.dayLegs2',
+        exerciseNames: [
+          'Front Squat',
+          'Lunge',
+          'Hip Thrust',
+          'Leg Extension',
+          'Calf Raise',
+          'Hanging Leg Raise',
+        ],
+      },
+    ],
+  },
+  {
+    id: 'strength-foundation',
+    title: 'program.strength.title',
+    description: 'program.strength.desc',
+    goal: 'strength',
+    days: [
+      {
+        name: 'program.strength.daySquat',
+        exerciseNames: ['Squat', 'Leg Press', 'Leg Curl', 'Back Extension', 'Plank'],
+      },
+      {
+        name: 'program.strength.dayBench',
+        exerciseNames: ['Bench Press', 'Overhead Press', 'Dumbbell Row', 'Tricep Pushdown', 'Face Pull'],
+      },
+      {
+        name: 'program.strength.dayDeadlift',
+        exerciseNames: ['Deadlift', 'Romanian Deadlift', 'Pull-Up', 'Barbell Row', "Farmer's Carry"],
+      },
+    ],
+  },
+]
+
 function findLibraryMatches(query: string): LibraryExercise[] {
   if (!query) return []
   return EXERCISE_LIBRARY.filter((exercise) =>
@@ -495,6 +651,7 @@ function AppContent({
   const [state, setState] = useState<PersistedState>(loadState)
   const [viewedSession, setViewedSession] = useState<Workout | null>(null)
   const [routinesOpen, setRoutinesOpen] = useState(false)
+  const [programsOpen, setProgramsOpen] = useState(false)
   const [workoutPaused, setWorkoutPaused] = useState(false)
   const [collapsedExerciseIds, setCollapsedExerciseIds] = useState<Set<string>>(
     () => new Set(),
@@ -944,6 +1101,10 @@ function AppContent({
     )
   }
 
+  if (programsOpen) {
+    return <ProgramPickerScreen onBack={() => setProgramsOpen(false)} />
+  }
+
   return (
     <HomeScreen
       sessions={state.sessions}
@@ -954,6 +1115,7 @@ function AppContent({
       onStartWithExercises={(names) => startWorkout(names)}
       onViewSession={setViewedSession}
       onOpenRoutines={() => setRoutinesOpen(true)}
+      onOpenPrograms={() => setProgramsOpen(true)}
       backupState={state}
       onImportBackup={importBackup}
       lang={lang}
@@ -971,6 +1133,7 @@ function HomeScreen({
   onStartWithExercises,
   onViewSession,
   onOpenRoutines,
+  onOpenPrograms,
   backupState,
   onImportBackup,
   lang,
@@ -984,6 +1147,7 @@ function HomeScreen({
   onStartWithExercises: (exerciseNames: string[]) => void
   onViewSession: (session: Workout) => void
   onOpenRoutines: () => void
+  onOpenPrograms: () => void
   backupState: PersistedState
   onImportBackup: (state: PersistedState) => void
   lang: Lang
@@ -1127,13 +1291,22 @@ function HomeScreen({
         </section>
       )}
 
-      <button
-        type="button"
-        className="secondary"
-        onClick={onOpenRoutines}
-      >
-        {tr('home.routines')}
-      </button>
+      <div className="backup-actions">
+        <button
+          type="button"
+          className="secondary"
+          onClick={onOpenPrograms}
+        >
+          {tr('home.chooseProgram')}
+        </button>
+        <button
+          type="button"
+          className="secondary"
+          onClick={onOpenRoutines}
+        >
+          {tr('home.routines')}
+        </button>
+      </div>
 
       <section className="recent">
         <h2>{tr('home.recentSessions')}</h2>
@@ -2727,6 +2900,113 @@ function RoutineCard({
         {tr('routine.addDay')}
       </button>
     </section>
+  )
+}
+
+function ProgramPickerScreen({ onBack }: { onBack: () => void }) {
+  const { tr, p } = useI18n()
+  const [goal, setGoal] = useState<ProgramGoal | null>(null)
+  const [selected, setSelected] = useState<ProgramTemplate | null>(null)
+  const recommended = goal
+    ? PROGRAM_TEMPLATES.filter((template) => template.goal === goal)
+    : []
+
+  function programExerciseCount(template: ProgramTemplate): number {
+    return template.days.reduce(
+      (sum, day) => sum + day.exerciseNames.length,
+      0,
+    )
+  }
+
+  function renderProgramCard(template: ProgramTemplate) {
+    return (
+      <button
+        key={template.id}
+        type="button"
+        className="program-card"
+        onClick={() => setSelected(template)}
+      >
+        <h3>{tr(template.title)}</h3>
+        <p className="muted">{tr(template.description)}</p>
+        <p className="program-meta">
+          {template.days.length} {p(template.days.length, 'count.days')} ·{' '}
+          {programExerciseCount(template)}{' '}
+          {p(programExerciseCount(template), 'count.exercises')}
+        </p>
+      </button>
+    )
+  }
+
+  return (
+    <main className="screen">
+      <header className="screen-header">
+        <h1>{tr('program.title')}</h1>
+        <p className="muted">{tr('program.desc')}</p>
+      </header>
+
+      <button type="button" className="btn-sm secondary" onClick={onBack}>
+        {tr('program.back')}
+      </button>
+
+      {selected ? (
+        <section className="card">
+          <h2>{tr(selected.title)}</h2>
+          <p className="muted">{tr(selected.description)}</p>
+          <p className="program-meta">
+            {selected.days.length} {p(selected.days.length, 'count.days')} ·{' '}
+            {programExerciseCount(selected)}{' '}
+            {p(programExerciseCount(selected), 'count.exercises')}
+          </p>
+          <h3>{tr('program.previewSoonTitle')}</h3>
+          <p className="muted">{tr('program.previewSoon')}</p>
+          <div className="backup-actions">
+            <button
+              type="button"
+              className="secondary"
+              onClick={() => setSelected(null)}
+            >
+              {tr('program.backToList')}
+            </button>
+          </div>
+        </section>
+      ) : goal === null ? (
+        <>
+          <h2>{tr('program.chooseGoal')}</h2>
+          <p className="muted">{tr('program.goalHint')}</p>
+          <div className="program-goal-list">
+            {PROGRAM_GOALS.map((direction) => (
+              <button
+                key={direction}
+                type="button"
+                className="program-goal"
+                onClick={() => setGoal(direction)}
+              >
+                <h3>{tr(`program.direction.${direction}`)}</h3>
+                <p className="muted">
+                  {tr(`program.direction.${direction}.desc`)}
+                </p>
+              </button>
+            ))}
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="backup-actions">
+            <button
+              type="button"
+              className="btn-sm secondary"
+              onClick={() => setGoal(null)}
+            >
+              {tr('program.changeGoal')}
+            </button>
+          </div>
+          <h2>{tr('program.recommended')}</h2>
+          {recommended.map(renderProgramCard)}
+          <h2>{tr('program.allPrograms')}</h2>
+          {PROGRAM_TEMPLATES.map(renderProgramCard)}
+        </>
+      )}
+    </main>
   )
 }
 
