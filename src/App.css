@@ -494,6 +494,13 @@ button.danger {
   font-weight: 600;
 }
 
+.timer-settings {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 8px;
+}
+
 .timer-label {
   font-size: 13px;
   color: var(--text);

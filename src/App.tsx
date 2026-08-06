@@ -12,6 +12,7 @@ type IconName =
   | 'arrow-down'
   | 'arrow-left'
   | 'plus'
+  | 'clock'
 
 const ICON_PATHS: Record<IconName, string[]> = {
   trash: [
@@ -34,6 +35,10 @@ const ICON_PATHS: Record<IconName, string[]> = {
   'arrow-down': ['M12 5v14', 'm19 12-7 7-7-7'],
   'arrow-left': ['M19 12H5', 'm12 19-7-7 7-7'],
   plus: ['M5 12h14', 'M12 5v14'],
+  clock: [
+    'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z',
+    'M12 6v6l4 2',
+  ],
 }
 
 function Icon({
@@ -1854,20 +1859,26 @@ function RestTimer({ workoutId }: { workoutId: string }) {
         </>
       ) : (
         <>
-          {!idleExpanded && (
-            <button
-              type="button"
-              className="timer-chip"
-              onClick={() => setIdleExpanded(true)}
-              aria-label={tr('timer.setRest')}
-            >
-              {tr('timer.rest')}{' '}
-              <span className="timer-chip-duration">{formatTimer(duration)}</span>
-            </button>
-          )}
+          <button
+            type="button"
+            className="timer-chip timer-quick"
+            onClick={() => start(duration)}
+            aria-label={tr('timer.startRest', { durasi: formatTimer(duration) })}
+          >
+            {tr('timer.rest')}{' '}
+            <span className="timer-chip-duration">{formatTimer(duration)}</span>
+          </button>
+          <button
+            type="button"
+            className="timer-chip timer-settings"
+            onClick={() => setIdleExpanded((expanded) => !expanded)}
+            aria-label={tr('timer.setRest')}
+            aria-expanded={idleExpanded}
+          >
+            <Icon name="clock" size={14} />
+          </button>
           {idleExpanded && (
             <>
-              <span className="timer-label">{tr('timer.rest')}</span>
               {REST_PRESETS.map((seconds) => (
                 <button
                   key={seconds}
