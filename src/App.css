@@ -240,6 +240,11 @@ input {
   }
 }
 
+.best-line {
+  margin-left: 8px;
+  color: var(--accent);
+}
+
 .previous-summary {
   white-space: nowrap;
   overflow: hidden;

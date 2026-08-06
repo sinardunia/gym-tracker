@@ -380,6 +380,32 @@ function findPreviousExercise(
   return null
 }
 
+function findPersonalBest(
+  sessions: Workout[],
+  exerciseName: string,
+): { weightKg: number; reps: number } | null {
+  const name = exerciseName.trim().toLowerCase()
+  let best: { weightKg: number; reps: number } | null = null
+  for (const session of sessions) {
+    if (session.finishedAt === null) continue
+    for (const exercise of session.exercises) {
+      if (exercise.unit !== 'kg') continue
+      if (exercise.name.trim().toLowerCase() !== name) continue
+      for (const set of exercise.sets) {
+        if (set.type !== 'working') continue
+        if (
+          !best ||
+          set.weightKg > best.weightKg ||
+          (set.weightKg === best.weightKg && set.reps > best.reps)
+        ) {
+          best = { weightKg: set.weightKg, reps: set.reps }
+        }
+      }
+    }
+  }
+  return best
+}
+
 function findTodayWorkout(
   routines: Routine[],
 ): { routine: Routine; day: RoutineDay } | null {
@@ -1788,6 +1814,10 @@ function ExerciseCard({
     () => findPreviousExercise(sessions, exercise.name),
     [sessions, exercise.name],
   )
+  const best = useMemo(
+    () => findPersonalBest(sessions, exercise.name),
+    [sessions, exercise.name],
+  )
 
   useEffect(() => {
     if (!previous) return
@@ -1957,6 +1987,14 @@ function ExerciseCard({
         <section className="previous-block">
           <h4>
             {tr('ex.previous', { date: formatDate(prevSession.finishedAt, lang) })}
+            {best && (
+              <span className="best-line">
+                {tr('ex.best', {
+                  weight: formatSetWeight('kg', best.weightKg, tr) ?? '',
+                  reps: best.reps,
+                })}
+              </span>
+            )}
           </h4>
           <ul className="sets">
             {prevSession.sets.map((set, index) => {

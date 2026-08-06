@@ -84,6 +84,7 @@ const ID: Record<string, string> = {
   'ex.note': 'Catatan exercise',
   'ex.previous': 'Sebelumnya — {date}',
   'ex.previousShort': 'Sebelumnya: {sets}',
+  'ex.best': 'Best: {weight} × {reps}',
 
   'setType.working': 'Working',
   'setType.warmup': 'Pemanasan',
@@ -252,6 +253,7 @@ const EN: Record<string, string> = {
   'ex.note': 'Exercise note',
   'ex.previous': 'Previous — {date}',
   'ex.previousShort': 'Prev: {sets}',
+  'ex.best': 'Best: {weight} × {reps}',
 
   'setType.working': 'Working',
   'setType.warmup': 'Warmup',
