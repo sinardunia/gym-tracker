@@ -2133,6 +2133,12 @@ function ExerciseCard({
   const lastSetSummary = lastSet
     ? tr('ex.lastSet', { reps: lastSet.reps, weight: lastSetWeight ? ` · ${lastSetWeight}` : '' })
     : tr('ex.noSets')
+  const bestText = best
+    ? tr('ex.best', {
+        weight: formatSetWeight('kg', best.weightKg, tr) ?? '',
+        reps: best.reps,
+      })
+    : null
   const prevSessionSummary =
     prevSession && prevSession.sets.length > 0
       ? tr('ex.previousShort', {
@@ -2142,7 +2148,7 @@ function ExerciseCard({
               return weightText ? `${weightText} × ${set.reps}` : String(set.reps)
             })
             .join(' · '),
-        })
+        }) + (bestText ? ` · ${bestText}` : '')
       : null
 
   return (
@@ -2220,14 +2226,7 @@ function ExerciseCard({
         <section className="previous-block">
           <h4>
             {tr('ex.previous', { date: formatDate(prevSession.finishedAt, lang) })}
-            {best && (
-              <span className="best-line">
-                {tr('ex.best', {
-                  weight: formatSetWeight('kg', best.weightKg, tr) ?? '',
-                  reps: best.reps,
-                })}
-              </span>
-            )}
+            {bestText && <span className="best-line">{bestText}</span>}
           </h4>
           <ul className="sets">
             {prevSession.sets.map((set, index) => {
