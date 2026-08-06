@@ -194,9 +194,9 @@ const ID: Record<string, string> = {
   'program.strength.daySquat': 'Squat Day',
   'program.strength.dayBench': 'Bench Day',
   'program.strength.dayDeadlift': 'Deadlift Day',
-  'program.previewSoonTitle': 'Segera hadir',
-  'program.previewSoon':
-    'Preview program dan cara memulainya akan tersedia di pembaruan berikutnya.',
+  'program.days': 'Hari',
+  'program.apply': 'Terapkan program',
+  'program.applyHint': 'Menambah Routine baru yang bisa kamu ubah dan jadwalkan.',
   'program.backToList': 'Kembali ke daftar program',
 
   'weekday.0': 'Minggu',
@@ -418,9 +418,9 @@ const EN: Record<string, string> = {
   'program.strength.daySquat': 'Squat Day',
   'program.strength.dayBench': 'Bench Day',
   'program.strength.dayDeadlift': 'Deadlift Day',
-  'program.previewSoonTitle': 'Coming soon',
-  'program.previewSoon':
-    'Program preview and how to start will be available in an upcoming update.',
+  'program.days': 'Days',
+  'program.apply': 'Apply program',
+  'program.applyHint': 'Adds a new routine you can edit and schedule.',
   'program.backToList': 'Back to programs',
 
   'weekday.0': 'Sunday',

@@ -870,6 +870,25 @@ function AppContent({
     }))
   }
 
+  function applyTemplate(template: ProgramTemplate) {
+    const routine: Routine = {
+      id: newId(),
+      name: tr(template.title),
+      days: template.days.map((day) => ({
+        id: newId(),
+        name: tr(day.name),
+        exerciseNames: [...day.exerciseNames],
+      })),
+      schedule: {},
+    }
+    setState((s) => ({
+      ...s,
+      routines: [routine, ...s.routines],
+    }))
+    setProgramsOpen(false)
+    setRoutinesOpen(true)
+  }
+
   function renameRoutine(routineId: string, name: string) {
     setState((s) => ({
       ...s,
@@ -1102,7 +1121,12 @@ function AppContent({
   }
 
   if (programsOpen) {
-    return <ProgramPickerScreen onBack={() => setProgramsOpen(false)} />
+    return (
+      <ProgramPickerScreen
+        onBack={() => setProgramsOpen(false)}
+        onApply={applyTemplate}
+      />
+    )
   }
 
   return (
@@ -2903,7 +2927,13 @@ function RoutineCard({
   )
 }
 
-function ProgramPickerScreen({ onBack }: { onBack: () => void }) {
+function ProgramPickerScreen({
+  onBack,
+  onApply,
+}: {
+  onBack: () => void
+  onApply: (template: ProgramTemplate) => void
+}) {
   const { tr, p } = useI18n()
   const [goal, setGoal] = useState<ProgramGoal | null>(null)
   const [selected, setSelected] = useState<ProgramTemplate | null>(null)
@@ -2957,9 +2987,35 @@ function ProgramPickerScreen({ onBack }: { onBack: () => void }) {
             {programExerciseCount(selected)}{' '}
             {p(programExerciseCount(selected), 'count.exercises')}
           </p>
-          <h3>{tr('program.previewSoonTitle')}</h3>
-          <p className="muted">{tr('program.previewSoon')}</p>
+          <h3>{tr('program.days')}</h3>
+          <ul className="days program-preview-days">
+            {selected.days.map((day) => (
+              <li key={day.name} className="day">
+                <div className="day-head">
+                  <strong>{tr(day.name)}</strong>
+                </div>
+                {day.exerciseNames.map((name, index) => (
+                  <div
+                    key={`${day.name}-${index}`}
+                    className="exercise-row"
+                  >
+                    <span>
+                      {index + 1}. {name}
+                    </span>
+                  </div>
+                ))}
+              </li>
+            ))}
+          </ul>
+          <p className="muted">{tr('program.applyHint')}</p>
           <div className="backup-actions">
+            <button
+              type="button"
+              className="primary"
+              onClick={() => onApply(selected)}
+            >
+              {tr('program.apply')}
+            </button>
             <button
               type="button"
               className="secondary"
