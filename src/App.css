@@ -501,11 +501,6 @@ button.danger {
   padding: 6px 8px;
 }
 
-.timer-label {
-  font-size: 13px;
-  color: var(--text);
-}
-
 .timer-display {
   font-size: 26px;
   font-weight: 600;
