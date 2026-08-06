@@ -2953,6 +2953,10 @@ function ProgramPickerScreen({
     ? PROGRAM_TEMPLATES.filter((template) => template.goal === goal)
     : []
 
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [goal, selected])
+
   function programExerciseCount(template: ProgramTemplate): number {
     return template.days.reduce(
       (sum, day) => sum + day.exerciseNames.length,
@@ -3071,7 +3075,9 @@ function ProgramPickerScreen({
           <h2>{tr('program.recommended')}</h2>
           {recommended.map(renderProgramCard)}
           <h2>{tr('program.allPrograms')}</h2>
-          {PROGRAM_TEMPLATES.map(renderProgramCard)}
+          {PROGRAM_TEMPLATES.filter(
+            (template) => !recommended.includes(template),
+          ).map(renderProgramCard)}
         </>
       )}
     </main>
