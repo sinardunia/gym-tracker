@@ -3004,7 +3004,7 @@ function ProgressScreen({
   onSelect: (name: string | null) => void
   onBack: () => void
 }) {
-  const { tr, lang } = useI18n()
+  const { tr, p, lang } = useI18n()
   const history = useMemo(() => exerciseHistory(sessions), [sessions])
 
   if (sessions.length === 0) {
@@ -3088,7 +3088,7 @@ function ProgressScreen({
                 <span className="day-toggle-main">
                   <span>{h.name}</span>
                   <span className="muted">
-                    {h.entries.length} {tr('progress.sessions')}
+                    {h.entries.length} {p(h.entries.length, 'count.sessions')}
                   </span>
                 </span>
               </button>

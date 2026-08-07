@@ -34,6 +34,8 @@ const ID: Record<string, string> = {
   'count.exercises.other': 'exercise',
   'count.sets.one': 'set',
   'count.sets.other': 'set',
+  'count.sessions.one': 'sesi',
+  'count.sessions.other': 'sesi',
 
   'workout.title': 'Workout',
   'workout.startedAt': 'Mulai {time}',
@@ -225,7 +227,6 @@ const ID: Record<string, string> = {
   'progress.noSessions':
     'Belum ada sesi yang selesai — selesaikan workout pertama untuk melihat progress.',
   'progress.noExercises': 'Belum ada exercise yang pernah dicatat.',
-  'progress.sessions': 'sesi',
   'progress.backToList': 'Kembali ke daftar exercise',
 
   'about.title': 'Tentang',
@@ -276,6 +277,8 @@ const EN: Record<string, string> = {
   'count.exercises.other': 'exercises',
   'count.sets.one': 'set',
   'count.sets.other': 'sets',
+  'count.sessions.one': 'session',
+  'count.sessions.other': 'sessions',
 
   'workout.title': 'Workout',
   'workout.startedAt': 'Started at {time}',
@@ -466,7 +469,6 @@ const EN: Record<string, string> = {
   'progress.noSessions':
     'No finished sessions yet — complete your first workout to see progress.',
   'progress.noExercises': 'No exercises logged yet.',
-  'progress.sessions': 'sessions',
   'progress.backToList': 'Back to exercises',
 
   'about.title': 'About',
