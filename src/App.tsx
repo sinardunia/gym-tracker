@@ -1914,9 +1914,11 @@ function ExerciseCard({
         return
       }
     }
+    const wasDrop = dropParentId !== null
     onAddSet(repsValue, weightValue, setType, dropParentId ?? undefined)
     setReps(String(repsValue))
     setWeight(String(weightValue))
+    if (wasDrop) setSetType('working')
     setDropParentId(null)
     setError(null)
   }
