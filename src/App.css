@@ -68,6 +68,73 @@
   }
 }
 
+.drop-row {
+  margin-left: 20px;
+  background: var(--bg);
+}
+
+.drop-marker {
+  color: var(--text);
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.set-edit-toggle {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 1;
+    cursor: default;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+    border-radius: 4px;
+  }
+}
+
+.set-edit-toggle-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.set-edit-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.set-edit-form {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+
+  select,
+  input {
+    flex: 1;
+    min-width: 0;
+    width: auto;
+  }
+}
+
 @keyframes set-flash {
   0% {
     background: var(--accent-bg);
@@ -255,6 +322,13 @@ input {
   border-radius: 8px;
 }
 
+.target-line {
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 14px;
+  margin: 0;
+}
+
 button {
   font-family: inherit;
   font-size: 16px;
@@ -423,6 +497,12 @@ button.danger {
 .set-remove {
   width: 32px;
   height: 32px;
+}
+
+.set-form .drop-btn {
+  border-color: var(--danger);
+  color: var(--danger);
+  background: transparent;
 }
 
 .exercise-summary,

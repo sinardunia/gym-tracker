@@ -1,5 +1,59 @@
-import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from 'react'
-import { I18nProvider, useI18n, localeOf, LANG_KEY, type Lang } from './i18n'
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type FormEvent,
+  type Ref,
+} from 'react'
+import { I18nProvider, useI18n, LANG_KEY, type Lang } from './i18n'
+import {
+  SET_TYPES,
+  WEEKDAY_KEYS,
+  normalizeWorkout,
+  type BackupMessage,
+  type Exercise,
+  type ExerciseUnit,
+  type PersistedState,
+  type ProgramGoal,
+  type ProgramTemplate,
+  type Routine,
+  type ScheduleConflict,
+  type SetType,
+  type Weekday,
+  type Workout,
+  type WorkoutSet,
+} from './lib/types'
+import {
+  PROGRAM_GOALS,
+  PROGRAM_TEMPLATES,
+  createWorkout,
+  loadState,
+  newId,
+  parseBackup,
+  saveState,
+} from './lib/data'
+import {
+  dropContext,
+  exerciseHistory,
+  findLastSessionSet,
+  findLibraryMatches,
+  findPersonalBest,
+  findPreviousExercise,
+  findTodayWorkout,
+  groupSetRows,
+  nearestWorkingParent,
+  overloadTarget,
+  suggestDrop,
+} from './lib/selectors'
+import {
+  countSets,
+  formatDate,
+  formatSetWeight,
+  formatTime,
+  formatTimer,
+} from './lib/format'
 import './App.css'
 
 type IconName =
@@ -67,558 +121,9 @@ function Icon({
   )
 }
 
-type SetType = 'working' | 'warmup' | 'dropset'
-type ExerciseUnit = 'kg' | 'plate' | 'bodyweight'
-
-const SET_TYPES: readonly SetType[] = ['working', 'warmup', 'dropset']
-
-const WEEKDAY_KEYS = ['0', '1', '2', '3', '4', '5', '6'] as const
-
-type WorkoutSet = {
-  id: string
-  reps: number
-  weightKg: number
-  type: SetType
-}
-
-type Exercise = {
-  id: string
-  name: string
-  sets: WorkoutSet[]
-  unit: ExerciseUnit
-  note?: string
-}
-
-type Workout = {
-  id: string
-  startedAt: string
-  finishedAt: string | null
-  exercises: Exercise[]
-  note?: string
-}
-
-type RoutineDay = {
-  id: string
-  name: string
-  exerciseNames: string[]
-}
-
-type Weekday = 0 | 1 | 2 | 3 | 4 | 5 | 6
-
-type Routine = {
-  id: string
-  name: string
-  days: RoutineDay[]
-  schedule: Partial<Record<Weekday, string>>
-}
-
-type ScheduleConflict = {
-  routineName: string
-  dayName: string
-}
-
-type PersistedState = {
-  activeWorkout: Workout | null
-  sessions: Workout[]
-  routines: Routine[]
-}
-
-type BackupMessage = {
-  kind: 'error' | 'info'
-  text: string
-}
-
-const STORAGE_KEY = 'gym-tracker.state.v2'
-const STORAGE_KEY_V1 = 'gym-tracker.state.v1'
 const FEEDBACK_KEY = 'gym-tracker.feedback'
 const GITHUB_URL = 'https://github.com/sinardunia/gym-tracker'
 const SAWERIA_URL = 'https://saweria.co/waltahh'
-
-type LibraryExercise = {
-  name: string
-  aliases: string[]
-}
-
-const EXERCISE_LIBRARY: LibraryExercise[] = [
-  { name: 'Bench Press', aliases: ['barbell bench', 'bench'] },
-  { name: 'Incline Bench Press', aliases: ['incline bench'] },
-  { name: 'Dumbbell Bench Press', aliases: ['db bench'] },
-  { name: 'Chest Press Machine', aliases: ['machine press'] },
-  { name: 'Chest Fly', aliases: ['pec fly', 'pec deck', 'dumbbell fly'] },
-  { name: 'Push-Up', aliases: ['pushup', 'press up'] },
-  { name: 'Dips', aliases: ['chest dip', 'tricep dip'] },
-  { name: 'Pull-Up', aliases: ['pullup', 'chin-up', 'chin up'] },
-  { name: 'Lat Pulldown', aliases: ['lat pull down', 'pulldown'] },
-  { name: 'Seated Cable Row', aliases: ['cable row', 'seated row'] },
-  { name: 'Barbell Row', aliases: ['bent over row', 'barbell bent over row'] },
-  { name: 'Dumbbell Row', aliases: ['db row', 'one arm row'] },
-  { name: 'T-Bar Row', aliases: [] },
-  { name: 'Face Pull', aliases: ['rear delt face pull'] },
-  { name: 'Rear Delt Fly', aliases: ['reverse fly', 'reverse pec deck'] },
-  { name: 'Squat', aliases: ['barbell squat', 'back squat'] },
-  { name: 'Front Squat', aliases: [] },
-  { name: 'Leg Press', aliases: ['leg press machine'] },
-  { name: 'Leg Extension', aliases: ['quad extension'] },
-  { name: 'Leg Curl', aliases: ['hamstring curl', 'lying leg curl', 'seated leg curl'] },
-  { name: 'Romanian Deadlift', aliases: ['rdl', 'romanian deadlift'] },
-  { name: 'Deadlift', aliases: ['conventional deadlift'] },
-  { name: 'Lunge', aliases: ['walking lunge', 'reverse lunge'] },
-  { name: 'Bulgarian Split Squat', aliases: ['split squat'] },
-  { name: 'Hip Thrust', aliases: ['glute bridge', 'barbell hip thrust'] },
-  { name: 'Calf Raise', aliases: ['standing calf raise', 'seated calf raise'] },
-  { name: 'Overhead Press', aliases: ['ohp', 'military press', 'shoulder press'] },
-  { name: 'Dumbbell Shoulder Press', aliases: ['db press', 'seated shoulder press'] },
-  { name: 'Lateral Raise', aliases: ['side raise', 'side lateral raise'] },
-  { name: 'Front Raise', aliases: [] },
-  { name: 'Shrug', aliases: ['dumbbell shrug', 'barbell shrug'] },
-  { name: 'Bicep Curl', aliases: ['barbell curl', 'dumbbell curl'] },
-  { name: 'Hammer Curl', aliases: [] },
-  { name: 'Preacher Curl', aliases: [] },
-  { name: 'Tricep Pushdown', aliases: ['cable pushdown', 'pushdown'] },
-  { name: 'Skull Crusher', aliases: ['lying tricep extension'] },
-  { name: 'Overhead Tricep Extension', aliases: ['tricep extension'] },
-  { name: 'Kettlebell Swing', aliases: ['kb swing'] },
-  { name: 'Good Morning', aliases: [] },
-  { name: 'Back Extension', aliases: ['hyperextension'] },
-  { name: 'Crunch', aliases: ['sit up', 'situp'] },
-  { name: 'Plank', aliases: ['front plank'] },
-  { name: 'Hanging Leg Raise', aliases: ['leg raise', 'hanging knee raise'] },
-  { name: 'Russian Twist', aliases: [] },
-  { name: 'Cable Crunch', aliases: ['kneeling crunch'] },
-  { name: 'Burpee', aliases: [] },
-  { name: 'Mountain Climber', aliases: [] },
-  { name: 'Step-Up', aliases: [] },
-  { name: "Farmer's Carry", aliases: ['farmer walk'] },
-  { name: 'Pullover', aliases: ['dumbbell pullover'] },
-]
-
-type ProgramGoal = 'beginner' | 'aesthetic' | 'strength' | 'athletic'
-
-const PROGRAM_GOALS: readonly ProgramGoal[] = [
-  'beginner',
-  'aesthetic',
-  'strength',
-  'athletic',
-]
-
-type ProgramTemplate = {
-  id: string
-  title: string
-  description: string
-  goal: ProgramGoal
-  days: { name: string; exerciseNames: string[] }[]
-}
-
-const PROGRAM_TEMPLATES: ProgramTemplate[] = [
-  {
-    id: 'fullbody-3x',
-    title: 'program.fullbody.title',
-    description: 'program.fullbody.desc',
-    goal: 'beginner',
-    days: [
-      {
-        name: 'program.fullbody.dayA',
-        exerciseNames: ['Squat', 'Bench Press', 'Lat Pulldown', 'Plank', 'Calf Raise'],
-      },
-      {
-        name: 'program.fullbody.dayB',
-        exerciseNames: [
-          'Romanian Deadlift',
-          'Push-Up',
-          'Seated Cable Row',
-          'Lateral Raise',
-          'Crunch',
-        ],
-      },
-      {
-        name: 'program.fullbody.dayC',
-        exerciseNames: ['Leg Press', 'Overhead Press', 'Dumbbell Row', 'Plank', 'Hip Thrust'],
-      },
-    ],
-  },
-  {
-    id: 'upperlower-4x',
-    title: 'program.upperlower.title',
-    description: 'program.upperlower.desc',
-    goal: 'aesthetic',
-    days: [
-      {
-        name: 'program.upperlower.dayU1',
-        exerciseNames: [
-          'Bench Press',
-          'Barbell Row',
-          'Overhead Press',
-          'Lateral Raise',
-          'Bicep Curl',
-          'Tricep Pushdown',
-        ],
-      },
-      {
-        name: 'program.upperlower.dayL1',
-        exerciseNames: ['Squat', 'Romanian Deadlift', 'Leg Extension', 'Leg Curl', 'Calf Raise'],
-      },
-      {
-        name: 'program.upperlower.dayU2',
-        exerciseNames: [
-          'Incline Bench Press',
-          'Lat Pulldown',
-          'Dumbbell Shoulder Press',
-          'Face Pull',
-          'Hammer Curl',
-          'Skull Crusher',
-        ],
-      },
-      {
-        name: 'program.upperlower.dayL2',
-        exerciseNames: [
-          'Deadlift',
-          'Leg Press',
-          'Lunge',
-          'Leg Curl',
-          'Calf Raise',
-          'Hanging Leg Raise',
-        ],
-      },
-    ],
-  },
-  {
-    id: 'ppl-6x',
-    title: 'program.ppl.title',
-    description: 'program.ppl.desc',
-    goal: 'athletic',
-    days: [
-      {
-        name: 'program.ppl.dayPush1',
-        exerciseNames: ['Bench Press', 'Overhead Press', 'Dips', 'Lateral Raise', 'Tricep Pushdown'],
-      },
-      {
-        name: 'program.ppl.dayPull1',
-        exerciseNames: ['Deadlift', 'Pull-Up', 'Barbell Row', 'Face Pull', 'Bicep Curl'],
-      },
-      {
-        name: 'program.ppl.dayLegs1',
-        exerciseNames: ['Squat', 'Romanian Deadlift', 'Leg Press', 'Leg Curl', 'Calf Raise'],
-      },
-      {
-        name: 'program.ppl.dayPush2',
-        exerciseNames: [
-          'Incline Bench Press',
-          'Dumbbell Shoulder Press',
-          'Chest Fly',
-          'Skull Crusher',
-          'Front Raise',
-        ],
-      },
-      {
-        name: 'program.ppl.dayPull2',
-        exerciseNames: ['Lat Pulldown', 'Seated Cable Row', 'Rear Delt Fly', 'Hammer Curl', 'Shrug'],
-      },
-      {
-        name: 'program.ppl.dayLegs2',
-        exerciseNames: [
-          'Front Squat',
-          'Lunge',
-          'Hip Thrust',
-          'Leg Extension',
-          'Calf Raise',
-          'Hanging Leg Raise',
-        ],
-      },
-    ],
-  },
-  {
-    id: 'strength-foundation',
-    title: 'program.strength.title',
-    description: 'program.strength.desc',
-    goal: 'strength',
-    days: [
-      {
-        name: 'program.strength.daySquat',
-        exerciseNames: ['Squat', 'Leg Press', 'Leg Curl', 'Back Extension', 'Plank'],
-      },
-      {
-        name: 'program.strength.dayBench',
-        exerciseNames: ['Bench Press', 'Overhead Press', 'Dumbbell Row', 'Tricep Pushdown', 'Face Pull'],
-      },
-      {
-        name: 'program.strength.dayDeadlift',
-        exerciseNames: ['Deadlift', 'Romanian Deadlift', 'Pull-Up', 'Barbell Row', "Farmer's Carry"],
-      },
-    ],
-  },
-]
-
-function findLibraryMatches(query: string): LibraryExercise[] {
-  if (!query) return []
-  return EXERCISE_LIBRARY.filter((exercise) =>
-    [exercise.name, ...exercise.aliases].some((alias) =>
-      alias.toLowerCase().includes(query),
-    ),
-  )
-}
-
-const EMPTY_STATE: PersistedState = {
-  activeWorkout: null,
-  sessions: [],
-  routines: [],
-}
-
-const newId = (): string => crypto.randomUUID()
-
-function createWorkout(): Workout {
-  return {
-    id: newId(),
-    startedAt: new Date().toISOString(),
-    finishedAt: null,
-    exercises: [],
-  }
-}
-
-function isSetType(value: unknown): value is SetType {
-  return value === 'working' || value === 'warmup' || value === 'dropset'
-}
-
-function isExerciseUnit(value: unknown): value is ExerciseUnit {
-  return value === 'kg' || value === 'plate' || value === 'bodyweight'
-}
-
-function isWorkout(value: unknown): value is Workout {
-  if (typeof value !== 'object' || value === null) return false
-  const workout = value as Record<string, unknown>
-  if (typeof workout.id !== 'string' || typeof workout.startedAt !== 'string') {
-    return false
-  }
-  if (workout.finishedAt !== null &&
-    typeof workout.finishedAt !== 'string'
-  ) {
-    return false
-  }
-  if (workout.note !== undefined && typeof workout.note !== 'string') {
-    return false
-  }
-  if (!Array.isArray(workout.exercises)) return false
-  return workout.exercises.every((exercise) => {
-    if (typeof exercise !== 'object' || exercise === null) return false
-    const entry = exercise as Record<string, unknown>
-    if (typeof entry.id !== 'string' || typeof entry.name !== 'string') {
-      return false
-    }
-    if (entry.note !== undefined && typeof entry.note !== 'string') {
-      return false
-    }
-    if (entry.unit !== undefined && !isExerciseUnit(entry.unit)) {
-      return false
-    }
-    if (!Array.isArray(entry.sets)) return false
-    return entry.sets.every((set) => {
-      if (typeof set !== 'object' || set === null) return false
-      const setEntry = set as Record<string, unknown>
-      return (
-        typeof setEntry.id === 'string' &&
-        typeof setEntry.reps === 'number' &&
-        Number.isFinite(setEntry.reps) &&
-        typeof setEntry.weightKg === 'number' &&
-        Number.isFinite(setEntry.weightKg) &&
-        (setEntry.type === undefined || isSetType(setEntry.type))
-      )
-    })
-  })
-}
-
-function isRoutineDay(value: unknown): value is RoutineDay {
-  if (typeof value !== 'object' || value === null) return false
-  const day = value as Record<string, unknown>
-  if (typeof day.id !== 'string' || typeof day.name !== 'string') {
-    return false
-  }
-  return (
-    Array.isArray(day.exerciseNames) &&
-    day.exerciseNames.every((name) => typeof name === 'string')
-  )
-}
-
-function isSchedule(
-  value: unknown,
-): value is Partial<Record<Weekday, string>> {
-  if (typeof value !== 'object' || value === null) return false
-  const schedule = value as Record<string, unknown>
-  return Object.entries(schedule).every(([key, dayId]) => {
-    const weekday = Number(key)
-    return (
-      Number.isInteger(weekday) &&
-      weekday >= 0 &&
-      weekday <= 6 &&
-      typeof dayId === 'string'
-    )
-  })
-}
-
-function isRoutine(value: unknown): value is Routine {
-  if (typeof value !== 'object' || value === null) return false
-  const routine = value as Record<string, unknown>
-  if (typeof routine.id !== 'string' || typeof routine.name !== 'string') {
-    return false
-  }
-  if (routine.schedule !== undefined && !isSchedule(routine.schedule)) {
-    return false
-  }
-  return Array.isArray(routine.days) && routine.days.every(isRoutineDay)
-}
-
-function normalizeRoutine(routine: Routine): Routine {
-  return { ...routine, schedule: routine.schedule ?? {} }
-}
-
-function normalizeSet(set: WorkoutSet): WorkoutSet {
-  return { ...set, type: set.type ?? 'working' }
-}
-
-function normalizeExercise(exercise: Exercise): Exercise {
-  return {
-    ...exercise,
-    unit: exercise.unit ?? 'kg',
-    note: exercise.note?.trim() ? exercise.note : undefined,
-    sets: exercise.sets.map(normalizeSet),
-  }
-}
-
-function normalizeWorkout(workout: Workout): Workout {
-  return {
-    ...workout,
-    note: workout.note?.trim() ? workout.note : undefined,
-    exercises: workout.exercises.map(normalizeExercise),
-  }
-}
-
-function isPersistedState(value: unknown): value is PersistedState {
-  if (typeof value !== 'object' || value === null) return false
-  const data = value as Record<string, unknown>
-  const activeWorkoutIsValid =
-    data.activeWorkout === null || isWorkout(data.activeWorkout)
-  const routinesAreValid =
-    data.routines === undefined ||
-    (Array.isArray(data.routines) && data.routines.every(isRoutine))
-  return (
-    activeWorkoutIsValid &&
-    Array.isArray(data.sessions) &&
-    data.sessions.every(isWorkout) &&
-    routinesAreValid
-  )
-}
-
-function findLastSessionSet(
-  sessions: Workout[],
-  exerciseName: string,
-): { reps: number; weightKg: number } | null {
-  const name = exerciseName.trim().toLowerCase()
-  for (const session of sessions) {
-    let lastSet: WorkoutSet | undefined
-    for (const exercise of session.exercises) {
-      if (exercise.name.trim().toLowerCase() === name) {
-        const workingSets = exercise.sets.filter((set) => set.type === 'working')
-        const lastWorking = workingSets[workingSets.length - 1]
-        if (lastWorking) lastSet = lastWorking
-      }
-    }
-    if (lastSet) return { reps: lastSet.reps, weightKg: lastSet.weightKg }
-  }
-  return null
-}
-
-function findPreviousExercise(
-  sessions: Workout[],
-  exerciseName: string,
-): { finishedAt: string; sets: WorkoutSet[] } | null {
-  const name = exerciseName.trim().toLowerCase()
-  for (const session of sessions) {
-    if (session.finishedAt === null) continue
-    for (const exercise of session.exercises) {
-      if (exercise.name.trim().toLowerCase() !== name) continue
-      if (exercise.sets.length === 0) continue
-      return { finishedAt: session.finishedAt, sets: exercise.sets }
-    }
-  }
-  return null
-}
-
-function findPersonalBest(
-  sessions: Workout[],
-  exerciseName: string,
-): { weightKg: number; reps: number } | null {
-  const name = exerciseName.trim().toLowerCase()
-  let best: { weightKg: number; reps: number } | null = null
-  for (const session of sessions) {
-    if (session.finishedAt === null) continue
-    for (const exercise of session.exercises) {
-      if (exercise.unit !== 'kg') continue
-      if (exercise.name.trim().toLowerCase() !== name) continue
-      for (const set of exercise.sets) {
-        if (set.type !== 'working') continue
-        if (
-          !best ||
-          set.weightKg > best.weightKg ||
-          (set.weightKg === best.weightKg && set.reps > best.reps)
-        ) {
-          best = { weightKg: set.weightKg, reps: set.reps }
-        }
-      }
-    }
-  }
-  return best
-}
-
-function findTodayWorkout(
-  routines: Routine[],
-): { routine: Routine; day: RoutineDay } | null {
-  const today = new Date().getDay() as Weekday
-  for (const routine of routines) {
-    const dayId = routine.schedule[today]
-    if (!dayId) continue
-    const day = routine.days.find((d) => d.id === dayId)
-    if (day) return { routine, day }
-  }
-  return null
-}
-
-function parseBackup(text: string): PersistedState | null {
-  try {
-    const parsed: unknown = JSON.parse(text)
-    if (!isPersistedState(parsed)) return null
-    return {
-      ...parsed,
-      activeWorkout: parsed.activeWorkout
-        ? normalizeWorkout(parsed.activeWorkout)
-        : null,
-      sessions: parsed.sessions.map(normalizeWorkout),
-      routines: (parsed.routines ?? []).map(normalizeRoutine),
-    }
-  } catch {
-    return null
-  }
-}
-
-function loadState(): PersistedState {
-  try {
-    const raw =
-      localStorage.getItem(STORAGE_KEY) ?? localStorage.getItem(STORAGE_KEY_V1)
-    if (!raw) return EMPTY_STATE
-    const parsed: unknown = JSON.parse(raw)
-    if (typeof parsed !== 'object' || parsed === null) return EMPTY_STATE
-    const data = parsed as Record<string, unknown>
-    const activeWorkout = isWorkout(data.activeWorkout)
-      ? normalizeWorkout(data.activeWorkout)
-      : null
-    const sessions = Array.isArray(data.sessions)
-      ? data.sessions.filter(isWorkout).map(normalizeWorkout)
-      : []
-    const routines = Array.isArray(data.routines)
-      ? data.routines.filter(isRoutine).map(normalizeRoutine)
-      : []
-    return { activeWorkout, sessions, routines }
-  } catch {
-    return EMPTY_STATE
-  }
-}
 
 function App() {
   const [lang, setLang] = useState<Lang>(() => {
@@ -657,6 +162,8 @@ function AppContent({
   const [viewedSession, setViewedSession] = useState<Workout | null>(null)
   const [routinesOpen, setRoutinesOpen] = useState(false)
   const [programsOpen, setProgramsOpen] = useState(false)
+  const [progressOpen, setProgressOpen] = useState(false)
+  const [progressExercise, setProgressExercise] = useState<string | null>(null)
   const [workoutPaused, setWorkoutPaused] = useState(false)
   const [collapsedExerciseIds, setCollapsedExerciseIds] = useState<Set<string>>(
     () => new Set(),
@@ -665,11 +172,7 @@ function AppContent({
   const activeWorkout = state.activeWorkout
 
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
-    } catch {
-      // Storage unavailable; keep working in memory.
-    }
+    saveState(state)
   }, [state])
 
   function startWorkout(exerciseNames: string[] = []) {
@@ -729,6 +232,7 @@ function AppContent({
     reps: number,
     weightKg: number,
     type: SetType,
+    parentId?: string,
   ) {
     setState((s) =>
       s.activeWorkout
@@ -740,7 +244,10 @@ function AppContent({
                 e.id === exerciseId
                   ? {
                       ...e,
-                      sets: [...e.sets, { id: newId(), reps, weightKg, type }],
+                      sets: [
+                        ...e.sets,
+                        { id: newId(), reps, weightKg, type, ...(parentId ? { parentId } : {}) },
+                      ],
                     }
                   : e,
               ),
@@ -760,6 +267,37 @@ function AppContent({
               exercises: s.activeWorkout.exercises.map((e) =>
                 e.id === exerciseId
                   ? { ...e, sets: e.sets.filter((set) => set.id !== setId) }
+                  : e,
+              ),
+            },
+          }
+        : s,
+    )
+  }
+
+  function updateSet(
+    exerciseId: string,
+    setId: string,
+    reps: number,
+    weightKg: number,
+    type: SetType,
+  ) {
+    setState((s) =>
+      s.activeWorkout
+        ? {
+            ...s,
+            activeWorkout: {
+              ...s.activeWorkout,
+              exercises: s.activeWorkout.exercises.map((e) =>
+                e.id === exerciseId
+                  ? {
+                      ...e,
+                      sets: e.sets.map((set) =>
+                        set.id === setId
+                          ? { ...set, reps, weightKg, type }
+                          : set,
+                      ),
+                    }
                   : e,
               ),
             },
@@ -1080,6 +618,7 @@ function AppContent({
         onAddExercise={addExercise}
         onAddSet={addSet}
         onRemoveSet={removeSet}
+        onUpdateSet={updateSet}
         onRemoveExercise={removeExercise}
         onRenameExercise={renameExercise}
         onChangeUnit={changeExerciseUnit}
@@ -1134,6 +673,20 @@ function AppContent({
     )
   }
 
+  if (progressOpen) {
+    return (
+      <ProgressScreen
+        sessions={state.sessions}
+        selected={progressExercise}
+        onSelect={setProgressExercise}
+        onBack={() => {
+          setProgressOpen(false)
+          setProgressExercise(null)
+        }}
+      />
+    )
+  }
+
   return (
     <HomeScreen
       sessions={state.sessions}
@@ -1145,6 +698,7 @@ function AppContent({
       onViewSession={setViewedSession}
       onOpenRoutines={() => setRoutinesOpen(true)}
       onOpenPrograms={() => setProgramsOpen(true)}
+      onOpenProgress={() => setProgressOpen(true)}
       backupState={state}
       onImportBackup={importBackup}
       lang={lang}
@@ -1163,6 +717,7 @@ function HomeScreen({
   onViewSession,
   onOpenRoutines,
   onOpenPrograms,
+  onOpenProgress,
   backupState,
   onImportBackup,
   lang,
@@ -1177,6 +732,7 @@ function HomeScreen({
   onViewSession: (session: Workout) => void
   onOpenRoutines: () => void
   onOpenPrograms: () => void
+  onOpenProgress: () => void
   backupState: PersistedState
   onImportBackup: (state: PersistedState) => void
   lang: Lang
@@ -1185,6 +741,8 @@ function HomeScreen({
   const { tr, p } = useI18n()
   const [pickingRoutine, setPickingRoutine] = useState(false)
   const [pickedRoutineId, setPickedRoutineId] = useState<string | null>(null)
+  const [showAllSessions, setShowAllSessions] = useState(false)
+  const visibleSessions = showAllSessions ? sessions : sessions.slice(0, 10)
   const today = findTodayWorkout(routines)
 
   return (
@@ -1335,6 +893,13 @@ function HomeScreen({
         >
           {tr('home.routines')}
         </button>
+        <button
+          type="button"
+          className="secondary"
+          onClick={onOpenProgress}
+        >
+          {tr('home.progress')}
+        </button>
       </div>
 
       <section className="recent">
@@ -1342,23 +907,34 @@ function HomeScreen({
         {sessions.length === 0 ? (
           <p className="muted">{tr('home.noSessions')}</p>
         ) : (
-          <ul className="session-list">
-            {sessions.map((session) => (
-              <li key={session.id}>
-                <button
-                  type="button"
-                  className="session-item"
-                  onClick={() => onViewSession(session)}
-                >
-                  <span>{formatDate(session.startedAt, lang)}</span>
-                  <span className="muted">
-                    {p(session.exercises.length, 'count.exercises')} ·{' '}
-                    {p(countSets(session), 'count.sets')}
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ul>
+          <>
+            <ul className="session-list">
+              {visibleSessions.map((session) => (
+                <li key={session.id}>
+                  <button
+                    type="button"
+                    className="session-item"
+                    onClick={() => onViewSession(session)}
+                  >
+                    <span>{formatDate(session.startedAt, lang)}</span>
+                    <span className="muted">
+                      {p(session.exercises.length, 'count.exercises')} ·{' '}
+                      {p(countSets(session), 'count.sets')}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+            {sessions.length > 10 && !showAllSessions && (
+              <button
+                type="button"
+                className="btn-sm secondary"
+                onClick={() => setShowAllSessions(true)}
+              >
+                {tr('home.showMore')}
+              </button>
+            )}
+          </>
         )}
       </section>
 
@@ -1478,6 +1054,7 @@ function WorkoutScreen({
   onAddExercise,
   onAddSet,
   onRemoveSet,
+  onUpdateSet,
   onRemoveExercise,
   onRenameExercise,
   onChangeUnit,
@@ -1497,8 +1074,16 @@ function WorkoutScreen({
     reps: number,
     weightKg: number,
     type: SetType,
+    parentId?: string,
   ) => void
   onRemoveSet: (exerciseId: string, setId: string) => void
+  onUpdateSet: (
+    exerciseId: string,
+    setId: string,
+    reps: number,
+    weightKg: number,
+    type: SetType,
+  ) => void
   onRemoveExercise: (exerciseId: string) => void
   onRenameExercise: (exerciseId: string, name: string) => void
   onChangeUnit: (exerciseId: string, unit: ExerciseUnit) => void
@@ -1603,10 +1188,13 @@ function WorkoutScreen({
           <ExerciseCard
             key={exercise.id}
             exercise={exercise}
-            onAddSet={(reps, weightKg, type) =>
-              onAddSet(exercise.id, reps, weightKg, type)
+            onAddSet={(reps, weightKg, type, parentId) =>
+              onAddSet(exercise.id, reps, weightKg, type, parentId)
             }
             onRemoveSet={(setId) => onRemoveSet(exercise.id, setId)}
+            onUpdateSet={(setId, reps, weightKg, type) =>
+              onUpdateSet(exercise.id, setId, reps, weightKg, type)
+            }
             onRemove={() => onRemoveExercise(exercise.id)}
             onRename={(name) => onRenameExercise(exercise.id, name)}
             onChangeUnit={(unit) => onChangeUnit(exercise.id, unit)}
@@ -1914,12 +1502,6 @@ function RestTimer({ workoutId }: { workoutId: string }) {
   )
 }
 
-function formatTimer(totalSeconds: number): string {
-  const minutes = Math.floor(totalSeconds / 60)
-  const seconds = totalSeconds % 60
-  return `${minutes}:${String(seconds).padStart(2, '0')}`
-}
-
 function BackupControls({
   state,
   onImport,
@@ -2013,10 +1595,207 @@ function BackupControls({
   )
 }
 
+function SetList({
+  sets,
+  unit,
+  onRemoveSet,
+  onUpdateSet,
+  highlightId,
+  lastRowRef,
+}: {
+  sets: WorkoutSet[]
+  unit: ExerciseUnit
+  onRemoveSet?: (setId: string) => void
+  onUpdateSet?: (
+    setId: string,
+    reps: number,
+    weightKg: number,
+    type: SetType,
+  ) => void
+  highlightId?: string | null
+  lastRowRef?: Ref<HTMLLIElement>
+}) {
+  const { tr } = useI18n()
+  const rows = groupSetRows(sets)
+  const lastSetId = sets.length > 0 ? sets[sets.length - 1].id : undefined
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [draft, setDraft] = useState<{
+    reps: string
+    weight: string
+    type: SetType
+  } | null>(null)
+  const [editError, setEditError] = useState<string | null>(null)
+  let number = 0
+
+  function startEdit(set: WorkoutSet) {
+    setEditingId(set.id)
+    setDraft({
+      reps: String(set.reps),
+      weight: String(set.weightKg),
+      type: set.type,
+    })
+    setEditError(null)
+  }
+
+  function cancelEdit() {
+    setEditingId(null)
+    setDraft(null)
+    setEditError(null)
+  }
+
+  function saveEdit(set: WorkoutSet) {
+    if (!draft || !onUpdateSet) return
+    const repsValue = Number(draft.reps)
+    if (!Number.isInteger(repsValue) || repsValue < 1) {
+      setEditError(tr('ex.repsError'))
+      return
+    }
+    let weightValue = 0
+    if (unit === 'bodyweight') {
+      weightValue = 0
+    } else if (unit === 'plate') {
+      weightValue = Number(draft.weight)
+      if (!Number.isInteger(weightValue) || weightValue < 0) {
+        setEditError(tr('ex.plateError'))
+        return
+      }
+    } else {
+      weightValue = Number(draft.weight)
+      if (!Number.isFinite(weightValue) || weightValue < 0) {
+        setEditError(tr('ex.weightError'))
+        return
+      }
+    }
+    onUpdateSet(set.id, repsValue, weightValue, draft.type)
+    cancelEdit()
+  }
+
+  function renderEditRow(set: WorkoutSet) {
+    return (
+      <li key={set.id} className="set-edit-row">
+        <div className="set-edit-form">
+          <select
+            value={draft?.type ?? set.type}
+            onChange={(e) =>
+              setDraft((d) => (d ? { ...d, type: e.target.value as SetType } : d))
+            }
+            aria-label={tr('ex.setTypeLabel')}
+          >
+            {SET_TYPES.map((t) => (
+              <option key={t} value={t}>
+                {tr(`setType.${t}`)}
+              </option>
+            ))}
+          </select>
+          <input
+            type="number"
+            min={1}
+            step={1}
+            inputMode="numeric"
+            value={draft?.reps ?? ''}
+            onChange={(e) =>
+              setDraft((d) => (d ? { ...d, reps: e.target.value } : d))
+            }
+            aria-label={tr('ex.reps')}
+          />
+          {unit !== 'bodyweight' && (
+            <input
+              type="number"
+              min={0}
+              step={unit === 'plate' ? 1 : 'any'}
+              inputMode={unit === 'plate' ? 'numeric' : 'decimal'}
+              value={draft?.weight ?? ''}
+              onChange={(e) =>
+                setDraft((d) => (d ? { ...d, weight: e.target.value } : d))
+              }
+              aria-label={unit === 'plate' ? tr('ex.plates') : tr('ex.weightKg')}
+            />
+          )}
+        </div>
+        {editError && <p className="error">{editError}</p>}
+        <div className="rename-actions">
+          <button type="button" className="btn-sm primary" onClick={() => saveEdit(set)}>
+            {tr('save')}
+          </button>
+          <button type="button" className="btn-sm secondary" onClick={cancelEdit}>
+            {tr('cancel')}
+          </button>
+        </div>
+      </li>
+    )
+  }
+
+  function renderSetRow(set: WorkoutSet, isDrop: boolean, setNumber: number) {
+    if (editingId === set.id) return renderEditRow(set)
+    const weightText = formatSetWeight(unit, set.weightKg, tr)
+    return (
+      <li
+        key={set.id}
+        ref={set.id === lastSetId ? lastRowRef : undefined}
+        className={`${isDrop ? 'drop-row' : ''}${
+          highlightId === set.id ? ' set-highlight' : ''
+        }`}
+      >
+        <button
+          type="button"
+          className="set-edit-toggle"
+          onClick={onUpdateSet ? () => startEdit(set) : undefined}
+          disabled={!onUpdateSet}
+          aria-label={tr('ex.editSet')}
+        >
+          {isDrop && (
+            <span className="drop-marker" aria-hidden="true">↳</span>
+          )}
+          <span className="set-edit-toggle-info">
+            <span>
+              {!isDrop && tr('ex.setLabel', { n: setNumber })}
+              {set.type !== 'working' && (
+                <span className={`set-badge ${set.type}`}>
+                  {tr(`setType.${set.type}`)}
+                </span>
+              )}
+            </span>
+            <span>
+              {tr('ex.repsCount', { reps: set.reps })}
+              {weightText ? ` · ${weightText}` : ''}
+            </span>
+          </span>
+        </button>
+        {onRemoveSet && (
+          <button
+            type="button"
+            className="icon-btn danger set-remove"
+            onClick={() => onRemoveSet(set.id)}
+            aria-label={
+              isDrop ? tr('ex.removeDrop') : tr('ex.removeSet', { n: setNumber })
+            }
+          >
+            <Icon name="trash" size={16} />
+          </button>
+        )}
+      </li>
+    )
+  }
+
+  return (
+    <ul className="sets">
+      {rows.flatMap(({ set, drops }) => {
+        number += 1
+        const setNumber = number
+        return [
+          renderSetRow(set, false, setNumber),
+          ...drops.map((drop) => renderSetRow(drop, true, setNumber)),
+        ]
+      })}
+    </ul>
+  )
+}
+
 function ExerciseCard({
   exercise,
   onAddSet,
   onRemoveSet,
+  onUpdateSet,
   onRemove,
   onRename,
   onChangeUnit,
@@ -2026,8 +1805,9 @@ function ExerciseCard({
   onToggleCollapsed,
 }: {
   exercise: Exercise
-  onAddSet: (reps: number, weightKg: number, type: SetType) => void
+  onAddSet: (reps: number, weightKg: number, type: SetType, parentId?: string) => void
   onRemoveSet: (setId: string) => void
+  onUpdateSet: (setId: string, reps: number, weightKg: number, type: SetType) => void
   onRemove: () => void
   onRename: (name: string) => void
   onChangeUnit: (unit: ExerciseUnit) => void
@@ -2040,6 +1820,7 @@ function ExerciseCard({
   const [reps, setReps] = useState('')
   const [weight, setWeight] = useState('')
   const [setType, setSetType] = useState<SetType>('working')
+  const [dropParentId, setDropParentId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [editingName, setEditingName] = useState(false)
   const [nameDraft, setNameDraft] = useState('')
@@ -2047,7 +1828,11 @@ function ExerciseCard({
   const [highlightedSetId, setHighlightedSetId] = useState<string | null>(null)
   const lastSetRef = useRef<HTMLLIElement | null>(null)
   const previousSetCount = useRef(exercise.sets.length)
-  const lastSet = exercise.sets[exercise.sets.length - 1]
+  const rawLastSet = exercise.sets[exercise.sets.length - 1]
+  const lastSet =
+    rawLastSet && rawLastSet.type === 'dropset' && rawLastSet.parentId
+      ? (nearestWorkingParent(exercise.sets) ?? rawLastSet)
+      : rawLastSet
   let lastWorkingSet: WorkoutSet | undefined
   for (const set of exercise.sets) {
     if (set.type === 'working') lastWorkingSet = set
@@ -2064,6 +1849,20 @@ function ExerciseCard({
     () => findPersonalBest(sessions, exercise.name),
     [sessions, exercise.name],
   )
+  const drop = dropContext(exercise.sets)
+  const dropWeight = drop ? suggestDrop(drop.base, exercise.unit) : null
+  const target = useMemo(
+    () => overloadTarget(exercise.name, sessions),
+    [exercise.name, sessions],
+  )
+  const targetBeaten = target
+    ? exercise.sets.some(
+        (set) =>
+          set.type === 'working' &&
+          (set.weightKg > target.weightKg ||
+            (set.weightKg === target.weightKg && set.reps >= target.targetReps)),
+      )
+    : true
 
   useEffect(() => {
     if (!previous) return
@@ -2115,9 +1914,10 @@ function ExerciseCard({
         return
       }
     }
-    onAddSet(repsValue, weightValue, setType)
+    onAddSet(repsValue, weightValue, setType, dropParentId ?? undefined)
     setReps(String(repsValue))
     setWeight(String(weightValue))
+    setDropParentId(null)
     setError(null)
   }
 
@@ -2152,6 +1952,15 @@ function ExerciseCard({
         reps: best.reps,
       })
     : null
+  const targetText =
+    target && !targetBeaten
+      ? (() => {
+          const weightText = formatSetWeight(exercise.unit, target.weightKg, tr)
+          return weightText
+            ? tr('ex.target', { weight: weightText, reps: target.targetReps })
+            : tr('ex.targetBodyweight', { reps: target.targetReps })
+        })()
+      : null
   const prevSessionSummary =
     prevSession && prevSession.sets.length > 0
       ? tr('ex.previousShort', {
@@ -2211,6 +2020,9 @@ function ExerciseCard({
           {prevSessionSummary && (
             <p className="muted previous-summary">{prevSessionSummary}</p>
           )}
+          {targetText && (
+            <p className="target-line">{targetText}</p>
+          )}
           <p className="muted collapsed-hint">{tr('ex.collapseHint')}</p>
           {previous && (
             <button
@@ -2241,28 +2053,11 @@ function ExerciseCard({
             {tr('ex.previous', { date: formatDate(prevSession.finishedAt, lang) })}
             {bestText && <span className="best-line">{bestText}</span>}
           </h4>
-          <ul className="sets">
-            {prevSession.sets.map((set, index) => {
-              const weightText = formatSetWeight(exercise.unit, set.weightKg, tr)
-              return (
-                <li key={set.id}>
-                  <span>
-                    {tr('ex.setLabel', { n: index + 1 })}
-                    {set.type !== 'working' && (
-                      <span className={`set-badge ${set.type}`}>
-                        {tr(`setType.${set.type}`)}
-                      </span>
-                    )}
-                  </span>
-                  <span>
-                    {tr('ex.repsCount', { reps: set.reps })}
-                    {weightText ? ` · ${weightText}` : ''}
-                  </span>
-                </li>
-              )
-            })}
-          </ul>
+          <SetList sets={prevSession.sets} unit={exercise.unit} />
         </section>
+      )}
+      {targetText && (
+        <p className="target-line">{targetText}</p>
       )}
 
       {editingName && (
@@ -2301,39 +2096,14 @@ function ExerciseCard({
       {exercise.sets.length === 0 ? (
         <p className="muted">{tr('ex.noSets')}</p>
       ) : (
-        <ul className="sets">
-          {exercise.sets.map((set, index) => {
-            const weightText = formatSetWeight(exercise.unit, set.weightKg, tr)
-            return (
-              <li
-                key={set.id}
-                ref={index === exercise.sets.length - 1 ? lastSetRef : undefined}
-                className={highlightedSetId === set.id ? 'set-highlight' : ''}
-              >
-                <span>
-                  {tr('ex.setLabel', { n: index + 1 })}
-                  {set.type !== 'working' && (
-                    <span className={`set-badge ${set.type}`}>
-                      {tr(`setType.${set.type}`)}
-                    </span>
-                  )}
-                </span>
-                <span>
-                  {tr('ex.repsCount', { reps: set.reps })}
-                  {weightText ? ` · ${weightText}` : ''}
-                </span>
-                <button
-                  type="button"
-                  className="icon-btn danger set-remove"
-                  onClick={() => onRemoveSet(set.id)}
-                  aria-label={tr('ex.removeSet', { n: index + 1 })}
-                >
-                  <Icon name="trash" size={16} />
-                </button>
-              </li>
-            )
-          })}
-        </ul>
+        <SetList
+          sets={exercise.sets}
+          unit={exercise.unit}
+          onRemoveSet={onRemoveSet}
+          onUpdateSet={onUpdateSet}
+          highlightId={highlightedSetId}
+          lastRowRef={lastSetRef}
+        />
       )}
 
       <form onSubmit={handleSubmit} className="set-form">
@@ -2354,7 +2124,10 @@ function ExerciseCard({
                 key={type}
                 type="button"
                 className={`set-type-btn${setType === type ? ' active' : ''}`}
-                onClick={() => setSetType(type)}
+                onClick={() => {
+                  setSetType(type)
+                  setDropParentId(null)
+                }}
               >
                 {tr(`setType.${type}`)}
               </button>
@@ -2408,6 +2181,20 @@ function ExerciseCard({
           </div>
         )}
         {error && <p className="error">{error}</p>}
+        {drop && dropWeight !== null && (
+          <button
+            type="button"
+            className="btn-sm secondary drop-btn"
+            onClick={() => {
+              setSetType('dropset')
+              setReps(String(drop.base.reps))
+              setWeight(String(dropWeight))
+              setDropParentId(drop.parentId)
+            }}
+          >
+            {tr('ex.drop')}
+          </button>
+        )}
         <button type="submit" className="primary">
           {tr('ex.addSet')}
         </button>
@@ -3197,6 +2984,113 @@ function RoutineEditorScreen({
   )
 }
 
+function ProgressScreen({
+  sessions,
+  selected,
+  onSelect,
+  onBack,
+}: {
+  sessions: Workout[]
+  selected: string | null
+  onSelect: (name: string | null) => void
+  onBack: () => void
+}) {
+  const { tr, lang } = useI18n()
+  const history = useMemo(() => exerciseHistory(sessions), [sessions])
+
+  if (sessions.length === 0) {
+    return (
+      <main className="screen">
+        <header className="screen-header">
+          <h1>{tr('progress.title')}</h1>
+          <p className="muted">{tr('progress.desc')}</p>
+        </header>
+        <button type="button" className="btn-sm secondary" onClick={onBack}>
+          {tr('program.back')}
+        </button>
+        <p className="muted empty">{tr('progress.noSessions')}</p>
+      </main>
+    )
+  }
+
+  const item = selected ? history.find((h) => h.name === selected) : undefined
+
+  return (
+    <main className="screen">
+      <header className="screen-header">
+        <h1>{tr('progress.title')}</h1>
+        <p className="muted">{tr('progress.desc')}</p>
+      </header>
+      <button type="button" className="btn-sm secondary" onClick={onBack}>
+        {tr('program.back')}
+      </button>
+
+      {item ? (
+        <>
+          <button
+            type="button"
+            className="btn-sm secondary"
+            onClick={() => onSelect(null)}
+          >
+            {tr('progress.backToList')}
+          </button>
+          <section className="card">
+            <h2>{item.name}</h2>
+            {item.best && (
+              <p className="muted">
+                {tr('ex.best', {
+                  weight:
+                    formatSetWeight(item.best.unit, item.best.weightKg, tr) ?? '',
+                  reps: item.best.reps,
+                })}
+              </p>
+            )}
+          </section>
+          <ul className="sets">
+            {item.entries.map((entry) => {
+              const weightText = formatSetWeight(
+                entry.unit,
+                entry.best.weightKg,
+                tr,
+              )
+              return (
+                <li key={entry.finishedAt}>
+                  <span>{formatDate(entry.finishedAt, lang)}</span>
+                  <span>
+                    {tr('ex.repsCount', { reps: entry.best.reps })}
+                    {weightText ? ` · ${weightText}` : ''}
+                  </span>
+                </li>
+              )
+            })}
+          </ul>
+        </>
+      ) : history.length === 0 ? (
+        <p className="muted empty">{tr('progress.noExercises')}</p>
+      ) : (
+        <ul className="days">
+          {history.map((h) => (
+            <li key={h.name} className="day">
+              <button
+                type="button"
+                className="day-toggle"
+                onClick={() => onSelect(h.name)}
+              >
+                <span className="day-toggle-main">
+                  <span>{h.name}</span>
+                  <span className="muted">
+                    {h.entries.length} {tr('progress.sessions')}
+                  </span>
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </main>
+  )
+}
+
 function SummaryScreen({
   workout,
   onStartAnother,
@@ -3222,27 +3116,7 @@ function SummaryScreen({
         <section key={exercise.id} className="card">
           <h3>{exercise.name}</h3>
           {exercise.note && <p className="summary-note">{exercise.note}</p>}
-          <ul className="sets">
-            {exercise.sets.map((set, index) => {
-              const weightText = formatSetWeight(exercise.unit, set.weightKg, tr)
-              return (
-                <li key={set.id}>
-                  <span>
-                    {tr('ex.setLabel', { n: index + 1 })}
-                    {set.type !== 'working' && (
-                      <span className={`set-badge ${set.type}`}>
-                        {tr(`setType.${set.type}`)}
-                      </span>
-                    )}
-                  </span>
-                  <span>
-                    {tr('ex.repsCount', { reps: set.reps })}
-                    {weightText ? ` · ${weightText}` : ''}
-                  </span>
-                </li>
-              )
-            })}
-          </ul>
+          <SetList sets={exercise.sets} unit={exercise.unit} />
         </section>
       ))}
 
@@ -3259,37 +3133,6 @@ function SummaryScreen({
       </button>
     </main>
   )
-}
-
-function countSets(workout: Workout): number {
-  return workout.exercises.reduce((sum, exercise) => sum + exercise.sets.length, 0)
-}
-
-function formatSetWeight(
-  unit: ExerciseUnit,
-  weightKg: number,
-  tr: (key: string, vars?: Record<string, string | number>) => string,
-): string | null {
-  if (unit === 'bodyweight') return null
-  if (unit === 'plate') return `${weightKg} ${tr('unit.plates')}`
-  return `${weightKg} ${tr('unit.kg')}`
-}
-
-function formatTime(iso: string, lang: Lang): string {
-  return new Date(iso).toLocaleTimeString(localeOf(lang), {
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
-
-function formatDate(iso: string, lang: Lang): string {
-  return new Date(iso).toLocaleString(localeOf(lang), {
-    weekday: 'short',
-    day: 'numeric',
-    month: 'short',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
 }
 
 export default App
