@@ -1955,7 +1955,7 @@ function ExerciseCard({
       })
     : null
   const targetText =
-    target && !targetBeaten
+    target && !targetBeaten && target.unit === exercise.unit
       ? (() => {
           const weightText = formatSetWeight(exercise.unit, target.weightKg, tr)
           return weightText

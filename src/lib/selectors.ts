@@ -31,14 +31,18 @@ export function findLastSessionSet(
 export function findPreviousExercise(
   sessions: Workout[],
   exerciseName: string,
-): { finishedAt: string; sets: WorkoutSet[] } | null {
+): { finishedAt: string; sets: WorkoutSet[]; unit: ExerciseUnit } | null {
   const name = exerciseName.trim().toLowerCase()
   for (const session of sessions) {
     if (session.finishedAt === null) continue
     for (const exercise of session.exercises) {
       if (exercise.name.trim().toLowerCase() !== name) continue
       if (exercise.sets.length === 0) continue
-      return { finishedAt: session.finishedAt, sets: exercise.sets }
+      return {
+        finishedAt: session.finishedAt,
+        sets: exercise.sets,
+        unit: exercise.unit,
+      }
     }
   }
   return null
@@ -167,7 +171,7 @@ export function dropContext(
 export function overloadTarget(
   exerciseName: string,
   sessions: Workout[],
-): { weightKg: number; reps: number; targetReps: number } | null {
+): { weightKg: number; reps: number; targetReps: number; unit: ExerciseUnit } | null {
   const prev = findPreviousExercise(sessions, exerciseName)
   if (!prev) return null
   let best: WorkoutSet | null = null
@@ -182,7 +186,12 @@ export function overloadTarget(
     }
   }
   if (!best) return null
-  return { weightKg: best.weightKg, reps: best.reps, targetReps: best.reps + 1 }
+  return {
+    weightKg: best.weightKg,
+    reps: best.reps,
+    targetReps: best.reps + 1,
+    unit: prev.unit,
+  }
 }
 
 /** One session's best working set for an exercise. */
