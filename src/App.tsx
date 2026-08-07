@@ -294,7 +294,14 @@ function AppContent({
                       ...e,
                       sets: e.sets.map((set) =>
                         set.id === setId
-                          ? { ...set, reps, weightKg, type }
+                          ? {
+                              ...set,
+                              reps,
+                              weightKg,
+                              type,
+                              // A non-dropset set never has a parent reference.
+                              ...(type === 'dropset' ? {} : { parentId: undefined }),
+                            }
                           : set,
                       ),
                     }
