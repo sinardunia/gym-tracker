@@ -116,6 +116,7 @@ function AppContent({
     setViewedSession(finished)
     setWorkoutPaused(false)
     setCollapsedExerciseIds(new Set())
+    clearTimerSnapshots()
   }
 
   function editSession(session: Workout) {
@@ -196,7 +197,12 @@ function AppContent({
               ...s.activeWorkout,
               exercises: s.activeWorkout.exercises.map((e) =>
                 e.id === exerciseId
-                  ? { ...e, sets: e.sets.filter((set) => set.id !== setId) }
+                  ? {
+                      ...e,
+                      sets: e.sets.filter(
+                        (set) => set.id !== setId && set.parentId !== setId,
+                      ),
+                    }
                   : e,
               ),
             },
@@ -218,25 +224,36 @@ function AppContent({
             ...s,
             activeWorkout: {
               ...s.activeWorkout,
-              exercises: s.activeWorkout.exercises.map((e) =>
-                e.id === exerciseId
-                  ? {
-                      ...e,
-                      sets: e.sets.map((set) =>
-                        set.id === setId
-                          ? {
-                              ...set,
-                              reps,
-                              weightKg,
-                              type,
-                              // A non-dropset set never has a parent reference.
-                              ...(type === 'dropset' ? {} : { parentId: undefined }),
-                            }
-                          : set,
-                      ),
+              exercises: s.activeWorkout.exercises.map((e) => {
+                if (e.id !== exerciseId) return e
+                const target = e.sets.find((set) => set.id === setId)
+                let parentId = target?.parentId
+                if (type === 'dropset' && !parentId) {
+                  for (let i = e.sets.length - 1; i >= 0; i -= 1) {
+                    if (e.sets[i].type === 'working' && e.sets[i].id !== setId) {
+                      parentId = e.sets[i].id
+                      break
                     }
-                  : e,
-              ),
+                  }
+                }
+                return {
+                  ...e,
+                  sets: e.sets.map((set) =>
+                    set.id === setId
+                      ? {
+                          ...set,
+                          reps,
+                          weightKg,
+                          type,
+                          // A non-dropset set never has a parent reference.
+                          ...(type === 'dropset'
+                            ? { parentId }
+                            : { parentId: undefined }),
+                        }
+                      : set,
+                  ),
+                }
+              }),
             },
           }
         : s,
