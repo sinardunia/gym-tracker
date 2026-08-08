@@ -87,6 +87,26 @@ export function findTodayWorkout(
   return null
 }
 
+/**
+ * The next scheduled workout after today, scanning from tomorrow forward for a
+ * full week. Returns null when no routine has any scheduled day in that window.
+ */
+export function findNextScheduledWorkout(
+  routines: Routine[],
+): { routine: Routine; day: RoutineDay; weekday: Weekday } | null {
+  const today = new Date().getDay() as Weekday
+  for (let offset = 1; offset <= 7; offset += 1) {
+    const weekday = ((today + offset) % 7) as Weekday
+    for (const routine of routines) {
+      const dayId = routine.schedule[weekday]
+      if (!dayId) continue
+      const day = routine.days.find((d) => d.id === dayId)
+      if (day) return { routine, day, weekday }
+    }
+  }
+  return null
+}
+
 export function findLibraryMatches(query: string): LibraryExercise[] {
   if (!query) return []
   return EXERCISE_LIBRARY.filter((exercise) =>
