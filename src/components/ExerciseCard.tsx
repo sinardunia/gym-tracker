@@ -148,8 +148,15 @@ export function ExerciseCard({
     }
     const wasDrop = dropParentId !== null
     onAddSet(repsValue, weightValue, setType, dropParentId ?? undefined)
-    setReps(String(repsValue))
-    setWeight(String(weightValue))
+    if (wasDrop && previous) {
+      // Kembalikan ke nilai working set supaya set working berikutnya
+      // tidak memakai berat drop yang lebih ringan.
+      setReps(String(previous.reps))
+      setWeight(String(previous.weightKg))
+    } else {
+      setReps(String(repsValue))
+      setWeight(String(weightValue))
+    }
     if (wasDrop) setSetType('working')
     setDropParentId(null)
     setError(null)
