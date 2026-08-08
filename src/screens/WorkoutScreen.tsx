@@ -5,6 +5,7 @@ import { NoteField } from '../components/NoteField'
 import { RestTimer } from '../components/RestTimer'
 import { ExerciseCard } from '../components/ExerciseCard'
 import { AddExerciseForm } from '../components/AddExerciseForm'
+import { recentExerciseNames } from '../lib/selectors'
 import { formatTime } from '../lib/format'
 import type { ExerciseUnit, SetType, Workout } from '../lib/types'
 
@@ -61,6 +62,7 @@ export function WorkoutScreen({
   const hasSet = workout.exercises.some((e) => e.sets.length > 0)
   const canFinish = workout.exercises.length > 0 && hasSet
   const noteOpen = noteExpanded || (workout.note ?? '').trim() !== ''
+  const recent = recentExerciseNames(sessions)
 
   return (
     <main className="screen">
@@ -165,7 +167,7 @@ export function WorkoutScreen({
         ))
       )}
 
-      <AddExerciseForm onAdd={onAddExercise} />
+      <AddExerciseForm onAdd={onAddExercise} recent={recent} />
     </main>
   )
 }

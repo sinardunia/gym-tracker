@@ -116,6 +116,26 @@ export function findLibraryMatches(query: string): LibraryExercise[] {
   )
 }
 
+/** Distinct exercise names from the most recent finished sessions, newest first. */
+export function recentExerciseNames(
+  sessions: Workout[],
+  limit = 8,
+): string[] {
+  const names: string[] = []
+  const seen = new Set<string>()
+  for (const session of sessions) {
+    if (session.finishedAt === null) continue
+    for (const exercise of session.exercises) {
+      const key = exercise.name.trim().toLowerCase()
+      if (!key || seen.has(key)) continue
+      seen.add(key)
+      names.push(exercise.name)
+      if (names.length >= limit) return names
+    }
+  }
+  return names
+}
+
 function roundToStep(value: number, step: number): number {
   return Math.round(value / step) * step
 }

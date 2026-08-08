@@ -4,8 +4,10 @@ import { findLibraryMatches } from '../lib/selectors'
 
 export function AddExerciseForm({
   onAdd,
+  recent = [],
 }: {
   onAdd: (name: string) => void
+  recent?: string[]
 }) {
   const { tr } = useI18n()
   const [name, setName] = useState('')
@@ -19,6 +21,12 @@ export function AddExerciseForm({
       return
     }
     onAdd(trimmed)
+    setName('')
+    setError(null)
+  }
+
+  function pick(selected: string) {
+    onAdd(selected)
     setName('')
     setError(null)
   }
@@ -54,13 +62,28 @@ export function AddExerciseForm({
                 <button
                   type="button"
                   className="recent-item"
-                  onClick={() => {
-                    onAdd(exercise.name)
-                    setName('')
-                    setError(null)
-                  }}
+                  onClick={() => pick(exercise.name)}
                 >
                   {exercise.name}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {!query && recent.length > 0 && (
+        <div className="recent-exercises">
+          <span className="recent-label">{tr('addEx.recent')}</span>
+          <ul className="recent-list">
+            {recent.map((exerciseName) => (
+              <li key={exerciseName}>
+                <button
+                  type="button"
+                  className="recent-item"
+                  onClick={() => pick(exerciseName)}
+                >
+                  {exerciseName}
                 </button>
               </li>
             ))}

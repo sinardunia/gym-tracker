@@ -113,6 +113,7 @@ const ID: Record<string, string> = {
   'addEx.nameLabel': 'Nama exercise',
   'addEx.namePlaceholder': 'mis. Bench Press',
   'addEx.library': 'Pustaka exercise',
+  'addEx.recent': 'Baru dipakai',
   'addEx.add': 'Tambah exercise',
 
   'backup.title': 'Cadangan',
@@ -358,6 +359,7 @@ const EN: Record<string, string> = {
   'addEx.nameLabel': 'Exercise name',
   'addEx.namePlaceholder': 'e.g. Bench Press',
   'addEx.library': 'Exercise library',
+  'addEx.recent': 'Recently used',
   'addEx.add': 'Add exercise',
 
   'backup.title': 'Backup',
