@@ -56,6 +56,7 @@ export function ExerciseCard({
   const [editingName, setEditingName] = useState(false)
   const [nameDraft, setNameDraft] = useState('')
   const [nameError, setNameError] = useState<string | null>(null)
+  const [confirmRemove, setConfirmRemove] = useState(false)
   const [highlightedSetId, setHighlightedSetId] = useState<string | null>(null)
   const lastSetRef = useRef<HTMLLIElement | null>(null)
   const setFormRef = useRef<HTMLFormElement | null>(null)
@@ -241,14 +242,39 @@ export function ExerciseCard({
             >
               <Icon name="pencil" size={16} />
             </button>
-            <button
-              type="button"
-              className="icon-btn danger"
-              onClick={onRemove}
-              aria-label={tr('ex.remove')}
-            >
-              <Icon name="trash" size={16} />
-            </button>
+            {confirmRemove ? (
+              <span className="inline-confirm">
+                <button
+                  type="button"
+                  className="btn-sm danger"
+                  onClick={onRemove}
+                >
+                  {tr('ex.confirmRemove')}
+                </button>
+                <button
+                  type="button"
+                  className="btn-sm secondary"
+                  onClick={() => setConfirmRemove(false)}
+                >
+                  {tr('cancel')}
+                </button>
+              </span>
+            ) : (
+              <button
+                type="button"
+                className="icon-btn danger"
+                onClick={() => {
+                  if (exercise.sets.length > 0) {
+                    setConfirmRemove(true)
+                  } else {
+                    onRemove()
+                  }
+                }}
+                aria-label={tr('ex.remove')}
+              >
+                <Icon name="trash" size={16} />
+              </button>
+            )}
           </div>
         )}
       </div>
