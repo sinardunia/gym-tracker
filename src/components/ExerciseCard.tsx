@@ -31,6 +31,9 @@ export function ExerciseCard({
   onRename,
   onChangeUnit,
   onUpdateNote,
+  onMove,
+  canMoveUp,
+  canMoveDown,
   sessions,
   collapsed,
   onToggleCollapsed,
@@ -43,6 +46,9 @@ export function ExerciseCard({
   onRename: (name: string) => void
   onChangeUnit: (unit: ExerciseUnit) => void
   onUpdateNote: (note: string) => void
+  onMove?: (direction: -1 | 1) => void
+  canMoveUp?: boolean
+  canMoveDown?: boolean
   sessions: Workout[]
   collapsed: boolean
   onToggleCollapsed: () => void
@@ -236,6 +242,28 @@ export function ExerciseCard({
         </div>
         {!collapsed && (
           <div className="exercise-actions">
+            {onMove && (
+              <>
+                <button
+                  type="button"
+                  className="icon-btn"
+                  disabled={!canMoveUp}
+                  onClick={() => onMove(-1)}
+                  aria-label={tr('ex.moveUp')}
+                >
+                  <Icon name="arrow-up" size={16} />
+                </button>
+                <button
+                  type="button"
+                  className="icon-btn"
+                  disabled={!canMoveDown}
+                  onClick={() => onMove(1)}
+                  aria-label={tr('ex.moveDown')}
+                >
+                  <Icon name="arrow-down" size={16} />
+                </button>
+              </>
+            )}
             <button
               type="button"
               className="icon-btn"

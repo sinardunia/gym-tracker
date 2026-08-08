@@ -19,6 +19,7 @@ export function WorkoutScreen({
   onRemoveExercise,
   onRenameExercise,
   onChangeUnit,
+  onMoveExercise,
   onUpdateWorkoutNote,
   onUpdateExerciseNote,
   onExit,
@@ -48,6 +49,7 @@ export function WorkoutScreen({
   onRemoveExercise: (exerciseId: string) => void
   onRenameExercise: (exerciseId: string, name: string) => void
   onChangeUnit: (exerciseId: string, unit: ExerciseUnit) => void
+  onMoveExercise: (exerciseId: string, direction: -1 | 1) => void
   onUpdateWorkoutNote: (note: string) => void
   onUpdateExerciseNote: (exerciseId: string, note: string) => void
   onExit: () => void
@@ -149,7 +151,7 @@ export function WorkoutScreen({
       {workout.exercises.length === 0 ? (
         <p className="muted empty">{tr('workout.noExercises')}</p>
       ) : (
-        workout.exercises.map((exercise) => (
+        workout.exercises.map((exercise, index) => (
           <ExerciseCard
             key={exercise.id}
             exercise={exercise}
@@ -164,6 +166,9 @@ export function WorkoutScreen({
             onRename={(name) => onRenameExercise(exercise.id, name)}
             onChangeUnit={(unit) => onChangeUnit(exercise.id, unit)}
             onUpdateNote={(note) => onUpdateExerciseNote(exercise.id, note)}
+            onMove={(direction) => onMoveExercise(exercise.id, direction)}
+            canMoveUp={index > 0}
+            canMoveDown={index < workout.exercises.length - 1}
             sessions={sessions}
             collapsed={collapsedExerciseIds.has(exercise.id)}
             onToggleCollapsed={() => onToggleCollapsed(exercise.id)}

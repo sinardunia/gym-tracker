@@ -261,13 +261,25 @@ function AppContent({
     )
   }
 
+  function moveExercise(exerciseId: string, direction: -1 | 1) {
+    setState((s) => {
+      if (!s.activeWorkout) return s
+      const exercises = [...s.activeWorkout.exercises]
+      const index = exercises.findIndex((e) => e.id === exerciseId)
+      const target = index + direction
+      if (index < 0 || target < 0 || target >= exercises.length) return s
+      const [moved] = exercises.splice(index, 1)
+      exercises.splice(target, 0, moved)
+      return { ...s, activeWorkout: { ...s.activeWorkout, exercises } }
+    })
+  }
+
   function updateWorkoutNote(note: string) {
     setState((s) =>
       s.activeWorkout
         ? {
             ...s,
-            activeWorkout: { ...s.activeWorkout, note: note.trim() ? note : undefined },
-          }
+            activeWorkout: { ...s.activeWorkout, note: note.trim() ? note : undefined },          }
         : s,
     )
   }
@@ -529,6 +541,7 @@ function AppContent({
         onRemoveExercise={removeExercise}
         onRenameExercise={renameExercise}
         onChangeUnit={changeExerciseUnit}
+        onMoveExercise={moveExercise}
         onUpdateWorkoutNote={updateWorkoutNote}
         onUpdateExerciseNote={updateExerciseNote}
         onExit={() => setWorkoutPaused(true)}
