@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { I18nProvider, useI18n, LANG_KEY, type Lang } from './i18n'
 import { HomeScreen } from './screens/HomeScreen'
 import { WorkoutScreen } from './screens/WorkoutScreen'
@@ -68,6 +68,7 @@ function AppContent({
   const [collapsedExerciseIds, setCollapsedExerciseIds] = useState<Set<string>>(
     () => new Set(),
   )
+  const editingSessionIdRef = useRef<string | null>(null)
 
   const activeWorkout = state.activeWorkout
 
@@ -76,6 +77,7 @@ function AppContent({
   }, [state])
 
   function startWorkout(exerciseNames: string[] = []) {
+    editingSessionIdRef.current = null
     setState((s) => ({
       ...s,
       activeWorkout: {
@@ -100,14 +102,42 @@ function AppContent({
       ...activeWorkout,
       finishedAt: new Date().toISOString(),
     })
+    const editingId = editingSessionIdRef.current
+    editingSessionIdRef.current = null
     setState((s) => ({
       ...s,
       activeWorkout: null,
-      sessions: [finished, ...s.sessions],
+      sessions: editingId
+        ? s.sessions.map((session) =>
+            session.id === editingId ? finished : session,
+          )
+        : [finished, ...s.sessions],
     }))
     setViewedSession(finished)
     setWorkoutPaused(false)
     setCollapsedExerciseIds(new Set())
+  }
+
+  function editSession(session: Workout) {
+    editingSessionIdRef.current = session.id
+    setState((s) => ({
+      ...s,
+      activeWorkout: normalizeWorkout({
+        ...session,
+        finishedAt: null,
+      }),
+    }))
+    setViewedSession(null)
+    setWorkoutPaused(false)
+    setCollapsedExerciseIds(new Set())
+  }
+
+  function deleteSession(sessionId: string) {
+    setState((s) => ({
+      ...s,
+      sessions: s.sessions.filter((session) => session.id !== sessionId),
+    }))
+    setViewedSession(null)
   }
 
   function addExercise(name: string) {
@@ -303,6 +333,7 @@ function AppContent({
   }
 
   function discardWorkout() {
+    editingSessionIdRef.current = null
     setState((s) => ({ ...s, activeWorkout: null }))
     setViewedSession(null)
     setWorkoutPaused(false)
@@ -560,6 +591,8 @@ function AppContent({
         workout={viewedSession}
         onStartAnother={startWorkout}
         onBack={() => setViewedSession(null)}
+        onEdit={editSession}
+        onDelete={deleteSession}
       />
     )
   }

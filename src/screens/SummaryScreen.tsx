@@ -1,5 +1,7 @@
+import { useState } from 'react'
 import { useI18n } from '../i18n'
 import { SetList } from '../components/SetList'
+import { ConfirmDialog } from '../components/ConfirmDialog'
 import { countSets, formatDate } from '../lib/format'
 import type { Workout } from '../lib/types'
 
@@ -7,12 +9,17 @@ export function SummaryScreen({
   workout,
   onStartAnother,
   onBack,
+  onEdit,
+  onDelete,
 }: {
   workout: Workout
   onStartAnother: () => void
   onBack: () => void
+  onEdit: (session: Workout) => void
+  onDelete: (sessionId: string) => void
 }) {
   const { tr, p, lang } = useI18n()
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
   return (
     <main className="screen">
       <header className="screen-header">
@@ -43,6 +50,44 @@ export function SummaryScreen({
       <button type="button" className="secondary" onClick={onBack}>
         {tr('summary.back')}
       </button>
+      <button type="button" className="secondary" onClick={() => onEdit(workout)}>
+        {tr('summary.edit')}
+      </button>
+      <button
+        type="button"
+        className="danger"
+        onClick={() => setConfirmingDelete(true)}
+      >
+        {tr('summary.delete')}
+      </button>
+
+      {confirmingDelete && (
+        <ConfirmDialog
+          title={tr('summary.deleteTitle')}
+          body={tr('summary.deleteBody')}
+          onClose={() => setConfirmingDelete(false)}
+        >
+          <div className="confirm-actions">
+            <button
+              type="button"
+              className="danger"
+              onClick={() => {
+                setConfirmingDelete(false)
+                onDelete(workout.id)
+              }}
+            >
+              {tr('summary.confirmDelete')}
+            </button>
+            <button
+              type="button"
+              className="secondary"
+              onClick={() => setConfirmingDelete(false)}
+            >
+              {tr('cancel')}
+            </button>
+          </div>
+        </ConfirmDialog>
+      )}
     </main>
   )
 }

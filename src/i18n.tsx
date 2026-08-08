@@ -228,6 +228,11 @@ const ID: Record<string, string> = {
   'summary.title': 'Workout selesai',
   'summary.startAnother': 'Mulai workout lain',
   'summary.back': 'Kembali',
+  'summary.edit': 'Edit sesi',
+  'summary.delete': 'Hapus sesi',
+  'summary.deleteTitle': 'Hapus sesi ini?',
+  'summary.deleteBody': 'Sesi dan semua set-nya akan dihapus permanen.',
+  'summary.confirmDelete': 'Konfirmasi hapus',
 
   'progress.title': 'Progress',
   'progress.desc': 'Perkembangan per exercise dari sesi-sesi yang selesai.',
@@ -477,6 +482,11 @@ const EN: Record<string, string> = {
   'summary.title': 'Workout complete',
   'summary.startAnother': 'Start another workout',
   'summary.back': 'Back',
+  'summary.edit': 'Edit session',
+  'summary.delete': 'Delete session',
+  'summary.deleteTitle': 'Delete this session?',
+  'summary.deleteBody': 'The session and all its sets will be permanently removed.',
+  'summary.confirmDelete': 'Confirm delete',
 
   'progress.title': 'Progress',
   'progress.desc': 'Per-exercise progress from finished sessions.',
