@@ -12,18 +12,22 @@ import type {
 export function findLastSessionSet(
   sessions: Workout[],
   exerciseName: string,
-): { reps: number; weightKg: number } | null {
+): { reps: number; weightKg: number; unit: ExerciseUnit } | null {
   const name = exerciseName.trim().toLowerCase()
   for (const session of sessions) {
     let lastSet: WorkoutSet | undefined
+    let lastUnit: ExerciseUnit = 'kg'
     for (const exercise of session.exercises) {
       if (exercise.name.trim().toLowerCase() === name) {
         const workingSets = exercise.sets.filter((set) => set.type === 'working')
         const lastWorking = workingSets[workingSets.length - 1]
-        if (lastWorking) lastSet = lastWorking
+        if (lastWorking) {
+          lastSet = lastWorking
+          lastUnit = exercise.unit
+        }
       }
     }
-    if (lastSet) return { reps: lastSet.reps, weightKg: lastSet.weightKg }
+    if (lastSet) return { reps: lastSet.reps, weightKg: lastSet.weightKg, unit: lastUnit }
   }
   return null
 }

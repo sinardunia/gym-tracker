@@ -76,10 +76,16 @@ export function ExerciseCard({
   for (const set of exercise.sets) {
     if (set.type === 'working') lastWorkingSet = set
   }
-  const previous = useMemo(
-    () => lastWorkingSet ?? findLastSessionSet(sessions, exercise.name),
-    [lastWorkingSet, sessions, exercise.name],
-  )
+  const previous = useMemo(() => {
+    if (lastWorkingSet) {
+      return {
+        reps: lastWorkingSet.reps,
+        weightKg: lastWorkingSet.weightKg,
+        unit: exercise.unit,
+      }
+    }
+    return findLastSessionSet(sessions, exercise.name)
+  }, [lastWorkingSet, sessions, exercise.name, exercise.unit])
   const prevSession = useMemo(
     () => findPreviousExercise(sessions, exercise.name),
     [sessions, exercise.name],
@@ -106,8 +112,10 @@ export function ExerciseCard({
   useEffect(() => {
     if (!previous) return
     setReps(String(previous.reps))
-    setWeight(String(previous.weightKg))
-  }, [previous])
+    if (previous.unit === exercise.unit) {
+      setWeight(String(previous.weightKg))
+    }
+  }, [previous, exercise.unit])
 
   useEffect(() => {
     if (exercise.unit === 'bodyweight') setWeight('')
@@ -321,7 +329,7 @@ export function ExerciseCard({
             <p className="target-line">{targetText}</p>
           )}
           <p className="muted collapsed-hint">{tr('ex.collapseHint')}</p>
-          {previous && (
+          {previous && previous.unit === exercise.unit && (
             <button
               type="button"
               className="positive repeat-btn"
@@ -404,7 +412,7 @@ export function ExerciseCard({
       )}
 
       <form ref={setFormRef} onSubmit={handleSubmit} className="set-form">
-        {previous && (
+        {previous && previous.unit === exercise.unit && (
           <button
             type="button"
             className="positive repeat-btn"
