@@ -3,11 +3,13 @@ import { useI18n } from '../i18n'
 import { WEEKDAY_KEYS, type ScheduleConflict, type Weekday } from '../lib/types'
 
 export function DayScheduleSelect({
+  id,
   assignedWeekday,
   takenWeekdays,
   getConflict,
   onSchedule,
 }: {
+  id: string
   assignedWeekday: string
   takenWeekdays: number[]
   getConflict: (weekday: Weekday) => ScheduleConflict | null
@@ -42,11 +44,11 @@ export function DayScheduleSelect({
 
   return (
     <div className="schedule-row">
-      <label htmlFor={`weekday-${assignedWeekday}`} className="muted">
+      <label htmlFor={`weekday-${id}`} className="muted">
         {tr('routine.weekday')}
       </label>
       <select
-        id={`weekday-${assignedWeekday}`}
+        id={`weekday-${id}`}
         value={draft}
         onChange={(e) => handleChange(e.target.value)}
       >

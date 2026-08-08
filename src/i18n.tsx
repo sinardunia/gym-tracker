@@ -98,6 +98,7 @@ const ID: Record<string, string> = {
   'ex.previous': 'Sebelumnya — {date}',
   'ex.previousShort': 'Sebelumnya: {sets}',
   'ex.best': 'Best: {weight} × {reps}',
+  'ex.bestBodyweight': 'Best: {reps} reps',
   'ex.target': 'Coba: {weight} × {reps}+',
   'ex.targetBodyweight': 'Coba: {reps}+ reps',
 
@@ -344,6 +345,7 @@ const EN: Record<string, string> = {
   'ex.previous': 'Previous — {date}',
   'ex.previousShort': 'Prev: {sets}',
   'ex.best': 'Best: {weight} × {reps}',
+  'ex.bestBodyweight': 'Best: {reps} reps',
   'ex.target': 'Try: {weight} × {reps}+',
   'ex.targetBodyweight': 'Try: {reps}+ reps',
 

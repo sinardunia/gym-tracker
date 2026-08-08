@@ -235,6 +235,7 @@ export function RoutineCard({
                       existing={day.exerciseNames}
                     />
                     <DayScheduleSelect
+                      id={day.id}
                       assignedWeekday={assignedWeekday}
                       takenWeekdays={takenWeekdays}
                       getConflict={(weekday) => getConflict(weekday, day.id)}

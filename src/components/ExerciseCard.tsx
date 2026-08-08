@@ -79,8 +79,8 @@ export function ExerciseCard({
     [sessions, exercise.name],
   )
   const best = useMemo(
-    () => findPersonalBest(sessions, exercise.name),
-    [sessions, exercise.name],
+    () => findPersonalBest(sessions, exercise.name, exercise.unit),
+    [sessions, exercise.name, exercise.unit],
   )
   const drop = dropContext(exercise.sets)
   const dropWeight = drop ? suggestDrop(drop.base, exercise.unit) : null
@@ -189,10 +189,12 @@ export function ExerciseCard({
     ? tr('ex.lastSet', { reps: lastSet.reps, weight: lastSetWeight ? ` · ${lastSetWeight}` : '' })
     : tr('ex.noSets')
   const bestText = best
-    ? tr('ex.best', {
-        weight: formatSetWeight('kg', best.weightKg, tr) ?? '',
-        reps: best.reps,
-      })
+    ? (() => {
+        const weightText = formatSetWeight(exercise.unit, best.weightKg, tr)
+        return weightText
+          ? tr('ex.best', { weight: weightText, reps: best.reps })
+          : tr('ex.bestBodyweight', { reps: best.reps })
+      })()
     : null
   const targetText =
     target && !targetBeaten && target.unit === exercise.unit

@@ -383,8 +383,8 @@ button.danger {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  width: 34px;
-  height: 34px;
+  width: 44px;
+  height: 44px;
   padding: 0;
   border-radius: 8px;
   border: 1px solid var(--border);
@@ -442,8 +442,8 @@ button.danger {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  width: 32px;
-  height: 32px;
+  width: 44px;
+  height: 44px;
   padding: 0;
   margin-top: 2px;
   border: none;
@@ -495,8 +495,8 @@ button.danger {
 }
 
 .set-remove {
-  width: 32px;
-  height: 32px;
+  width: 44px;
+  height: 44px;
 }
 
 .set-form .drop-btn {

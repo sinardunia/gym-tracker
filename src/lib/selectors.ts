@@ -51,13 +51,14 @@ export function findPreviousExercise(
 export function findPersonalBest(
   sessions: Workout[],
   exerciseName: string,
+  unit: ExerciseUnit,
 ): { weightKg: number; reps: number } | null {
   const name = exerciseName.trim().toLowerCase()
   let best: { weightKg: number; reps: number } | null = null
   for (const session of sessions) {
     if (session.finishedAt === null) continue
     for (const exercise of session.exercises) {
-      if (exercise.unit !== 'kg') continue
+      if (exercise.unit !== unit) continue
       if (exercise.name.trim().toLowerCase() !== name) continue
       for (const set of exercise.sets) {
         if (set.type !== 'working') continue
