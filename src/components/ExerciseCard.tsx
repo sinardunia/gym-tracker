@@ -58,6 +58,7 @@ export function ExerciseCard({
   const [nameError, setNameError] = useState<string | null>(null)
   const [highlightedSetId, setHighlightedSetId] = useState<string | null>(null)
   const lastSetRef = useRef<HTMLLIElement | null>(null)
+  const setFormRef = useRef<HTMLFormElement | null>(null)
   const previousSetCount = useRef(exercise.sets.length)
   const rawLastSet = exercise.sets[exercise.sets.length - 1]
   const lastSet =
@@ -111,7 +112,7 @@ export function ExerciseCard({
     if (exercise.sets.length <= previousLength) return
     const added = exercise.sets[exercise.sets.length - 1]
     setHighlightedSetId(added.id)
-    const node = lastSetRef.current
+    const node = setFormRef.current
     if (node) {
       const rect = node.getBoundingClientRect()
       if (rect.bottom > window.innerHeight) {
@@ -339,7 +340,7 @@ export function ExerciseCard({
         />
       )}
 
-      <form onSubmit={handleSubmit} className="set-form">
+      <form ref={setFormRef} onSubmit={handleSubmit} className="set-form">
         {previous && (
           <button
             type="button"
