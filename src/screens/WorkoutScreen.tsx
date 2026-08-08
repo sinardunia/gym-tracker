@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useI18n } from '../i18n'
 import { Icon } from '../components/Icon'
 import { NoteField } from '../components/NoteField'
 import { RestTimer } from '../components/RestTimer'
 import { ExerciseCard } from '../components/ExerciseCard'
 import { AddExerciseForm } from '../components/AddExerciseForm'
+import { ConfirmDialog } from '../components/ConfirmDialog'
 import { recentExerciseNames } from '../lib/selectors'
 import { formatTime } from '../lib/format'
 import type { ExerciseUnit, SetType, Workout } from '../lib/types'
@@ -59,6 +60,7 @@ export function WorkoutScreen({
   const { tr, lang } = useI18n()
   const [confirmingExit, setConfirmingExit] = useState(false)
   const [noteExpanded, setNoteExpanded] = useState(false)
+  const backButtonRef = useRef<HTMLButtonElement | null>(null)
   const hasSet = workout.exercises.some((e) => e.sets.length > 0)
   const canFinish = workout.exercises.length > 0 && hasSet
   const noteOpen = noteExpanded || (workout.note ?? '').trim() !== ''
@@ -90,6 +92,7 @@ export function WorkoutScreen({
         <div className="workout-actions-row">
           <button
             type="button"
+            ref={backButtonRef}
             className="icon-btn"
             onClick={() => setConfirmingExit(true)}
             aria-label={tr('workout.backHome')}
@@ -112,34 +115,35 @@ export function WorkoutScreen({
       )}
 
       {confirmingExit && (
-        <div className="confirm-dialog" role="dialog" aria-modal="true">
-          <div className="confirm-card">
-            <h3>{tr('workout.exitTitle')}</h3>
-            <p className="muted">{tr('workout.exitBody')}</p>
-            <div className="confirm-actions">
-              <button
-                type="button"
-                className="primary"
-                onClick={() => {
-                  setConfirmingExit(false)
-                  onExit()
-                }}
-              >
-                {tr('workout.goHome')}
-              </button>
-              <button
-                type="button"
-                className="danger"
-                onClick={() => {
-                  setConfirmingExit(false)
-                  onDiscard()
-                }}
-              >
-                {tr('workout.discard')}
-              </button>
-            </div>
+        <ConfirmDialog
+          title={tr('workout.exitTitle')}
+          body={tr('workout.exitBody')}
+          onClose={() => setConfirmingExit(false)}
+          returnFocusRef={backButtonRef}
+        >
+          <div className="confirm-actions">
+            <button
+              type="button"
+              className="primary"
+              onClick={() => {
+                setConfirmingExit(false)
+                onExit()
+              }}
+            >
+              {tr('workout.goHome')}
+            </button>
+            <button
+              type="button"
+              className="danger"
+              onClick={() => {
+                setConfirmingExit(false)
+                onDiscard()
+              }}
+            >
+              {tr('workout.discard')}
+            </button>
           </div>
-        </div>
+        </ConfirmDialog>
       )}
 
       {workout.exercises.length === 0 ? (

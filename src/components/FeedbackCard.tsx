@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useI18n } from '../i18n'
+import { ConfirmDialog } from './ConfirmDialog'
 import { FEEDBACK_KEY, GITHUB_URL } from '../lib/config'
 import { newId } from '../lib/data'
 
@@ -14,6 +15,7 @@ export function FeedbackCard() {
   const [open, setOpen] = useState(false)
   const [message, setMessage] = useState('')
   const [saved, setSaved] = useState(false)
+  const openButtonRef = useRef<HTMLButtonElement | null>(null)
 
   function submit() {
     const trimmed = message.trim()
@@ -33,51 +35,57 @@ export function FeedbackCard() {
 
   return (
     <>
-      <button type="button" className="secondary" onClick={() => setOpen(true)}>
+      <button
+        type="button"
+        ref={openButtonRef}
+        className="secondary"
+        onClick={() => setOpen(true)}
+      >
         {tr('feedback.send')}
       </button>
       {open && (
-        <div className="confirm-dialog" role="dialog" aria-modal="true">
-          <div className="confirm-card">
-            <h3>{tr('feedback.title')}</h3>
-            <p className="muted">{tr('feedback.body')}</p>
-            <textarea
-              className="note-field"
-              rows={4}
-              autoFocus
-              value={message}
-              placeholder={tr('feedback.placeholder')}
-              aria-label={tr('feedback.messageLabel')}
-              onChange={(e) => setMessage(e.target.value)}
-            />
-            {saved && <p className="feedback-saved">{tr('feedback.saved')}</p>}
-            <div className="confirm-actions">
-              <button
-                type="button"
-                className="positive"
-                disabled={!message.trim()}
-                onClick={submit}
-              >
-                {tr('feedback.save')}
-              </button>
-              <a
-                className="file-button"
-                href={`${GITHUB_URL}/issues/new`}
-                target="_blank"
-                rel="noreferrer"
-              >
-                {tr('feedback.openIssue')}
-              </a>
-              <button
-                type="button"
-                className="secondary"
-                onClick={() => setOpen(false)}
-              >
-                {tr('feedback.close')}
-              </button>
-            </div>
+        <ConfirmDialog
+          title={tr('feedback.title')}
+          body={tr('feedback.body')}
+          onClose={() => setOpen(false)}
+          returnFocusRef={openButtonRef}
+          ariaLabel={tr('feedback.title')}
+        >
+          <textarea
+            className="note-field"
+            rows={4}
+            value={message}
+            placeholder={tr('feedback.placeholder')}
+            aria-label={tr('feedback.messageLabel')}
+            onChange={(e) => setMessage(e.target.value)}
+          />
+          {saved && <p className="feedback-saved">{tr('feedback.saved')}</p>}
+          <div className="confirm-actions">
+            <button
+              type="button"
+              className="positive"
+              disabled={!message.trim()}
+              onClick={submit}
+            >
+              {tr('feedback.save')}
+            </button>
+            <a
+              className="file-button"
+              href={`${GITHUB_URL}/issues/new`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              {tr('feedback.openIssue')}
+            </a>
+            <button
+              type="button"
+              className="secondary"
+              onClick={() => setOpen(false)}
+            >
+              {tr('feedback.close')}
+            </button>
           </div>
-        </div>
+        </ConfirmDialog>
       )}
     </>
   )
