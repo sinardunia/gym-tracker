@@ -1,3 +1,20 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-bg: var(--bg);
+  --color-brand-card: var(--card-bg);
+  --color-brand-row: var(--row-bg);
+  --color-brand-border: var(--border);
+  --color-brand-accent: var(--accent);
+  --color-brand-accent-bg: var(--accent-bg);
+  --color-brand-danger: var(--danger);
+  --color-brand-danger-bg: var(--danger-bg);
+  --color-brand-positive: var(--positive);
+  --color-brand-positive-bg: var(--positive-bg);
+  --color-brand-text: var(--text);
+  --color-brand-heading: var(--text-h);
+}
+
 :root {
   --text: #6b7280;
   --text-h: #111827;
@@ -48,29 +65,6 @@
 body {
   margin: 0;
   min-height: 100dvh;
-}
-
-h1,
-h2,
-h3 {
-  font-family: var(--sans);
-  font-weight: 600;
-  color: var(--text-h);
-}
-
-h1 {
-  font-size: 28px;
-  margin: 0;
-}
-
-h2 {
-  font-size: 20px;
-  margin: 0;
-}
-
-h3 {
-  font-size: 17px;
-  margin: 0;
 }
 
 #root {
