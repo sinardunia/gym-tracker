@@ -55,6 +55,8 @@ const ID: Record<string, string> = {
     'Catatan workout… (mis. dada terasa kuat saat bench)',
   'workout.backHome': 'Kembali ke home',
   'workout.notes': 'Catatan workout',
+  'workout.finishNotesTitle': 'Catatan Workout (Opsional)',
+  'common.cancel': 'Batal',
 
   'timer.rest': 'Istirahat',
   'timer.setRest': 'Atur durasi istirahat',
@@ -313,6 +315,8 @@ const EN: Record<string, string> = {
   'workout.notesPlaceholder': 'Workout notes… (e.g. felt strong on bench)',
   'workout.backHome': 'Back to home',
   'workout.notes': 'Workout notes',
+  'workout.finishNotesTitle': 'Workout Notes (Optional)',
+  'common.cancel': 'Cancel',
 
   'timer.rest': 'Rest',
   'timer.setRest': 'Set rest duration',

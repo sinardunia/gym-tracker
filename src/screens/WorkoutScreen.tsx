@@ -62,11 +62,11 @@ export function WorkoutScreen({
 }) {
   const { tr, lang } = useI18n()
   const [confirmingExit, setConfirmingExit] = useState(false)
-  const [noteExpanded, setNoteExpanded] = useState(false)
+  const [showFinishModal, setShowFinishModal] = useState(false)
+  const [finishNote, setFinishNote] = useState(() => workout.note ?? '')
   const backButtonRef = useRef<HTMLButtonElement | null>(null)
   const hasSet = workout.exercises.some((e) => e.sets.length > 0)
   const canFinish = workout.exercises.length > 0 && hasSet
-  const noteOpen = noteExpanded || (workout.note ?? '').trim() !== ''
   const recent = recentExerciseNames(sessions)
 
   return (
@@ -78,55 +78,11 @@ export function WorkoutScreen({
             {tr('workout.startedAt', { time: formatTime(workout.startedAt, lang) })}
           </span>
         </div>
-        <button
-          type="button"
-          className="icon-btn btn-sm"
-          onClick={() => setNoteExpanded((open) => !open)}
-          aria-label={tr('workout.notes')}
-          title={tr('workout.notes')}
-        >
-          <Icon name="note" size={16} />
-        </button>
       </header>
 
-      {noteOpen && (
-        <NoteField
-          value={workout.note ?? ''}
-          onChange={(note) => {
-            onUpdateWorkoutNote(note)
-          }}
-          placeholder={tr('workout.notesPlaceholder')}
-          label={tr('workout.notes')}
-          compact={!noteExpanded}
-          onFocus={() => setNoteExpanded(true)}
-        />
-      )}
-
-      <div className="workout-actions">
-        <div className="workout-actions-row">
-          <button
-            type="button"
-            ref={backButtonRef}
-            className="icon-btn"
-            onClick={() => setConfirmingExit(true)}
-            aria-label={tr('workout.backHome')}
-          >
-            <Icon name="arrow-left" />
-          </button>
-          <button
-            type="button"
-            className="positive finish"
-            onClick={onFinish}
-            disabled={!canFinish}
-          >
-            {tr('workout.finish')}
-          </button>
-        </div>
+      <div className="workout-timer-container">
         <RestTimer workoutId={workout.id} />
       </div>
-      {!canFinish && (
-        <p className="error hint">{tr('workout.finishHint')}</p>
-      )}
 
       {confirmingExit && (
         <ConfirmDialog
@@ -160,6 +116,42 @@ export function WorkoutScreen({
         </ConfirmDialog>
       )}
 
+      {showFinishModal && (
+        <ConfirmDialog
+          title={tr('workout.finishNotesTitle')}
+          onClose={() => setShowFinishModal(false)}
+        >
+          <div className="finish-modal-body">
+            <NoteField
+              value={finishNote}
+              onChange={setFinishNote}
+              placeholder={tr('workout.notesPlaceholder')}
+              label={tr('workout.notes')}
+            />
+            <div className="confirm-actions" style={{ marginTop: '1rem' }}>
+              <button
+                type="button"
+                className="secondary"
+                onClick={() => setShowFinishModal(false)}
+              >
+                {tr('common.cancel')}
+              </button>
+              <button
+                type="button"
+                className="positive"
+                onClick={() => {
+                  onUpdateWorkoutNote(finishNote)
+                  setShowFinishModal(false)
+                  onFinish()
+                }}
+              >
+                {tr('workout.finish')}
+              </button>
+            </div>
+          </div>
+        </ConfirmDialog>
+      )}
+
       {workout.exercises.length === 0 ? (
         <p className="muted empty">{tr('workout.noExercises')}</p>
       ) : (
@@ -189,6 +181,31 @@ export function WorkoutScreen({
       )}
 
       <AddExerciseForm onAdd={onAddExercise} recent={recent} />
+
+      <div className="workout-bottom-actions">
+        <div className="workout-actions-row">
+          <button
+            type="button"
+            ref={backButtonRef}
+            className="icon-btn"
+            onClick={() => setConfirmingExit(true)}
+            aria-label={tr('workout.backHome')}
+          >
+            <Icon name="arrow-left" />
+          </button>
+          <button
+            type="button"
+            className="positive finish"
+            onClick={() => setShowFinishModal(true)}
+            disabled={!canFinish}
+          >
+            {tr('workout.finish')}
+          </button>
+        </div>
+        {!canFinish && (
+          <p className="error hint">{tr('workout.finishHint')}</p>
+        )}
+      </div>
 
       <FloatingPlateCalculatorButton />
     </main>

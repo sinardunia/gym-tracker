@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { Agentation } from 'agentation'
 import { I18nProvider, useI18n, LANG_KEY, type Lang } from './i18n'
 import { HomeScreen } from './screens/HomeScreen'
 import { WorkoutScreen } from './screens/WorkoutScreen'
@@ -46,6 +47,7 @@ function App() {
   return (
     <I18nProvider lang={lang}>
       <AppContent lang={lang} onToggleLang={() => setLang((cur) => (cur === 'id' ? 'en' : 'id'))} />
+      {process.env.NODE_ENV === 'development' && <Agentation />}
     </I18nProvider>
   )
 }
