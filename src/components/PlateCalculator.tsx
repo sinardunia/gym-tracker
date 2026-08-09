@@ -396,6 +396,14 @@ export function CalculatorModal({ onClose }: { onClose: () => void }) {
             =
           </button>
         </div>
+
+        <button
+          type="button"
+          className="w-full py-2.5 px-4 text-sm font-semibold rounded-xl border border-[var(--border)] bg-[var(--row-bg)] text-[var(--text-h)] hover:bg-[var(--card-bg)] active:scale-[0.99] transition-all cursor-pointer mt-1"
+          onClick={onClose}
+        >
+          {tr('feedback.close')}
+        </button>
       </div>
     </ConfirmDialog>
   )
