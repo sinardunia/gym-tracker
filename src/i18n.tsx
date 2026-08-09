@@ -262,16 +262,8 @@ const ID: Record<string, string> = {
   'unit.kg': 'kg',
   'unit.plates': 'plat',
 
-  'calc.title': 'Kalkulator Plat Barbell',
-  'calc.desc': 'Hitung plat beban yang dipasang di setiap sisi stik.',
-  'calc.barWeight': 'Berat Stik / Barbell',
-  'calc.noBar': 'Tanpa stik (0 kg)',
-  'calc.totalWeight': 'Target Total Berat (kg)',
-  'calc.perSide': 'Beban per Sisi',
-  'calc.barOnly': 'Cukup pakai stik tanpa plat.',
-  'calc.noPlatesNeeded': 'Tidak ada plat yang cocok.',
-  'calc.remainder': 'Sisa {amount} kg tidak dapat dibagi plat standar.',
-  'calc.btn': 'Kalkulator Plat',
+  'calc.title': 'Kalkulator',
+  'calc.btn': 'Kalkulator',
 }
 
 const EN: Record<string, string> = {
@@ -528,16 +520,8 @@ const EN: Record<string, string> = {
   'unit.kg': 'kg',
   'unit.plates': 'plates',
 
-  'calc.title': 'Barbell Plate Calculator',
-  'calc.desc': 'Calculate plate load for each side of the barbell.',
-  'calc.barWeight': 'Barbell Weight',
-  'calc.noBar': 'No bar (0 kg)',
-  'calc.totalWeight': 'Target Total Weight (kg)',
-  'calc.perSide': 'Weight per Side',
-  'calc.barOnly': 'Use bar only (no plates needed).',
-  'calc.noPlatesNeeded': 'No matching plates.',
-  'calc.remainder': '{amount} kg remainder cannot be split with standard plates.',
-  'calc.btn': 'Plate Calc',
+  'calc.title': 'Calculator',
+  'calc.btn': 'Calculator',
 }
 
 const DICTS: Record<Lang, Record<string, string>> = { id: ID, en: EN }

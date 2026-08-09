@@ -1248,60 +1248,91 @@ button.danger {
   }
 }
 
-.plate-calc-body {
+.calc-container {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
 }
 
-.bar-presets {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.calc-result {
+.calc-screen {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 12px;
+  align-items: flex-end;
+  justify-content: flex-end;
+  padding: 12px 16px;
   background: var(--row-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  min-height: 72px;
+}
+
+.calc-formula {
+  font-size: 13px;
+  color: var(--text);
+  min-height: 18px;
+}
+
+.calc-display {
+  font-size: 32px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-h);
+  overflow-x: auto;
+  max-width: 100%;
+  white-space: nowrap;
+}
+
+.calc-keypad {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.calc-btn {
+  font-size: 18px;
+  font-weight: 600;
+  height: 48px;
+  padding: 0;
   border-radius: 10px;
   border: 1px solid var(--border);
-}
-
-.result-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 15px;
-
-  strong {
-    font-size: 18px;
-    color: var(--accent);
-  }
-}
-
-.plate-badge-list {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.plate-badge {
-  font-size: 14px;
-  padding: 6px 10px;
   background: var(--card-bg);
-  border: 1px solid var(--border);
-  border-radius: 8px;
   color: var(--text-h);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
 
-  strong {
-    color: var(--accent);
+  &:hover {
+    background: var(--row-bg);
   }
-}
 
-.calc-empty {
-  margin: 0;
-  font-size: 14px;
+  &:active {
+    transform: scale(0.97);
+  }
+
+  &.function {
+    background: var(--row-bg);
+    color: var(--text);
+  }
+
+  &.operator {
+    background: var(--accent-bg);
+    border-color: var(--accent);
+    color: var(--accent);
+
+    &.active {
+      background: var(--accent);
+      color: #fff;
+    }
+  }
+
+  &.equals {
+    background: var(--positive);
+    border-color: var(--positive);
+    color: #fff;
+  }
+
+  &.zero {
+    grid-column: span 2;
+  }
 }

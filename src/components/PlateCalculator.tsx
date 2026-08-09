@@ -1,118 +1,224 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useI18n } from '../i18n'
 import { Icon } from './Icon'
 import { ConfirmDialog } from './ConfirmDialog'
 
-const STANDARD_PLATES = [25, 20, 15, 10, 5, 2.5, 1.25]
-const BAR_PRESETS = [20, 15, 10, 0]
+type Operator = '+' | '-' | '×' | '÷'
 
-function calculatePlates(totalWeight: number, barWeight: number) {
-  const sideWeight = (totalWeight - barWeight) / 2
-  if (sideWeight <= 0 || !Number.isFinite(sideWeight)) {
-    return { sideWeight: Math.max(0, sideWeight), plates: [], remainder: 0 }
-  }
+export function CalculatorModal({ onClose }: { onClose: () => void }) {
+  const { tr } = useI18n()
+  const [display, setDisplay] = useState('0')
+  const [prevValue, setPrevValue] = useState<number | null>(null)
+  const [operator, setOperator] = useState<Operator | null>(null)
+  const [waitingForOperand, setWaitingForOperand] = useState(false)
+  const [formula, setFormula] = useState('')
 
-  let remaining = sideWeight
-  const plates: { weight: number; count: number }[] = []
-
-  for (const plate of STANDARD_PLATES) {
-    const count = Math.floor(remaining / plate)
-    if (count > 0) {
-      plates.push({ weight: plate, count })
-      remaining = Math.round((remaining - count * plate) * 100) / 100
+  function inputDigit(digit: string) {
+    if (waitingForOperand) {
+      setDisplay(digit)
+      setWaitingForOperand(false)
+    } else {
+      setDisplay(display === '0' ? digit : display + digit)
     }
   }
 
-  return {
-    sideWeight,
-    plates,
-    remainder: remaining,
+  function inputDecimal() {
+    if (waitingForOperand) {
+      setDisplay('0.')
+      setWaitingForOperand(false)
+      return
+    }
+    if (!display.includes('.')) {
+      setDisplay(display + '.')
+    }
   }
-}
 
-export function PlateCalculator({
-  onClose,
-}: {
-  onClose: () => void
-}) {
-  const { tr } = useI18n()
-  const [totalWeight, setTotalWeight] = useState('60')
-  const [barWeight, setBarWeight] = useState(20)
+  function clearAll() {
+    setDisplay('0')
+    setPrevValue(null)
+    setOperator(null)
+    setWaitingForOperand(false)
+    setFormula('')
+  }
 
-  const totalNum = Number(totalWeight)
-  const isValid = Number.isFinite(totalNum) && totalNum >= barWeight
-  const result = isValid ? calculatePlates(totalNum, barWeight) : null
+  function toggleSign() {
+    const value = parseFloat(display)
+    if (value !== 0) {
+      setDisplay(String(-value))
+    }
+  }
+
+  function inputPercent() {
+    const value = parseFloat(display)
+    setDisplay(String(value / 100))
+  }
+
+  function performOperation(nextOperator: Operator) {
+    const inputValue = parseFloat(display)
+
+    if (prevValue === null) {
+      setPrevValue(inputValue)
+      setFormula(`${inputValue} ${nextOperator}`)
+    } else if (operator && !waitingForOperand) {
+      const result = compute(prevValue, inputValue, operator)
+      setPrevValue(result)
+      setDisplay(String(result))
+      setFormula(`${result} ${nextOperator}`)
+    } else {
+      setFormula(`${prevValue} ${nextOperator}`)
+    }
+
+    setWaitingForOperand(true)
+    setOperator(nextOperator)
+  }
+
+  function handleEqual() {
+    const inputValue = parseFloat(display)
+    if (prevValue !== null && operator) {
+      const result = compute(prevValue, inputValue, operator)
+      setFormula(`${prevValue} ${operator} ${inputValue} =`)
+      setDisplay(String(result))
+      setPrevValue(null)
+      setOperator(null)
+      setWaitingForOperand(true)
+    }
+  }
+
+  function compute(a: number, b: number, op: Operator): number {
+    let res = 0
+    switch (op) {
+      case '+':
+        res = a + b
+        break
+      case '-':
+        res = a - b
+        break
+      case '×':
+        res = a * b
+        break
+      case '÷':
+        res = b !== 0 ? a / b : 0
+        break
+    }
+    return Math.round(res * 1e8) / 1e8
+  }
+
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key >= '0' && e.key <= '9') inputDigit(e.key)
+      else if (e.key === '.') inputDecimal()
+      else if (e.key === '+') performOperation('+')
+      else if (e.key === '-') performOperation('-')
+      else if (e.key === '*') performOperation('×')
+      else if (e.key === '/') {
+        e.preventDefault()
+        performOperation('÷')
+      } else if (e.key === 'Enter' || e.key === '=') {
+        e.preventDefault()
+        handleEqual()
+      } else if (e.key === 'Escape') onClose()
+      else if (e.key === 'Backspace') {
+        if (display.length > 1 && !waitingForOperand) {
+          setDisplay((d) => (d.length > 1 ? d.slice(0, -1) : '0'))
+        } else {
+          setDisplay('0')
+        }
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  })
 
   return (
-    <ConfirmDialog
-      title={tr('calc.title')}
-      body={tr('calc.desc')}
-      onClose={onClose}
-    >
-      <div className="plate-calc-body">
-        <div className="field">
-          <label>{tr('calc.barWeight')}</label>
-          <div className="bar-presets">
-            {BAR_PRESETS.map((weight) => (
-              <button
-                key={weight}
-                type="button"
-                className={`timer-chip${barWeight === weight ? ' active' : ''}`}
-                onClick={() => setBarWeight(weight)}
-              >
-                {weight === 0 ? tr('calc.noBar') : `${weight} kg`}
-              </button>
-            ))}
+    <ConfirmDialog title={tr('calc.title')} onClose={onClose}>
+      <div className="calc-container">
+        <div className="calc-screen">
+          <div className="calc-formula">{formula}</div>
+          <div className="calc-display" role="textbox" aria-label="display">
+            {display}
           </div>
         </div>
 
-        <div className="field">
-          <label htmlFor="total-weight-input">{tr('calc.totalWeight')}</label>
-          <input
-            id="total-weight-input"
-            type="number"
-            min={barWeight}
-            step="any"
-            inputMode="decimal"
-            value={totalWeight}
-            onChange={(e) => setTotalWeight(e.target.value)}
-            placeholder="60"
-            autoFocus
-          />
+        <div className="calc-keypad">
+          <button type="button" className="calc-btn function" onClick={clearAll}>
+            {display !== '0' || prevValue !== null ? 'C' : 'AC'}
+          </button>
+          <button type="button" className="calc-btn function" onClick={toggleSign}>
+            ±
+          </button>
+          <button type="button" className="calc-btn function" onClick={inputPercent}>
+            %
+          </button>
+          <button
+            type="button"
+            className={`calc-btn operator${operator === '÷' ? ' active' : ''}`}
+            onClick={() => performOperation('÷')}
+          >
+            ÷
+          </button>
+
+          <button type="button" className="calc-btn number" onClick={() => inputDigit('7')}>
+            7
+          </button>
+          <button type="button" className="calc-btn number" onClick={() => inputDigit('8')}>
+            8
+          </button>
+          <button type="button" className="calc-btn number" onClick={() => inputDigit('9')}>
+            9
+          </button>
+          <button
+            type="button"
+            className={`calc-btn operator${operator === '×' ? ' active' : ''}`}
+            onClick={() => performOperation('×')}
+          >
+            ×
+          </button>
+
+          <button type="button" className="calc-btn number" onClick={() => inputDigit('4')}>
+            4
+          </button>
+          <button type="button" className="calc-btn number" onClick={() => inputDigit('5')}>
+            5
+          </button>
+          <button type="button" className="calc-btn number" onClick={() => inputDigit('6')}>
+            6
+          </button>
+          <button
+            type="button"
+            className={`calc-btn operator${operator === '-' ? ' active' : ''}`}
+            onClick={() => performOperation('-')}
+          >
+            -
+          </button>
+
+          <button type="button" className="calc-btn number" onClick={() => inputDigit('1')}>
+            1
+          </button>
+          <button type="button" className="calc-btn number" onClick={() => inputDigit('2')}>
+            2
+          </button>
+          <button type="button" className="calc-btn number" onClick={() => inputDigit('3')}>
+            3
+          </button>
+          <button
+            type="button"
+            className={`calc-btn operator${operator === '+' ? ' active' : ''}`}
+            onClick={() => performOperation('+')}
+          >
+            +
+          </button>
+
+          <button type="button" className="calc-btn number zero" onClick={() => inputDigit('0')}>
+            0
+          </button>
+          <button type="button" className="calc-btn number" onClick={inputDecimal}>
+            .
+          </button>
+          <button type="button" className="calc-btn equals" onClick={handleEqual}>
+            =
+          </button>
         </div>
-
-        {result && (
-          <div className="calc-result">
-            <div className="result-header">
-              <span className="muted">{tr('calc.perSide')}</span>
-              <strong>{result.sideWeight} kg</strong>
-            </div>
-
-            {result.plates.length === 0 ? (
-              <p className="muted calc-empty">
-                {totalNum <= barWeight ? tr('calc.barOnly') : tr('calc.noPlatesNeeded')}
-              </p>
-            ) : (
-              <div className="plate-badge-list">
-                {result.plates.map(({ weight, count }) => (
-                  <span key={weight} className="plate-badge">
-                    <strong>{count}×</strong> {weight} kg
-                  </span>
-                ))}
-              </div>
-            )}
-
-            {result.remainder > 0 && (
-              <p className="error hint">
-                {tr('calc.remainder', { amount: result.remainder })}
-              </p>
-            )}
-          </div>
-        )}
-
-        <button type="button" className="secondary" onClick={onClose}>
-          {tr('feedback.close')}
-        </button>
       </div>
     </ConfirmDialog>
   )
@@ -135,7 +241,7 @@ export function FloatingPlateCalculatorButton() {
         <span>{tr('calc.btn')}</span>
       </button>
 
-      {open && <PlateCalculator onClose={() => setOpen(false)} />}
+      {open && <CalculatorModal onClose={() => setOpen(false)} />}
     </>
   )
 }
