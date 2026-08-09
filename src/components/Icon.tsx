@@ -9,6 +9,7 @@ type IconName =
   | 'arrow-left'
   | 'plus'
   | 'clock'
+  | 'calculator'
 
 const ICON_PATHS: Record<IconName, string[]> = {
   trash: [
@@ -34,6 +35,16 @@ const ICON_PATHS: Record<IconName, string[]> = {
   clock: [
     'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z',
     'M12 6v6l4 2',
+  ],
+  calculator: [
+    'M4 2h16a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z',
+    'M8 6h8v4H8z',
+    'M8 14h.01',
+    'M12 14h.01',
+    'M16 14h.01',
+    'M8 18h.01',
+    'M12 18h.01',
+    'M16 18h.01',
   ],
 }
 

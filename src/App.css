@@ -1225,11 +1225,14 @@ button.danger {
   gap: 10px;
 }
 
-.floating-add-ex-btn {
+.floating-calc-btn {
   position: fixed;
   bottom: calc(20px + env(safe-area-inset-bottom));
   right: 20px;
   z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   background: var(--accent);
   color: #fff;
   font-size: 14px;
@@ -1239,4 +1242,66 @@ button.danger {
   border: none;
   box-shadow: 0 4px 14px rgba(124, 58, 237, 0.4);
   cursor: pointer;
+
+  &:hover {
+    opacity: 0.92;
+  }
+}
+
+.plate-calc-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.bar-presets {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.calc-result {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  background: var(--row-bg);
+  border-radius: 10px;
+  border: 1px solid var(--border);
+}
+
+.result-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 15px;
+
+  strong {
+    font-size: 18px;
+    color: var(--accent);
+  }
+}
+
+.plate-badge-list {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.plate-badge {
+  font-size: 14px;
+  padding: 6px 10px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-h);
+
+  strong {
+    color: var(--accent);
+  }
+}
+
+.calc-empty {
+  margin: 0;
+  font-size: 14px;
 }

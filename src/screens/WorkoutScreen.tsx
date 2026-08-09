@@ -6,6 +6,7 @@ import { RestTimer } from '../components/RestTimer'
 import { ExerciseCard } from '../components/ExerciseCard'
 import { AddExerciseForm } from '../components/AddExerciseForm'
 import { ConfirmDialog } from '../components/ConfirmDialog'
+import { FloatingPlateCalculatorButton } from '../components/PlateCalculator'
 import { recentExerciseNames } from '../lib/selectors'
 import { formatTime } from '../lib/format'
 import type { ExerciseUnit, SetType, Workout } from '../lib/types'
@@ -63,17 +64,10 @@ export function WorkoutScreen({
   const [confirmingExit, setConfirmingExit] = useState(false)
   const [noteExpanded, setNoteExpanded] = useState(false)
   const backButtonRef = useRef<HTMLButtonElement | null>(null)
-  const addFormRef = useRef<HTMLDivElement | null>(null)
   const hasSet = workout.exercises.some((e) => e.sets.length > 0)
   const canFinish = workout.exercises.length > 0 && hasSet
   const noteOpen = noteExpanded || (workout.note ?? '').trim() !== ''
   const recent = recentExerciseNames(sessions)
-
-  function scrollToAddExercise() {
-    addFormRef.current?.scrollIntoView({ behavior: 'smooth' })
-    const input = addFormRef.current?.querySelector('input')
-    input?.focus()
-  }
 
   return (
     <main className="screen">
@@ -194,20 +188,9 @@ export function WorkoutScreen({
         ))
       )}
 
-      <div ref={addFormRef}>
-        <AddExerciseForm onAdd={onAddExercise} recent={recent} />
-      </div>
+      <AddExerciseForm onAdd={onAddExercise} recent={recent} />
 
-      {workout.exercises.length > 0 && (
-        <button
-          type="button"
-          className="floating-add-ex-btn"
-          onClick={scrollToAddExercise}
-          aria-label={tr('addEx.add')}
-        >
-          + Exercise
-        </button>
-      )}
+      <FloatingPlateCalculatorButton />
     </main>
   )
 }
