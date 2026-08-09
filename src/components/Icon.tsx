@@ -1,6 +1,7 @@
 type IconName =
   | 'trash'
   | 'pencil'
+  | 'note'
   | 'repeat'
   | 'chevron-down'
   | 'chevron-up'
@@ -20,6 +21,13 @@ const ICON_PATHS: Record<IconName, string[]> = {
     'M14 11v6',
   ],
   pencil: ['M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z'],
+  note: [
+    'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z',
+    'M14 2v6h6',
+    'M16 13H8',
+    'M16 17H8',
+    'M10 9H8',
+  ],
   repeat: [
     'm17 1 4 4-4 4',
     'M3 11V9a4 4 0 0 1 4-4h14',

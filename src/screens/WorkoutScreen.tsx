@@ -85,7 +85,7 @@ export function WorkoutScreen({
           aria-label={tr('workout.notes')}
           title={tr('workout.notes')}
         >
-          <Icon name="pencil" size={16} />
+          <Icon name="note" size={16} />
         </button>
       </header>
 

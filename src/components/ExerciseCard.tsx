@@ -280,7 +280,7 @@ export function ExerciseCard({
               aria-label={tr('ex.note')}
               title={tr('ex.note')}
             >
-              <Icon name="pencil" size={16} />
+              <Icon name="note" size={16} />
             </button>
             <button
               type="button"

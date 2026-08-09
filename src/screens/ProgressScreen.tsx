@@ -41,19 +41,16 @@ export function ProgressScreen({
         <h1>{tr('progress.title')}</h1>
         <p className="muted">{tr('progress.desc')}</p>
       </header>
-      <button type="button" className="btn-sm secondary" onClick={onBack}>
-        {tr('program.back')}
+      <button
+        type="button"
+        className="btn-sm secondary"
+        onClick={selected ? () => onSelect(null) : onBack}
+      >
+        {selected ? tr('progress.backToList') : tr('program.back')}
       </button>
 
       {item ? (
         <>
-          <button
-            type="button"
-            className="btn-sm secondary"
-            onClick={() => onSelect(null)}
-          >
-            {tr('progress.backToList')}
-          </button>
           <section className="card">
             <h2>{item.name}</h2>
             {item.best && (

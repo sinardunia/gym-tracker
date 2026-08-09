@@ -70,14 +70,15 @@ export function RoutineEditorScreen({
 
   return (
     <main className="screen">
-      <header className="screen-header">
-        <h1>{tr('routine.title')}</h1>
-        <p className="muted">{tr('routine.desc')}</p>
+      <header className="screen-header flex items-start justify-between gap-3">
+        <div>
+          <h1>{tr('routine.title')}</h1>
+          <p className="muted">{tr('routine.desc')}</p>
+        </div>
+        <button type="button" className="btn-sm secondary flex-shrink-0" onClick={onBack}>
+          {tr('routine.back')}
+        </button>
       </header>
-
-      <button type="button" className="btn-sm secondary" onClick={onBack}>
-        {tr('routine.back')}
-      </button>
 
       <button type="button" className="primary" onClick={onAddRoutine}>
         {tr('routine.addRoutine')}

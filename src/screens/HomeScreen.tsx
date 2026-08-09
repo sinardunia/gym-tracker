@@ -50,6 +50,21 @@ export function HomeScreen({
 
   return (
     <main className="screen">
+      <header className="screen-header header-row">
+        <div>
+          <h1>Gym Tracker</h1>
+          <p className="muted">{tr('home.tagline')}</p>
+        </div>
+        <button
+          type="button"
+          className="btn-sm secondary lang-toggle"
+          onClick={onToggleLang}
+          aria-label={lang === 'id' ? tr('lang.switchToEn') : tr('lang.switchToId')}
+        >
+          {lang === 'id' ? 'EN' : 'ID'}
+        </button>
+      </header>
+
       {activeWorkout && (
         <div className="active-workout-banner">
           <div className="active-workout-info">
@@ -66,21 +81,6 @@ export function HomeScreen({
           </button>
         </div>
       )}
-
-      <header className="screen-header header-row">
-        <div>
-          <h1>Gym Tracker</h1>
-          <p className="muted">{tr('home.tagline')}</p>
-        </div>
-        <button
-          type="button"
-          className="btn-sm secondary lang-toggle"
-          onClick={onToggleLang}
-          aria-label={lang === 'id' ? tr('lang.switchToEn') : tr('lang.switchToId')}
-        >
-          {lang === 'id' ? 'EN' : 'ID'}
-        </button>
-      </header>
 
       <section className="card today-card">
         <h2>

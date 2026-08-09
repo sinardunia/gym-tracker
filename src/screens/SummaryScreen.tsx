@@ -39,27 +39,32 @@ export function SummaryScreen({
         </section>
       ))}
 
-      <p className="summary-count">
+      <p className="summary-count font-semibold">
         {p(workout.exercises.length, 'count.exercises')} ·{' '}
         {p(countSets(workout), 'count.sets')}
       </p>
 
-      <button type="button" className="primary" onClick={onStartAnother}>
-        {tr('summary.startAnother')}
-      </button>
-      <button type="button" className="secondary" onClick={onBack}>
-        {tr('summary.back')}
-      </button>
-      <button type="button" className="secondary" onClick={() => onEdit(workout)}>
-        {tr('summary.edit')}
-      </button>
-      <button
-        type="button"
-        className="danger"
-        onClick={() => setConfirmingDelete(true)}
-      >
-        {tr('summary.delete')}
-      </button>
+      <div className="flex flex-col gap-2">
+        <button type="button" className="primary" onClick={onStartAnother}>
+          {tr('summary.startAnother')}
+        </button>
+        <button type="button" className="secondary" onClick={onBack}>
+          {tr('summary.back')}
+        </button>
+
+        <div className="flex gap-2 mt-4 pt-4 border-t border-[var(--border)]">
+          <button type="button" className="btn-sm secondary flex-1" onClick={() => onEdit(workout)}>
+            {tr('summary.edit')}
+          </button>
+          <button
+            type="button"
+            className="btn-sm danger flex-1"
+            onClick={() => setConfirmingDelete(true)}
+          >
+            {tr('summary.delete')}
+          </button>
+        </div>
+      </div>
 
       {confirmingDelete && (
         <ConfirmDialog
