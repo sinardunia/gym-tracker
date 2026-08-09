@@ -262,7 +262,7 @@ export function HomeScreen({
           className="settings-toggle"
           onClick={() => setSettingsOpen((open) => !open)}
         >
-          <span>Pengaturan & Cadangan Data</span>
+          <span>{tr('home.settings')}</span>
           <span className="muted">{settingsOpen ? '▲' : '▼'}</span>
         </button>
 

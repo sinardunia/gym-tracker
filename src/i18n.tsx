@@ -27,6 +27,7 @@ const ID: Record<string, string> = {
   'home.progress': 'Progress',
   'home.showMore': 'Tampilkan lebih banyak',
   'home.noDaysInRoutine': 'Belum ada hari di routine ini.',
+  'home.settings': 'Pengaturan & Cadangan Data',
   'lang.switchToEn': 'Switch to English',
   'lang.switchToId': 'Ganti ke Bahasa Indonesia',
 
@@ -282,6 +283,7 @@ const EN: Record<string, string> = {
   'home.progress': 'Progress',
   'home.showMore': 'Show more',
   'home.noDaysInRoutine': 'No days in this routine yet.',
+  'home.settings': 'Settings & Data Backup',
   'lang.switchToEn': 'Switch to English',
   'lang.switchToId': 'Ganti ke Bahasa Indonesia',
 
@@ -373,7 +375,7 @@ const EN: Record<string, string> = {
   'addEx.recent': 'Recently used',
   'addEx.add': 'Add exercise',
 
-  'backup.title': 'Backup',
+  'backup.title': 'Data Backup (JSON)',
   'backup.desc': 'Export or restore all local Gym Tracker data.',
   'backup.export': 'Export JSON',
   'backup.import': 'Import JSON',
