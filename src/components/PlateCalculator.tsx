@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useI18n } from '../i18n'
 import { Icon } from './Icon'
 import { ConfirmDialog } from './ConfirmDialog'
@@ -8,125 +8,154 @@ type Operator = '+' | '-' | '×' | '÷'
 export function CalculatorModal({ onClose }: { onClose: () => void }) {
   const { tr } = useI18n()
   const [display, setDisplay] = useState('0')
-  const [prevValue, setPrevValue] = useState<number | null>(null)
-  const [operator, setOperator] = useState<Operator | null>(null)
-  const [waitingForOperand, setWaitingForOperand] = useState(false)
-  const [lastActionWasEqual, setLastActionWasEqual] = useState(false)
-  const [lastOperand, setLastOperand] = useState<number | null>(null)
+  const [accValue, setAccValue] = useState<number | null>(null)
+  const [pendingOperator, setPendingOperator] = useState<Operator | null>(null)
+  const [waitingForNextNumber, setWaitingForNextNumber] = useState(false)
+  const [justEvaluated, setJustEvaluated] = useState(false)
   const [lastOperator, setLastOperator] = useState<Operator | null>(null)
+  const [lastOperand, setLastOperand] = useState<number | null>(null)
   const [formula, setFormula] = useState('')
 
-  function inputDigit(digit: string) {
-    if (lastActionWasEqual) {
+  // Refs for event listener to avoid stale closure issues
+  const stateRef = useRef({
+    display,
+    accValue,
+    pendingOperator,
+    waitingForNextNumber,
+    justEvaluated,
+    lastOperator,
+    lastOperand,
+  })
+
+  useEffect(() => {
+    stateRef.current = {
+      display,
+      accValue,
+      pendingOperator,
+      waitingForNextNumber,
+      justEvaluated,
+      lastOperator,
+      lastOperand,
+    }
+  }, [display, accValue, pendingOperator, waitingForNextNumber, justEvaluated, lastOperator, lastOperand])
+
+  function handleDigit(digit: string) {
+    if (justEvaluated) {
       setDisplay(digit)
       setFormula('')
-      setPrevValue(null)
-      setOperator(null)
-      setWaitingForOperand(false)
-      setLastActionWasEqual(false)
+      setAccValue(null)
+      setPendingOperator(null)
+      setLastOperator(null)
+      setLastOperand(null)
+      setWaitingForNextNumber(false)
+      setJustEvaluated(false)
       return
     }
 
-    if (waitingForOperand) {
+    if (waitingForNextNumber) {
       setDisplay(digit)
-      setWaitingForOperand(false)
+      setWaitingForNextNumber(false)
     } else {
-      setDisplay(display === '0' ? digit : display + digit)
+      setDisplay((prev) => (prev === '0' ? digit : prev + digit))
     }
   }
 
-  function inputDecimal() {
-    if (lastActionWasEqual) {
+  function handleDecimal() {
+    if (justEvaluated) {
       setDisplay('0.')
       setFormula('')
-      setPrevValue(null)
-      setOperator(null)
-      setWaitingForOperand(false)
-      setLastActionWasEqual(false)
+      setAccValue(null)
+      setPendingOperator(null)
+      setLastOperator(null)
+      setLastOperand(null)
+      setWaitingForNextNumber(false)
+      setJustEvaluated(false)
       return
     }
 
-    if (waitingForOperand) {
+    if (waitingForNextNumber) {
       setDisplay('0.')
-      setWaitingForOperand(false)
+      setWaitingForNextNumber(false)
       return
     }
 
     if (!display.includes('.')) {
-      setDisplay(display + '.')
+      setDisplay((prev) => prev + '.')
     }
   }
 
   function clearAll() {
     setDisplay('0')
-    setPrevValue(null)
-    setOperator(null)
-    setWaitingForOperand(false)
-    setLastActionWasEqual(false)
-    setLastOperand(null)
+    setAccValue(null)
+    setPendingOperator(null)
+    setWaitingForNextNumber(false)
+    setJustEvaluated(false)
     setLastOperator(null)
+    setLastOperand(null)
     setFormula('')
   }
 
   function toggleSign() {
-    const value = parseFloat(display)
-    if (value !== 0) {
-      setDisplay(String(-value))
+    const val = parseFloat(display)
+    if (val !== 0 && Number.isFinite(val)) {
+      setDisplay(String(-val))
     }
   }
 
-  function inputPercent() {
-    const value = parseFloat(display)
-    setDisplay(String(value / 100))
+  function handlePercent() {
+    const val = parseFloat(display)
+    if (Number.isFinite(val)) {
+      const res = Math.round((val / 100) * 1e8) / 1e8
+      setDisplay(String(res))
+    }
   }
 
-  function performOperation(nextOperator: Operator) {
-    const inputValue = parseFloat(display)
+  function handleOperator(op: Operator) {
+    const val = parseFloat(display)
 
-    if (lastActionWasEqual) {
-      setPrevValue(inputValue)
-      setFormula(`${inputValue} ${nextOperator}`)
-      setOperator(nextOperator)
-      setWaitingForOperand(true)
-      setLastActionWasEqual(false)
+    if (justEvaluated) {
+      setAccValue(val)
+      setFormula(`${val} ${op}`)
+      setPendingOperator(op)
+      setWaitingForNextNumber(true)
+      setJustEvaluated(false)
       return
     }
 
-    if (prevValue === null) {
-      setPrevValue(inputValue)
-      setFormula(`${inputValue} ${nextOperator}`)
-    } else if (operator && !waitingForOperand) {
-      const result = compute(prevValue, inputValue, operator)
-      setPrevValue(result)
-      setDisplay(String(result))
-      setFormula(`${result} ${nextOperator}`)
+    if (pendingOperator !== null && !waitingForNextNumber && accValue !== null) {
+      const res = compute(accValue, val, pendingOperator)
+      setDisplay(String(res))
+      setAccValue(res)
+      setFormula(`${res} ${op}`)
     } else {
-      setFormula(`${prevValue} ${nextOperator}`)
+      setAccValue(val)
+      setFormula(`${val} ${op}`)
     }
 
-    setWaitingForOperand(true)
-    setOperator(nextOperator)
+    setPendingOperator(op)
+    setWaitingForNextNumber(true)
   }
 
   function handleEqual() {
-    const inputValue = parseFloat(display)
+    const val = parseFloat(display)
 
-    if (prevValue !== null && operator) {
-      const secondVal = waitingForOperand ? prevValue : inputValue
-      const result = compute(prevValue, secondVal, operator)
-      setFormula(`${prevValue} ${operator} ${secondVal} =`)
-      setDisplay(String(result))
-      setPrevValue(result)
+    if (pendingOperator !== null && accValue !== null) {
+      const secondVal = waitingForNextNumber ? accValue : val
+      const res = compute(accValue, secondVal, pendingOperator)
+      setFormula(`${accValue} ${pendingOperator} ${secondVal} =`)
+      setDisplay(String(res))
+      setAccValue(res)
+      setLastOperator(pendingOperator)
       setLastOperand(secondVal)
-      setLastOperator(operator)
-      setOperator(null)
-      setWaitingForOperand(true)
-      setLastActionWasEqual(true)
-    } else if (lastActionWasEqual && lastOperator && lastOperand !== null) {
-      const result = compute(inputValue, lastOperand, lastOperator)
-      setFormula(`${inputValue} ${lastOperator} ${lastOperand} =`)
-      setDisplay(String(result))
-      setWaitingForOperand(true)
+      setPendingOperator(null)
+      setWaitingForNextNumber(true)
+      setJustEvaluated(true)
+    } else if (justEvaluated && lastOperator !== null && lastOperand !== null) {
+      const res = compute(val, lastOperand, lastOperator)
+      setFormula(`${val} ${lastOperator} ${lastOperand} =`)
+      setDisplay(String(res))
+      setAccValue(res)
+      setWaitingForNextNumber(true)
     }
   }
 
@@ -149,22 +178,48 @@ export function CalculatorModal({ onClose }: { onClose: () => void }) {
     return Math.round(res * 1e8) / 1e8
   }
 
+  const handlersRef = useRef({
+    handleDigit,
+    handleDecimal,
+    handleOperator,
+    handleEqual,
+    onClose,
+  })
+
+  useEffect(() => {
+    handlersRef.current = {
+      handleDigit,
+      handleDecimal,
+      handleOperator,
+      handleEqual,
+      onClose,
+    }
+  })
+
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
-      if (e.key >= '0' && e.key <= '9') inputDigit(e.key)
-      else if (e.key === '.') inputDecimal()
-      else if (e.key === '+') performOperation('+')
-      else if (e.key === '-') performOperation('-')
-      else if (e.key === '*') performOperation('×')
-      else if (e.key === '/') {
+      const h = handlersRef.current
+      if (e.key >= '0' && e.key <= '9') {
+        h.handleDigit(e.key)
+      } else if (e.key === '.') {
+        h.handleDecimal()
+      } else if (e.key === '+') {
+        h.handleOperator('+')
+      } else if (e.key === '-') {
+        h.handleOperator('-')
+      } else if (e.key === '*') {
+        h.handleOperator('×')
+      } else if (e.key === '/') {
         e.preventDefault()
-        performOperation('÷')
+        h.handleOperator('÷')
       } else if (e.key === 'Enter' || e.key === '=') {
         e.preventDefault()
-        handleEqual()
-      } else if (e.key === 'Escape') onClose()
-      else if (e.key === 'Backspace') {
-        if (display.length > 1 && !waitingForOperand) {
+        h.handleEqual()
+      } else if (e.key === 'Escape') {
+        h.onClose()
+      } else if (e.key === 'Backspace') {
+        const { display: curDisplay, waitingForNextNumber: waiting } = stateRef.current
+        if (curDisplay.length > 1 && !waiting) {
           setDisplay((d) => (d.length > 1 ? d.slice(0, -1) : '0'))
         } else {
           setDisplay('0')
@@ -174,7 +229,7 @@ export function CalculatorModal({ onClose }: { onClose: () => void }) {
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  })
+  }, [])
 
   return (
     <ConfirmDialog title={tr('calc.title')} onClose={onClose}>
@@ -189,153 +244,153 @@ export function CalculatorModal({ onClose }: { onClose: () => void }) {
         <div className="grid grid-cols-4 gap-2">
           <button
             type="button"
-            className="flex items-center justify-center h-12 text-lg font-semibold rounded-xl border border-[var(--border)] bg-[var(--row-bg)] text-[var(--text)] active:scale-95 transition-transform"
+            className="flex items-center justify-center h-12 text-lg font-semibold rounded-xl border border-[var(--border)] bg-[var(--row-bg)] text-[var(--text)] active:scale-95 transition-transform cursor-pointer"
             onClick={clearAll}
           >
-            {display !== '0' || prevValue !== null ? 'C' : 'AC'}
+            {display !== '0' || accValue !== null ? 'C' : 'AC'}
           </button>
           <button
             type="button"
-            className="flex items-center justify-center h-12 text-lg font-semibold rounded-xl border border-[var(--border)] bg-[var(--row-bg)] text-[var(--text)] active:scale-95 transition-transform"
+            className="flex items-center justify-center h-12 text-lg font-semibold rounded-xl border border-[var(--border)] bg-[var(--row-bg)] text-[var(--text)] active:scale-95 transition-transform cursor-pointer"
             onClick={toggleSign}
           >
             ±
           </button>
           <button
             type="button"
-            className="flex items-center justify-center h-12 text-lg font-semibold rounded-xl border border-[var(--border)] bg-[var(--row-bg)] text-[var(--text)] active:scale-95 transition-transform"
-            onClick={inputPercent}
+            className="flex items-center justify-center h-12 text-lg font-semibold rounded-xl border border-[var(--border)] bg-[var(--row-bg)] text-[var(--text)] active:scale-95 transition-transform cursor-pointer"
+            onClick={handlePercent}
           >
             %
           </button>
           <button
             type="button"
-            className={`flex items-center justify-center h-12 text-lg font-semibold rounded-xl border transition-all active:scale-95 ${
-              operator === '÷'
+            className={`flex items-center justify-center h-12 text-lg font-semibold rounded-xl border transition-all active:scale-95 cursor-pointer ${
+              pendingOperator === '÷'
                 ? 'bg-[var(--accent)] text-white border-[var(--accent)]'
                 : 'bg-[var(--accent-bg)] text-[var(--accent)] border-[var(--accent)]'
             }`}
-            onClick={() => performOperation('÷')}
+            onClick={() => handleOperator('÷')}
           >
             ÷
           </button>
 
           <button
             type="button"
-            className="flex items-center justify-center h-12 text-lg font-semibold rounded-xl border border-[var(--border)] bg-[var(--card-bg)] text-[var(--text-h)] hover:bg-[var(--row-bg)] active:scale-95 transition-transform"
-            onClick={() => inputDigit('7')}
+            className="flex items-center justify-center h-12 text-lg font-semibold rounded-xl border border-[var(--border)] bg-[var(--card-bg)] text-[var(--text-h)] hover:bg-[var(--row-bg)] active:scale-95 transition-transform cursor-pointer"
+            onClick={() => handleDigit('7')}
           >
             7
           </button>
           <button
             type="button"
-            className="flex items-center justify-center h-12 text-lg font-semibold rounded-xl border border-[var(--border)] bg-[var(--card-bg)] text-[var(--text-h)] hover:bg-[var(--row-bg)] active:scale-95 transition-transform"
-            onClick={() => inputDigit('8')}
+            className="flex items-center justify-center h-12 text-lg font-semibold rounded-xl border border-[var(--border)] bg-[var(--card-bg)] text-[var(--text-h)] hover:bg-[var(--row-bg)] active:scale-95 transition-transform cursor-pointer"
+            onClick={() => handleDigit('8')}
           >
             8
           </button>
           <button
             type="button"
-            className="flex items-center justify-center h-12 text-lg font-semibold rounded-xl border border-[var(--border)] bg-[var(--card-bg)] text-[var(--text-h)] hover:bg-[var(--row-bg)] active:scale-95 transition-transform"
-            onClick={() => inputDigit('9')}
+            className="flex items-center justify-center h-12 text-lg font-semibold rounded-xl border border-[var(--border)] bg-[var(--card-bg)] text-[var(--text-h)] hover:bg-[var(--row-bg)] active:scale-95 transition-transform cursor-pointer"
+            onClick={() => handleDigit('9')}
           >
             9
           </button>
           <button
             type="button"
-            className={`flex items-center justify-center h-12 text-lg font-semibold rounded-xl border transition-all active:scale-95 ${
-              operator === '×'
+            className={`flex items-center justify-center h-12 text-lg font-semibold rounded-xl border transition-all active:scale-95 cursor-pointer ${
+              pendingOperator === '×'
                 ? 'bg-[var(--accent)] text-white border-[var(--accent)]'
                 : 'bg-[var(--accent-bg)] text-[var(--accent)] border-[var(--accent)]'
             }`}
-            onClick={() => performOperation('×')}
+            onClick={() => handleOperator('×')}
           >
             ×
           </button>
 
           <button
             type="button"
-            className="flex items-center justify-center h-12 text-lg font-semibold rounded-xl border border-[var(--border)] bg-[var(--card-bg)] text-[var(--text-h)] hover:bg-[var(--row-bg)] active:scale-95 transition-transform"
-            onClick={() => inputDigit('4')}
+            className="flex items-center justify-center h-12 text-lg font-semibold rounded-xl border border-[var(--border)] bg-[var(--card-bg)] text-[var(--text-h)] hover:bg-[var(--row-bg)] active:scale-95 transition-transform cursor-pointer"
+            onClick={() => handleDigit('4')}
           >
             4
           </button>
           <button
             type="button"
-            className="flex items-center justify-center h-12 text-lg font-semibold rounded-xl border border-[var(--border)] bg-[var(--card-bg)] text-[var(--text-h)] hover:bg-[var(--row-bg)] active:scale-95 transition-transform"
-            onClick={() => inputDigit('5')}
+            className="flex items-center justify-center h-12 text-lg font-semibold rounded-xl border border-[var(--border)] bg-[var(--card-bg)] text-[var(--text-h)] hover:bg-[var(--row-bg)] active:scale-95 transition-transform cursor-pointer"
+            onClick={() => handleDigit('5')}
           >
             5
           </button>
           <button
             type="button"
-            className="flex items-center justify-center h-12 text-lg font-semibold rounded-xl border border-[var(--border)] bg-[var(--card-bg)] text-[var(--text-h)] hover:bg-[var(--row-bg)] active:scale-95 transition-transform"
-            onClick={() => inputDigit('6')}
+            className="flex items-center justify-center h-12 text-lg font-semibold rounded-xl border border-[var(--border)] bg-[var(--card-bg)] text-[var(--text-h)] hover:bg-[var(--row-bg)] active:scale-95 transition-transform cursor-pointer"
+            onClick={() => handleDigit('6')}
           >
             6
           </button>
           <button
             type="button"
-            className={`flex items-center justify-center h-12 text-lg font-semibold rounded-xl border transition-all active:scale-95 ${
-              operator === '-'
+            className={`flex items-center justify-center h-12 text-lg font-semibold rounded-xl border transition-all active:scale-95 cursor-pointer ${
+              pendingOperator === '-'
                 ? 'bg-[var(--accent)] text-white border-[var(--accent)]'
                 : 'bg-[var(--accent-bg)] text-[var(--accent)] border-[var(--accent)]'
             }`}
-            onClick={() => performOperation('-')}
+            onClick={() => handleOperator('-')}
           >
             -
           </button>
 
           <button
             type="button"
-            className="flex items-center justify-center h-12 text-lg font-semibold rounded-xl border border-[var(--border)] bg-[var(--card-bg)] text-[var(--text-h)] hover:bg-[var(--row-bg)] active:scale-95 transition-transform"
-            onClick={() => inputDigit('1')}
+            className="flex items-center justify-center h-12 text-lg font-semibold rounded-xl border border-[var(--border)] bg-[var(--card-bg)] text-[var(--text-h)] hover:bg-[var(--row-bg)] active:scale-95 transition-transform cursor-pointer"
+            onClick={() => handleDigit('1')}
           >
             1
           </button>
           <button
             type="button"
-            className="flex items-center justify-center h-12 text-lg font-semibold rounded-xl border border-[var(--border)] bg-[var(--card-bg)] text-[var(--text-h)] hover:bg-[var(--row-bg)] active:scale-95 transition-transform"
-            onClick={() => inputDigit('2')}
+            className="flex items-center justify-center h-12 text-lg font-semibold rounded-xl border border-[var(--border)] bg-[var(--card-bg)] text-[var(--text-h)] hover:bg-[var(--row-bg)] active:scale-95 transition-transform cursor-pointer"
+            onClick={() => handleDigit('2')}
           >
             2
           </button>
           <button
             type="button"
-            className="flex items-center justify-center h-12 text-lg font-semibold rounded-xl border border-[var(--border)] bg-[var(--card-bg)] text-[var(--text-h)] hover:bg-[var(--row-bg)] active:scale-95 transition-transform"
-            onClick={() => inputDigit('3')}
+            className="flex items-center justify-center h-12 text-lg font-semibold rounded-xl border border-[var(--border)] bg-[var(--card-bg)] text-[var(--text-h)] hover:bg-[var(--row-bg)] active:scale-95 transition-transform cursor-pointer"
+            onClick={() => handleDigit('3')}
           >
             3
           </button>
           <button
             type="button"
-            className={`flex items-center justify-center h-12 text-lg font-semibold rounded-xl border transition-all active:scale-95 ${
-              operator === '+'
+            className={`flex items-center justify-center h-12 text-lg font-semibold rounded-xl border transition-all active:scale-95 cursor-pointer ${
+              pendingOperator === '+'
                 ? 'bg-[var(--accent)] text-white border-[var(--accent)]'
                 : 'bg-[var(--accent-bg)] text-[var(--accent)] border-[var(--accent)]'
             }`}
-            onClick={() => performOperation('+')}
+            onClick={() => handleOperator('+')}
           >
             +
           </button>
 
           <button
             type="button"
-            className="col-span-2 flex items-center justify-center h-12 text-lg font-semibold rounded-xl border border-[var(--border)] bg-[var(--card-bg)] text-[var(--text-h)] hover:bg-[var(--row-bg)] active:scale-95 transition-transform"
-            onClick={() => inputDigit('0')}
+            className="col-span-2 flex items-center justify-center h-12 text-lg font-semibold rounded-xl border border-[var(--border)] bg-[var(--card-bg)] text-[var(--text-h)] hover:bg-[var(--row-bg)] active:scale-95 transition-transform cursor-pointer"
+            onClick={() => handleDigit('0')}
           >
             0
           </button>
           <button
             type="button"
-            className="flex items-center justify-center h-12 text-lg font-semibold rounded-xl border border-[var(--border)] bg-[var(--card-bg)] text-[var(--text-h)] hover:bg-[var(--row-bg)] active:scale-95 transition-transform"
-            onClick={inputDecimal}
+            className="flex items-center justify-center h-12 text-lg font-semibold rounded-xl border border-[var(--border)] bg-[var(--card-bg)] text-[var(--text-h)] hover:bg-[var(--row-bg)] active:scale-95 transition-transform cursor-pointer"
+            onClick={handleDecimal}
           >
             .
           </button>
           <button
             type="button"
-            className="flex items-center justify-center h-12 text-lg font-semibold rounded-xl bg-[var(--positive)] text-white active:scale-95 transition-transform shadow-sm"
+            className="flex items-center justify-center h-12 text-lg font-semibold rounded-xl bg-[var(--positive)] text-white active:scale-95 transition-transform shadow-sm cursor-pointer"
             onClick={handleEqual}
           >
             =
