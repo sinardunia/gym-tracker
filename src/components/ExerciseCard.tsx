@@ -64,6 +64,7 @@ export function ExerciseCard({
   const [nameError, setNameError] = useState<string | null>(null)
   const [confirmRemove, setConfirmRemove] = useState(false)
   const [highlightedSetId, setHighlightedSetId] = useState<string | null>(null)
+  const [showNoteField, setShowNoteField] = useState(false)
   const lastSetRef = useRef<HTMLLIElement | null>(null)
   const setFormRef = useRef<HTMLFormElement | null>(null)
   const previousSetCount = useRef(exercise.sets.length)
@@ -275,6 +276,15 @@ export function ExerciseCard({
             <button
               type="button"
               className="icon-btn"
+              onClick={() => setShowNoteField((open) => !open)}
+              aria-label={tr('ex.note')}
+              title={tr('ex.note')}
+            >
+              <Icon name="pencil" size={16} />
+            </button>
+            <button
+              type="button"
+              className="icon-btn"
               onClick={startRename}
               aria-label={tr('ex.rename')}
             >
@@ -328,14 +338,13 @@ export function ExerciseCard({
           {targetText && (
             <p className="target-line">{targetText}</p>
           )}
-          <p className="muted collapsed-hint">{tr('ex.collapseHint')}</p>
           {previous && previous.unit === exercise.unit && (
             <button
               type="button"
-              className="positive repeat-btn"
+              className="btn-sm secondary repeat-btn"
               onClick={() => onAddSet(previous.reps, previous.weightKg, 'working')}
             >
-              <Icon name="repeat" size={16} />
+              <Icon name="repeat" size={14} />
               {tr('ex.repeatLastSet')}
             </button>
           )}
@@ -344,13 +353,15 @@ export function ExerciseCard({
 
       {!collapsed && (
         <>
-      <NoteField
-        value={exercise.note ?? ''}
-        onChange={onUpdateNote}
-        placeholder={tr('ex.notePlaceholder')}
-        compact
-        label={tr('ex.note')}
-      />
+      {(showNoteField || exercise.note) && (
+        <NoteField
+          value={exercise.note ?? ''}
+          onChange={onUpdateNote}
+          placeholder={tr('ex.notePlaceholder')}
+          compact
+          label={tr('ex.note')}
+        />
+      )}
 
       {prevSession && prevSession.sets.length > 0 && (
         <section className="previous-block">

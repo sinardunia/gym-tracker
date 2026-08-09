@@ -119,7 +119,7 @@ const ID: Record<string, string> = {
   'addEx.recent': 'Baru dipakai',
   'addEx.add': 'Tambah exercise',
 
-  'backup.title': 'Cadangan',
+  'backup.title': 'Cadangan Data (JSON)',
   'backup.desc': 'Ekspor atau pulihkan semua data Gym Tracker lokal.',
   'backup.export': 'Ekspor JSON',
   'backup.import': 'Impor JSON',

@@ -63,32 +63,50 @@ export function WorkoutScreen({
   const [confirmingExit, setConfirmingExit] = useState(false)
   const [noteExpanded, setNoteExpanded] = useState(false)
   const backButtonRef = useRef<HTMLButtonElement | null>(null)
+  const addFormRef = useRef<HTMLDivElement | null>(null)
   const hasSet = workout.exercises.some((e) => e.sets.length > 0)
   const canFinish = workout.exercises.length > 0 && hasSet
   const noteOpen = noteExpanded || (workout.note ?? '').trim() !== ''
   const recent = recentExerciseNames(sessions)
 
+  function scrollToAddExercise() {
+    addFormRef.current?.scrollIntoView({ behavior: 'smooth' })
+    const input = addFormRef.current?.querySelector('input')
+    input?.focus()
+  }
+
   return (
     <main className="screen">
-      <header className="screen-header">
-        <h1>{tr('workout.title')}</h1>
-        <p className="muted">
-          {tr('workout.startedAt', { time: formatTime(workout.startedAt, lang) })}
-        </p>
+      <header className="screen-header compact-workout-header">
+        <div className="workout-header-title">
+          <h1>{tr('workout.title')}</h1>
+          <span className="muted">
+            {tr('workout.startedAt', { time: formatTime(workout.startedAt, lang) })}
+          </span>
+        </div>
+        <button
+          type="button"
+          className="icon-btn btn-sm"
+          onClick={() => setNoteExpanded((open) => !open)}
+          aria-label={tr('workout.notes')}
+          title={tr('workout.notes')}
+        >
+          <Icon name="pencil" size={16} />
+        </button>
       </header>
 
-      <NoteField
-        value={workout.note ?? ''}
-        onChange={(note) => {
-          onUpdateWorkoutNote(note)
-          setNoteExpanded(true)
-        }}
-        placeholder={tr('workout.notesPlaceholder')}
-        label={tr('workout.notes')}
-        compact={!noteOpen}
-        onFocus={() => setNoteExpanded(true)}
-        onBlur={() => setNoteExpanded(false)}
-      />
+      {noteOpen && (
+        <NoteField
+          value={workout.note ?? ''}
+          onChange={(note) => {
+            onUpdateWorkoutNote(note)
+          }}
+          placeholder={tr('workout.notesPlaceholder')}
+          label={tr('workout.notes')}
+          compact={!noteExpanded}
+          onFocus={() => setNoteExpanded(true)}
+        />
+      )}
 
       <div className="workout-actions">
         <div className="workout-actions-row">
@@ -176,7 +194,20 @@ export function WorkoutScreen({
         ))
       )}
 
-      <AddExerciseForm onAdd={onAddExercise} recent={recent} />
+      <div ref={addFormRef}>
+        <AddExerciseForm onAdd={onAddExercise} recent={recent} />
+      </div>
+
+      {workout.exercises.length > 0 && (
+        <button
+          type="button"
+          className="floating-add-ex-btn"
+          onClick={scrollToAddExercise}
+          aria-label={tr('addEx.add')}
+        >
+          + Exercise
+        </button>
+      )}
     </main>
   )
 }

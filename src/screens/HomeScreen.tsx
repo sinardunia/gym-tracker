@@ -41,6 +41,7 @@ export function HomeScreen({
   const { tr, p } = useI18n()
   const [pickingRoutine, setPickingRoutine] = useState(false)
   const [showAllSessions, setShowAllSessions] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const visibleSessions = showAllSessions ? sessions : sessions.slice(0, 10)
   const today = findTodayWorkout(routines)
   const nextScheduled = today ? null : findNextScheduledWorkout(routines)
@@ -49,6 +50,23 @@ export function HomeScreen({
 
   return (
     <main className="screen">
+      {activeWorkout && (
+        <div className="active-workout-banner">
+          <div className="active-workout-info">
+            <span className="pulse-dot" />
+            <div>
+              <strong>{tr('home.workoutInProgress')}</strong>
+              <span className="muted">
+                {' · '}{tr('home.startedAt', { time: formatTime(activeWorkout.startedAt, lang) })}
+              </span>
+            </div>
+          </div>
+          <button type="button" className="primary btn-sm" onClick={onResumeWorkout}>
+            {tr('home.resumeWorkout')}
+          </button>
+        </div>
+      )}
+
       <header className="screen-header header-row">
         <div>
           <h1>Gym Tracker</h1>
@@ -63,18 +81,6 @@ export function HomeScreen({
           {lang === 'id' ? 'EN' : 'ID'}
         </button>
       </header>
-
-      {activeWorkout && (
-        <section className="card resume-card">
-          <h2>{tr('home.workoutInProgress')}</h2>
-          <p className="muted">
-            {tr('home.startedAt', { time: formatTime(activeWorkout.startedAt, lang) })}
-          </p>
-          <button type="button" className="primary" onClick={onResumeWorkout}>
-            {tr('home.resumeWorkout')}
-          </button>
-        </section>
-      )}
 
       <section className="card today-card">
         <h2>
@@ -98,9 +104,6 @@ export function HomeScreen({
                   <li key={name}>{name}</li>
                 ))}
               </ul>
-            )}
-            {!canStart && (
-              <p className="muted">{tr('home.resumeWorkoutHint')}</p>
             )}
             {canStart && (
               <>
@@ -214,21 +217,31 @@ export function HomeScreen({
         ) : (
           <>
             <ul className="session-list">
-              {visibleSessions.map((session) => (
-                <li key={session.id}>
-                  <button
-                    type="button"
-                    className="session-item"
-                    onClick={() => onViewSession(session)}
-                  >
-                    <span>{formatDate(session.startedAt, lang)}</span>
-                    <span className="muted">
-                      {p(session.exercises.length, 'count.exercises')} ·{' '}
-                      {p(countSets(session), 'count.sets')}
-                    </span>
-                  </button>
-                </li>
-              ))}
+              {visibleSessions.map((session) => {
+                const totalSets = countSets(session)
+                const exNames = session.exercises.map((e) => e.name)
+                const previewText = exNames.length > 0
+                  ? exNames.slice(0, 2).join(', ') + (exNames.length > 2 ? ` +${exNames.length - 2}` : '')
+                  : ''
+
+                return (
+                  <li key={session.id}>
+                    <button
+                      type="button"
+                      className="session-item"
+                      onClick={() => onViewSession(session)}
+                    >
+                      <div className="session-item-main">
+                        <span className="session-date">{formatDate(session.startedAt, lang)}</span>
+                        {previewText && <span className="muted session-preview">{previewText}</span>}
+                      </div>
+                      <span className="muted session-meta">
+                        {p(session.exercises.length, 'count.exercises')} ({totalSets} set)
+                      </span>
+                    </button>
+                  </li>
+                )
+              })}
             </ul>
             {sessions.length > 10 && !showAllSessions && (
               <button
@@ -243,32 +256,47 @@ export function HomeScreen({
         )}
       </section>
 
-      <BackupControls state={backupState} onImport={onImportBackup} />
+      <section className="card settings-card">
+        <button
+          type="button"
+          className="settings-toggle"
+          onClick={() => setSettingsOpen((open) => !open)}
+        >
+          <span>Pengaturan & Cadangan Data</span>
+          <span className="muted">{settingsOpen ? '▲' : '▼'}</span>
+        </button>
 
-      <section className="card about">
-        <h2>{tr('about.title')}</h2>
-        <p className="muted">
-          {tr('about.desc', { version: __APP_VERSION__ })}
-        </p>
-        <div className="backup-actions">
-          <a
-            className="file-button"
-            href={GITHUB_URL}
-            target="_blank"
-            rel="noreferrer"
-          >
-            {tr('about.github')}
-          </a>
-          <a
-            className="file-button"
-            href={SAWERIA_URL}
-            target="_blank"
-            rel="noreferrer"
-          >
-            {tr('about.support')}
-          </a>
-        </div>
-        <FeedbackCard />
+        {settingsOpen && (
+          <div className="settings-content">
+            <BackupControls state={backupState} onImport={onImportBackup} />
+
+            <section className="about-sub">
+              <h3>{tr('about.title')}</h3>
+              <p className="muted">
+                {tr('about.desc', { version: __APP_VERSION__ })}
+              </p>
+              <div className="backup-actions">
+                <a
+                  className="file-button btn-sm secondary"
+                  href={GITHUB_URL}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {tr('about.github')}
+                </a>
+                <a
+                  className="file-button btn-sm secondary"
+                  href={SAWERIA_URL}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {tr('about.support')}
+                </a>
+              </div>
+              <FeedbackCard />
+            </section>
+          </div>
+        )}
       </section>
     </main>
   )

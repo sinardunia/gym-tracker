@@ -1,3 +1,4 @@
+import { get, set } from 'idb-keyval'
 import {
   isPersistedState,
   isRoutine,
@@ -273,7 +274,24 @@ export function loadState(): PersistedState {
 export function saveState(state: PersistedState) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
+    void set(STORAGE_KEY, state)
   } catch {
     // Storage unavailable; keep working in memory.
   }
+}
+
+export async function loadAsyncState(): Promise<PersistedState | null> {
+  try {
+    const idbState = await get<PersistedState>(STORAGE_KEY)
+    if (idbState && isPersistedState(idbState)) {
+      return {
+        activeWorkout: idbState.activeWorkout ? normalizeWorkout(idbState.activeWorkout) : null,
+        sessions: idbState.sessions.map(normalizeWorkout),
+        routines: (idbState.routines ?? []).map(normalizeRoutine),
+      }
+    }
+  } catch {
+    // IDB unavailable
+  }
+  return null
 }
