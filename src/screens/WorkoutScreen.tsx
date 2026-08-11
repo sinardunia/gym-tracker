@@ -64,10 +64,18 @@ export function WorkoutScreen({
   const [confirmingExit, setConfirmingExit] = useState(false)
   const [showFinishModal, setShowFinishModal] = useState(false)
   const [finishNote, setFinishNote] = useState(() => workout.note ?? '')
+  const [activeExerciseId, setActiveExerciseId] = useState<string | null>(
+    () => workout.exercises[0]?.id ?? null,
+  )
   const backButtonRef = useRef<HTMLButtonElement | null>(null)
   const hasSet = workout.exercises.some((e) => e.sets.length > 0)
   const canFinish = workout.exercises.length > 0 && hasSet
   const recent = recentExerciseNames(sessions)
+
+  const effectiveActiveId =
+    workout.exercises.find((e) => e.id === activeExerciseId)?.id ??
+    workout.exercises[0]?.id ??
+    null
 
   return (
     <main className="screen">
@@ -159,6 +167,8 @@ export function WorkoutScreen({
           <ExerciseCard
             key={exercise.id}
             exercise={exercise}
+            isActiveExercise={exercise.id === effectiveActiveId}
+            onSelectActive={() => setActiveExerciseId(exercise.id)}
             onAddSet={(reps, weightKg, type, parentId) =>
               onAddSet(exercise.id, reps, weightKg, type, parentId)
             }
@@ -195,7 +205,7 @@ export function WorkoutScreen({
           </button>
           <button
             type="button"
-            className="positive finish"
+            className="secondary finish"
             onClick={() => setShowFinishModal(true)}
             disabled={!canFinish}
           >

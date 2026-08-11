@@ -127,6 +127,18 @@ export function SetList({
           <button type="button" className="btn-sm primary" onClick={() => saveEdit(set)}>
             {tr('save')}
           </button>
+          {onRemoveSet && (
+            <button
+              type="button"
+              className="btn-sm danger"
+              onClick={() => {
+                onRemoveSet(set.id)
+                cancelEdit()
+              }}
+            >
+              {tr('ex.remove')}
+            </button>
+          )}
           <button type="button" className="btn-sm secondary" onClick={cancelEdit}>
             {tr('cancel')}
           </button>
@@ -176,18 +188,6 @@ export function SetList({
             </span>
           )}
         </button>
-        {onRemoveSet && (
-          <button
-            type="button"
-            className="icon-btn danger set-remove"
-            onClick={() => onRemoveSet(set.id)}
-            aria-label={
-              isDrop ? tr('ex.removeDrop') : tr('ex.removeSet', { n: setNumber })
-            }
-          >
-            <Icon name="trash" size={16} />
-          </button>
-        )}
       </li>
     )
   }

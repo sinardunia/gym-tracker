@@ -24,6 +24,8 @@ import {
 
 export function ExerciseCard({
   exercise,
+  isActiveExercise = true,
+  onSelectActive,
   onAddSet,
   onRemoveSet,
   onUpdateSet,
@@ -39,6 +41,8 @@ export function ExerciseCard({
   onToggleCollapsed,
 }: {
   exercise: Exercise
+  isActiveExercise?: boolean
+  onSelectActive?: () => void
   onAddSet: (reps: number, weightKg: number, type: SetType, parentId?: string) => void
   onRemoveSet: (setId: string) => void
   onUpdateSet: (setId: string, reps: number, weightKg: number, type: SetType) => void
@@ -234,17 +238,27 @@ export function ExerciseCard({
       : null
 
   return (
-    <section className="card exercise">
+    <section
+      className={`card exercise${isActiveExercise ? ' active-exercise' : ' inactive-exercise'}`}
+      onClick={!isActiveExercise && onSelectActive ? onSelectActive : undefined}
+    >
       <div className="exercise-head">
         <button
           type="button"
           className="collapse-toggle"
-          onClick={onToggleCollapsed}
+          onClick={(e) => {
+            e.stopPropagation()
+            onToggleCollapsed()
+          }}
           aria-label={collapsed ? tr('ex.expand') : tr('ex.collapse')}
         >
           <Icon name={collapsed ? 'chevron-down' : 'chevron-up'} size={18} />
         </button>
-        <div className="exercise-title">
+        <div
+          className="exercise-title"
+          onClick={!isActiveExercise && onSelectActive ? onSelectActive : undefined}
+          style={{ cursor: !isActiveExercise ? 'pointer' : 'default' }}
+        >
           <h3>{exercise.name}</h3>
           <p className="exercise-summary">
             {setCount} {p(setCount, 'count.sets')} · {lastSetSummary}
@@ -255,7 +269,10 @@ export function ExerciseCard({
             <button
               type="button"
               className={`icon-btn${showOptionsMenu ? ' active' : ''}`}
-              onClick={() => setShowOptionsMenu((open) => !open)}
+              onClick={(e) => {
+                e.stopPropagation()
+                setShowOptionsMenu((open) => !open)
+              }}
               aria-label={tr('ex.options')}
               title={tr('ex.options')}
             >
@@ -457,89 +474,91 @@ export function ExerciseCard({
         />
       )}
 
-      <div className="current-set-execution-card">
-        <div className="current-set-header">
-          <span className="current-set-title">
-            {tr('ex.currentSet', { n: exercise.sets.length + 1 })}
-          </span>
-        </div>
-        <form ref={setFormRef} onSubmit={handleSubmit} className="set-form">
-          <div className="set-form-meta">
-            <div className="set-type-row" role="group" aria-label={tr('ex.setTypeLabel')}>
-              {SET_TYPES.map((type) => (
-                <button
-                  key={type}
-                  type="button"
-                  className={`set-type-btn${setType === type ? ' active' : ''}`}
-                  onClick={() => {
-                    setSetType(type)
-                    setDropParentId(null)
-                  }}
-                >
-                  {tr(`setType.${type}`)}
-                </button>
-              ))}
-            </div>
+      {isActiveExercise && (
+        <div className="current-set-execution-card">
+          <div className="current-set-header">
+            <span className="current-set-title">
+              {tr('ex.currentSet', { n: exercise.sets.length + 1 })}
+            </span>
           </div>
-          <div className="set-fields-grid">
-            <div className="field">
-              <label htmlFor={`reps-${exercise.id}`}>{tr('ex.reps')}</label>
-              <input
-                id={`reps-${exercise.id}`}
-                type="number"
-                min={1}
-                step={1}
-                inputMode="numeric"
-                value={reps}
-                onChange={(e) => {
-                  setReps(e.target.value)
-                  setError(null)
-                }}
-                placeholder="10"
-              />
+          <form ref={setFormRef} onSubmit={handleSubmit} className="set-form">
+            <div className="set-form-meta">
+              <div className="set-type-row" role="group" aria-label={tr('ex.setTypeLabel')}>
+                {SET_TYPES.map((type) => (
+                  <button
+                    key={type}
+                    type="button"
+                    className={`set-type-btn${setType === type ? ' active' : ''}`}
+                    onClick={() => {
+                      setSetType(type)
+                      setDropParentId(null)
+                    }}
+                  >
+                    {tr(`setType.${type}`)}
+                  </button>
+                ))}
+              </div>
             </div>
-            {exercise.unit !== 'bodyweight' && (
+            <div className="set-fields-grid">
               <div className="field">
-                <label htmlFor={`weight-${exercise.id}`}>
-                  {exercise.unit === 'plate' ? tr('ex.plates') : tr('ex.weightKg')}
-                </label>
+                <label htmlFor={`reps-${exercise.id}`}>{tr('ex.reps')}</label>
                 <input
-                  id={`weight-${exercise.id}`}
+                  id={`reps-${exercise.id}`}
                   type="number"
-                  min={0}
-                  step={exercise.unit === 'plate' ? 1 : 'any'}
-                  inputMode={exercise.unit === 'plate' ? 'numeric' : 'decimal'}
-                  value={weight}
+                  min={1}
+                  step={1}
+                  inputMode="numeric"
+                  value={reps}
                   onChange={(e) => {
-                    setWeight(e.target.value)
+                    setReps(e.target.value)
                     setError(null)
                   }}
-                  placeholder={exercise.unit === 'plate' ? '2' : '60'}
+                  placeholder="10"
                 />
               </div>
+              {exercise.unit !== 'bodyweight' && (
+                <div className="field">
+                  <label htmlFor={`weight-${exercise.id}`}>
+                    {exercise.unit === 'plate' ? tr('ex.plates') : tr('ex.weightKg')}
+                  </label>
+                  <input
+                    id={`weight-${exercise.id}`}
+                    type="number"
+                    min={0}
+                    step={exercise.unit === 'plate' ? 1 : 'any'}
+                    inputMode={exercise.unit === 'plate' ? 'numeric' : 'decimal'}
+                    value={weight}
+                    onChange={(e) => {
+                      setWeight(e.target.value)
+                      setError(null)
+                    }}
+                    placeholder={exercise.unit === 'plate' ? '2' : '60'}
+                  />
+                </div>
+              )}
+            </div>
+            {error && <p className="error">{error}</p>}
+            {drop && dropWeight !== null && (
+              <button
+                type="button"
+                className="btn-sm secondary drop-btn"
+                onClick={() => {
+                  setSetType('dropset')
+                  setReps(String(drop.base.reps))
+                  setWeight(String(dropWeight))
+                  setDropParentId(drop.parentId)
+                }}
+              >
+                {tr('ex.drop')}
+              </button>
             )}
-          </div>
-          {error && <p className="error">{error}</p>}
-          {drop && dropWeight !== null && (
-            <button
-              type="button"
-              className="btn-sm secondary drop-btn"
-              onClick={() => {
-                setSetType('dropset')
-                setReps(String(drop.base.reps))
-                setWeight(String(dropWeight))
-                setDropParentId(drop.parentId)
-              }}
-            >
-              {tr('ex.drop')}
+            <button type="submit" className="positive complete-set-btn">
+              <Icon name="check" size={18} />
+              <span>{tr('ex.completeSet')}</span>
             </button>
-          )}
-          <button type="submit" className="positive complete-set-btn">
-            <Icon name="check" size={18} />
-            <span>{tr('ex.completeSet')}</span>
-          </button>
-        </form>
-      </div>
+          </form>
+        </div>
+      )}
         </>
       )}
     </section>
