@@ -10,6 +10,10 @@ type Vars = Record<string, string | number>
 const ID: Record<string, string> = {
   'home.tagline': 'Catat workout-mu, satu exercise dan set pada satu waktu.',
   'home.today': 'Latihan hari ini',
+  'home.recommendedNext': 'Rekomendasi Lanjutan (Rotasi)',
+  'home.calendarContext': 'Jadwal Hari Ini ({day})',
+  'home.switchToCalendar': 'Ganti ke {day} (Jadwal Hari Ini)',
+  'home.switchToSequence': 'Kembali ke Rekomendasi ({day})',
   'home.todayNoExercises': 'Hari ini belum ada exercise.',
   'home.todayScheduled': 'Tidak ada latihan terjadwal hari ini.',
   'home.nextWorkout': 'Berikutnya — {day}',
@@ -271,6 +275,10 @@ const ID: Record<string, string> = {
 const EN: Record<string, string> = {
   'home.tagline': 'Log your workout, one exercise and set at a time.',
   'home.today': "Today's workout",
+  'home.recommendedNext': 'Next in Rotation (Sequence)',
+  'home.calendarContext': "Today's Schedule ({day})",
+  'home.switchToCalendar': "Switch to {day} (Today's Schedule)",
+  'home.switchToSequence': 'Back to Recommendation ({day})',
   'home.todayNoExercises': 'This day has no exercises yet.',
   'home.todayScheduled': 'No workout scheduled today.',
   'home.nextWorkout': 'Next — {day}',

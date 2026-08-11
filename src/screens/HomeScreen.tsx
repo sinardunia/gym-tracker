@@ -3,7 +3,7 @@ import { useI18n, type Lang } from '../i18n'
 import { BackupControls } from '../components/BackupControls'
 import { FeedbackCard } from '../components/FeedbackCard'
 import { GITHUB_URL, SAWERIA_URL } from '../lib/config'
-import { findNextScheduledWorkout, findTodayWorkout } from '../lib/selectors'
+import { getRecommendedWorkout } from '../lib/selectors'
 import { countSets, formatDate, formatTime } from '../lib/format'
 import type { PersistedState, Routine, Workout } from '../lib/types'
 
@@ -43,9 +43,17 @@ export function HomeScreen({
   const [showAllSessions, setShowAllSessions] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const visibleSessions = showAllSessions ? sessions : sessions.slice(0, 10)
-  const today = findTodayWorkout(routines)
-  const nextScheduled = today ? null : findNextScheduledWorkout(routines)
-  const plan = today ?? nextScheduled
+  const recommendation = getRecommendedWorkout(routines, sessions)
+  const [overrideSelection, setOverrideSelection] = useState<'recommended' | 'calendar' | null>(null)
+
+  const activePlan =
+    overrideSelection === 'calendar'
+      ? recommendation.calendarScheduled
+      : overrideSelection === 'recommended'
+        ? recommendation.recommended
+        : (recommendation.recommended ?? recommendation.calendarScheduled)
+
+  const isShowingCalendar = activePlan && activePlan === recommendation.calendarScheduled
   const canStart = activeWorkout === null
 
   return (
@@ -84,23 +92,62 @@ export function HomeScreen({
 
       <section className="card today-card">
         <h2>
-          {today
-            ? tr('home.today')
-            : nextScheduled
-              ? tr('home.nextWorkout', {
-                  day: tr(`weekday.${nextScheduled.weekday}`),
-                })
-              : tr('home.today')}
+          {recommendation.isSequenceMismatch && !isShowingCalendar
+            ? tr('home.recommendedNext')
+            : tr('home.today')}
         </h2>
-        {plan ? (
+        {activePlan ? (
           <>
-            <h3>{plan.day.name}</h3>
-            <p className="muted exercise-summary">{plan.routine.name}</p>
-            {plan.day.exerciseNames.length === 0 ? (
+            <div className="plan-header-info">
+              <h3>{activePlan.day.name}</h3>
+              <p className="muted exercise-summary">{activePlan.routine.name}</p>
+            </div>
+
+            {recommendation.isSequenceMismatch && (
+              <div className="sequence-mismatch-banner">
+                {isShowingCalendar ? (
+                  <>
+                    <span className="mismatch-tag">
+                      {tr('home.calendarContext', {
+                        day: recommendation.calendarScheduled?.day.name ?? '',
+                      })}
+                    </span>
+                    <button
+                      type="button"
+                      className="btn-link"
+                      onClick={() => setOverrideSelection('recommended')}
+                    >
+                      {tr('home.switchToSequence', {
+                        day: recommendation.recommended?.day.name ?? '',
+                      })}
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <span className="mismatch-tag">
+                      {tr('home.calendarContext', {
+                        day: recommendation.calendarScheduled?.day.name ?? '',
+                      })}
+                    </span>
+                    <button
+                      type="button"
+                      className="btn-link"
+                      onClick={() => setOverrideSelection('calendar')}
+                    >
+                      {tr('home.switchToCalendar', {
+                        day: recommendation.calendarScheduled?.day.name ?? '',
+                      })}
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+
+            {activePlan.day.exerciseNames.length === 0 ? (
               <p className="muted">{tr('home.todayNoExercises')}</p>
             ) : (
               <ul className="today-exercises">
-                {plan.day.exerciseNames.map((name) => (
+                {activePlan.day.exerciseNames.map((name) => (
                   <li key={name}>{name}</li>
                 ))}
               </ul>
@@ -110,7 +157,13 @@ export function HomeScreen({
                 <button
                   type="button"
                   className="primary"
-                  onClick={() => onStartWithExercises(plan.day.exerciseNames)}
+                  onClick={() =>
+                    onStartWithExercises(
+                      activePlan.day.exerciseNames,
+                      activePlan.routine.id,
+                      activePlan.day.id,
+                    )
+                  }
                 >
                   {tr('home.startWorkout')}
                 </button>
