@@ -35,6 +35,11 @@ const ID: Record<string, string> = {
   'lang.switchToEn': 'Switch to English',
   'lang.switchToId': 'Ganti ke Bahasa Indonesia',
 
+  'pwa.installTitle': 'Install Gym Tracker',
+  'pwa.installDesc': 'Akses cepat & 100% offline dari layar utama HP kamu.',
+  'pwa.installBtn': 'Install',
+  'pwa.iosGuide': 'Tekan ikon Bagikan (Share) lalu pilih "Tambah ke Layar Utama".',
+
   'count.days.one': 'hari',
   'count.days.other': 'hari',
   'count.exercises.one': 'exercise',
@@ -299,6 +304,11 @@ const EN: Record<string, string> = {
   'home.settings': 'Settings & Data Backup',
   'lang.switchToEn': 'Switch to English',
   'lang.switchToId': 'Ganti ke Bahasa Indonesia',
+
+  'pwa.installTitle': 'Install Gym Tracker',
+  'pwa.installDesc': 'Fast access & 100% offline right from your home screen.',
+  'pwa.installBtn': 'Install',
+  'pwa.iosGuide': 'Tap the Share button then select "Add to Home Screen".',
 
   'count.days.one': 'day',
   'count.days.other': 'days',

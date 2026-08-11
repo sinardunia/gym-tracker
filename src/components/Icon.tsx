@@ -11,6 +11,7 @@ type IconName =
   | 'plus'
   | 'clock'
   | 'calculator'
+  | 'x'
 
 const ICON_PATHS: Record<IconName, string[]> = {
   trash: [
@@ -54,6 +55,7 @@ const ICON_PATHS: Record<IconName, string[]> = {
     'M12 18h.01',
     'M16 18h.01',
   ],
+  x: ['M18 6L6 18', 'M6 6l12 12'],
 }
 
 export function Icon({
