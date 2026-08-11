@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useI18n, type Lang } from '../i18n'
 import { BackupControls } from '../components/BackupControls'
 import { FeedbackCard } from '../components/FeedbackCard'
+import { InstallPwaBanner } from '../components/InstallPwaBanner'
 import { GITHUB_URL, SAWERIA_URL } from '../lib/config'
 import { getRecommendedWorkout } from '../lib/selectors'
 import { countSets, formatDate, formatTime } from '../lib/format'
@@ -58,6 +59,8 @@ export function HomeScreen({
 
   return (
     <main className="screen">
+      <InstallPwaBanner />
+
       <header className="screen-header header-row">
         <div>
           <h1>Gym Tracker</h1>
