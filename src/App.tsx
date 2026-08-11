@@ -364,12 +364,13 @@ function AppContent({
 
   function toggleExerciseCollapsed(exerciseId: string) {
     setCollapsedExerciseIds((ids) => {
-      const next = new Set(ids)
-      if (next.has(exerciseId)) {
-        next.delete(exerciseId)
-      } else {
-        next.add(exerciseId)
+      const isCollapsed = ids.has(exerciseId)
+      if (isCollapsed) {
+        const allIds = activeWorkout?.exercises.map((e) => e.id) ?? []
+        return new Set(allIds.filter((id) => id !== exerciseId))
       }
+      const next = new Set(ids)
+      next.add(exerciseId)
       return next
     })
   }

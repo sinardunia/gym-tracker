@@ -1,16 +1,12 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { useI18n } from '../i18n'
 import { Icon } from './Icon'
-import { NoteField } from './NoteField'
 import { SetList } from './SetList'
 import {
-  dropContext,
   findLastSessionSet,
   findPersonalBest,
   findPreviousExercise,
-  nearestWorkingParent,
   overloadTarget,
-  suggestDrop,
 } from '../lib/selectors'
 import { formatDate, formatSetWeight } from '../lib/format'
 import {
@@ -32,7 +28,7 @@ export function ExerciseCard({
   onRemove,
   onRename,
   onChangeUnit,
-  onUpdateNote,
+  onUpdateNote: _onUpdateNote,
   onMove,
   canMoveUp,
   canMoveDown,
@@ -68,16 +64,15 @@ export function ExerciseCard({
   const [nameError, setNameError] = useState<string | null>(null)
   const [confirmRemove, setConfirmRemove] = useState(false)
   const [highlightedSetId, setHighlightedSetId] = useState<string | null>(null)
-  const [showNoteField, setShowNoteField] = useState(false)
   const [showOptionsMenu, setShowOptionsMenu] = useState(false)
+  useEffect(() => {
+    if (!isActiveExercise || collapsed) {
+      setShowOptionsMenu(false)
+    }
+  }, [isActiveExercise, collapsed])
   const lastSetRef = useRef<HTMLLIElement | null>(null)
   const setFormRef = useRef<HTMLFormElement | null>(null)
   const previousSetCount = useRef(exercise.sets.length)
-  const rawLastSet = exercise.sets[exercise.sets.length - 1]
-  const lastSet =
-    rawLastSet && rawLastSet.type === 'dropset' && rawLastSet.parentId
-      ? (nearestWorkingParent(exercise.sets) ?? rawLastSet)
-      : rawLastSet
   let lastWorkingSet: WorkoutSet | undefined
   for (const set of exercise.sets) {
     if (set.type === 'working') lastWorkingSet = set
@@ -100,8 +95,6 @@ export function ExerciseCard({
     () => findPersonalBest(sessions, exercise.name, exercise.unit),
     [sessions, exercise.name, exercise.unit],
   )
-  const drop = dropContext(exercise.sets)
-  const dropWeight = drop ? suggestDrop(drop.base, exercise.unit) : null
   const target = useMemo(
     () => overloadTarget(exercise.name, sessions),
     [exercise.name, sessions],
@@ -202,11 +195,8 @@ export function ExerciseCard({
   }
 
   const setCount = exercise.sets.length
-  const lastSetWeight = lastSet
-    ? formatSetWeight(exercise.unit, lastSet.weightKg, tr)
-    : null
-  const lastSetSummary = lastSet
-    ? tr('ex.lastSet', { reps: lastSet.reps, weight: lastSetWeight ? ` · ${lastSetWeight}` : '' })
+  const lastSetSummary = setCount > 0
+    ? tr('ex.lastSet', { count: setCount })
     : tr('ex.noSets')
   const bestText = best
     ? (() => {
@@ -243,6 +233,30 @@ export function ExerciseCard({
       onClick={!isActiveExercise && onSelectActive ? onSelectActive : undefined}
     >
       <div className="exercise-head">
+        {!collapsed && (
+          <button
+            type="button"
+            className={`icon-btn${showOptionsMenu ? ' active' : ''}`}
+            onClick={(e) => {
+              e.stopPropagation()
+              setShowOptionsMenu((open) => !open)
+            }}
+            aria-label={tr('ex.options')}
+            title={tr('ex.options')}
+          >
+            <Icon name="more" size={18} />
+          </button>
+        )}
+        <div
+          className="exercise-title"
+          onClick={!isActiveExercise && onSelectActive ? onSelectActive : undefined}
+          style={{ cursor: !isActiveExercise ? 'pointer' : 'default' }}
+        >
+          <h3>{exercise.name}</h3>
+          <p className="exercise-summary">
+            {setCount} {p(setCount, 'count.sets')} · {lastSetSummary}
+          </p>
+        </div>
         <button
           type="button"
           className="collapse-toggle"
@@ -254,32 +268,6 @@ export function ExerciseCard({
         >
           <Icon name={collapsed ? 'chevron-down' : 'chevron-up'} size={18} />
         </button>
-        <div
-          className="exercise-title"
-          onClick={!isActiveExercise && onSelectActive ? onSelectActive : undefined}
-          style={{ cursor: !isActiveExercise ? 'pointer' : 'default' }}
-        >
-          <h3>{exercise.name}</h3>
-          <p className="exercise-summary">
-            {setCount} {p(setCount, 'count.sets')} · {lastSetSummary}
-          </p>
-        </div>
-        {!collapsed && (
-          <div className="exercise-actions">
-            <button
-              type="button"
-              className={`icon-btn${showOptionsMenu ? ' active' : ''}`}
-              onClick={(e) => {
-                e.stopPropagation()
-                setShowOptionsMenu((open) => !open)
-              }}
-              aria-label={tr('ex.options')}
-              title={tr('ex.options')}
-            >
-              <Icon name="more" size={18} />
-            </button>
-          </div>
-        )}
       </div>
 
       {!collapsed && showOptionsMenu && (
@@ -298,17 +286,6 @@ export function ExerciseCard({
             </select>
           </div>
           <div className="options-actions">
-            <button
-              type="button"
-              className="btn-sm secondary"
-              onClick={() => {
-                setShowNoteField((open) => !open)
-                setShowOptionsMenu(false)
-              }}
-            >
-              <Icon name="note" size={14} />
-              <span>{tr('ex.note')}</span>
-            </button>
             <button
               type="button"
               className="btn-sm secondary"
@@ -381,9 +358,6 @@ export function ExerciseCard({
 
       {collapsed && (
         <div className="collapsed-actions">
-          {exercise.note && (
-            <p className="muted collapsed-note">{exercise.note}</p>
-          )}
           {prevSessionSummary && (
             <p className="muted previous-summary">{prevSessionSummary}</p>
           )}
@@ -394,10 +368,21 @@ export function ExerciseCard({
             <button
               type="button"
               className="btn-sm secondary repeat-btn"
-              onClick={() => onAddSet(previous.reps, previous.weightKg, 'working')}
+              onClick={() => {
+                setReps(String(previous.reps))
+                setWeight(String(previous.weightKg))
+                setError(null)
+              }}
             >
-              <Icon name="repeat" size={14} />
-              {tr('ex.repeatLastSet')}
+              <Icon name="pencil" size={14} />
+              <span>
+                {exercise.unit === 'bodyweight'
+                  ? tr('ex.fillInputBodyweight', { reps: previous.reps })
+                  : tr('ex.fillInput', {
+                      weight: formatSetWeight(exercise.unit, previous.weightKg, tr) ?? '',
+                      reps: previous.reps,
+                    })}
+              </span>
             </button>
           )}
         </div>
@@ -405,17 +390,7 @@ export function ExerciseCard({
 
       {!collapsed && (
         <>
-      {(showNoteField || exercise.note) && (
-        <NoteField
-          value={exercise.note ?? ''}
-          onChange={onUpdateNote}
-          placeholder={tr('ex.notePlaceholder')}
-          compact
-          label={tr('ex.note')}
-        />
-      )}
-
-      {prevSession && prevSession.sets.length > 0 && (
+          {prevSession && prevSession.sets.length > 0 && (
         <section className="previous-block">
           <h4>
             {tr('ex.previous', { date: formatDate(prevSession.finishedAt, lang) })}
@@ -538,20 +513,6 @@ export function ExerciseCard({
               )}
             </div>
             {error && <p className="error">{error}</p>}
-            {drop && dropWeight !== null && (
-              <button
-                type="button"
-                className="btn-sm secondary drop-btn"
-                onClick={() => {
-                  setSetType('dropset')
-                  setReps(String(drop.base.reps))
-                  setWeight(String(dropWeight))
-                  setDropParentId(drop.parentId)
-                }}
-              >
-                {tr('ex.drop')}
-              </button>
-            )}
             <button type="submit" className="positive complete-set-btn">
               <Icon name="check" size={18} />
               <span>{tr('ex.completeSet')}</span>

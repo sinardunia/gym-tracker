@@ -168,7 +168,12 @@ export function WorkoutScreen({
             key={exercise.id}
             exercise={exercise}
             isActiveExercise={exercise.id === effectiveActiveId}
-            onSelectActive={() => setActiveExerciseId(exercise.id)}
+            onSelectActive={() => {
+              setActiveExerciseId(exercise.id)
+              if (collapsedExerciseIds.has(exercise.id)) {
+                onToggleCollapsed(exercise.id)
+              }
+            }}
             onAddSet={(reps, weightKg, type, parentId) =>
               onAddSet(exercise.id, reps, weightKg, type, parentId)
             }
@@ -185,7 +190,13 @@ export function WorkoutScreen({
             canMoveDown={index < workout.exercises.length - 1}
             sessions={sessions}
             collapsed={collapsedExerciseIds.has(exercise.id)}
-            onToggleCollapsed={() => onToggleCollapsed(exercise.id)}
+            onToggleCollapsed={() => {
+              const isCurrentlyCollapsed = collapsedExerciseIds.has(exercise.id)
+              if (isCurrentlyCollapsed) {
+                setActiveExerciseId(exercise.id)
+              }
+              onToggleCollapsed(exercise.id)
+            }}
           />
         ))
       )}

@@ -27,6 +27,13 @@ export function SummaryScreen({
         <p className="muted">{formatDate(workout.startedAt, lang)}</p>
       </header>
 
+      <div className="active-workout-banner" style={{ background: 'var(--positive-bg)', borderColor: 'var(--positive)' }}>
+        <div className="active-workout-info">
+          <span className="pulse-dot" style={{ background: 'var(--positive)', boxShadow: 'none' }} />
+          <strong style={{ color: 'var(--positive)' }}>{tr('summary.savedNotice')}</strong>
+        </div>
+      </div>
+
       {workout.note && (
         <p className="summary-note">{workout.note}</p>
       )}
