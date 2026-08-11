@@ -24,6 +24,8 @@ export type Exercise = {
 
 export type Workout = {
   id: string
+  routineId?: string
+  dayId?: string
   startedAt: string
   finishedAt: string | null
   exercises: Exercise[]

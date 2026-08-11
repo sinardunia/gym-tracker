@@ -79,6 +79,72 @@ export function findPersonalBest(
   return best
 }
 
+export type RecommendationResult = {
+  recommended: { routine: Routine; day: RoutineDay } | null
+  calendarScheduled: { routine: Routine; day: RoutineDay } | null
+  isSequenceMismatch: boolean
+}
+
+export function getRecommendedWorkout(
+  routines: Routine[],
+  sessions: Workout[],
+): RecommendationResult {
+  if (routines.length === 0) {
+    return { recommended: null, calendarScheduled: null, isSequenceMismatch: false }
+  }
+
+  const todayCalendar = findTodayWorkout(routines)
+  const primaryRoutine = routines[0]
+  if (!primaryRoutine || primaryRoutine.days.length === 0) {
+    return {
+      recommended: todayCalendar,
+      calendarScheduled: todayCalendar,
+      isSequenceMismatch: false,
+    }
+  }
+
+  // Find the last completed session that matched a routine day
+  const finishedSessions = sessions.filter((s) => s.finishedAt !== null)
+  let lastDayIndex = -1
+
+  for (const session of finishedSessions) {
+    if (session.routineId === primaryRoutine.id && session.dayId) {
+      const idx = primaryRoutine.days.findIndex((d) => d.id === session.dayId)
+      if (idx !== -1) {
+        lastDayIndex = idx
+        break
+      }
+    }
+    // Fallback: match by day name or exercise overlap if dayId wasn't stored
+    if (lastDayIndex === -1 && session.exercises.length > 0) {
+      const sessionExNames = new Set(session.exercises.map((e) => e.name.toLowerCase()))
+      const matchedIdx = primaryRoutine.days.findIndex((d) =>
+        d.exerciseNames.some((name) => sessionExNames.has(name.toLowerCase())),
+      )
+      if (matchedIdx !== -1) {
+        lastDayIndex = matchedIdx
+        break
+      }
+    }
+  }
+
+  const nextIndex = (lastDayIndex + 1) % primaryRoutine.days.length
+  const recommendedDay = primaryRoutine.days[nextIndex]
+  const recommended = { routine: primaryRoutine, day: recommendedDay }
+
+  const isSequenceMismatch = Boolean(
+    todayCalendar &&
+      (todayCalendar.routine.id !== recommended.routine.id ||
+        todayCalendar.day.id !== recommended.day.id),
+  )
+
+  return {
+    recommended,
+    calendarScheduled: todayCalendar,
+    isSequenceMismatch,
+  }
+}
+
 export function findTodayWorkout(
   routines: Routine[],
 ): { routine: Routine; day: RoutineDay } | null {
