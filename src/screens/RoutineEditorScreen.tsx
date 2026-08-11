@@ -6,6 +6,7 @@ import type { Routine, ScheduleConflict, Weekday } from '../lib/types'
 export function RoutineEditorScreen({
   routines,
   onBack,
+  hideHeader = false,
   onAddRoutine,
   onRenameRoutine,
   onDeleteRoutine,
@@ -40,6 +41,7 @@ export function RoutineEditorScreen({
     dayId: string,
     weekday: Weekday | null,
   ) => void
+  hideHeader?: boolean
 }) {
   const { tr } = useI18n()
   const owners = useMemo(() => {
@@ -69,16 +71,18 @@ export function RoutineEditorScreen({
   }
 
   return (
-    <main className="screen">
-      <header className="screen-header flex items-start justify-between gap-3">
-        <div>
-          <h1>{tr('routine.title')}</h1>
-          <p className="muted">{tr('routine.desc')}</p>
-        </div>
-        <button type="button" className="btn-sm secondary flex-shrink-0" onClick={onBack}>
-          {tr('routine.back')}
-        </button>
-      </header>
+    <div className="flex flex-col gap-4">
+      {!hideHeader && (
+        <header className="screen-header flex items-start justify-between gap-3">
+          <div>
+            <h1>{tr('routine.title')}</h1>
+            <p className="muted">{tr('routine.desc')}</p>
+          </div>
+          <button type="button" className="btn-sm secondary flex-shrink-0" onClick={onBack}>
+            {tr('routine.back')}
+          </button>
+        </header>
+      )}
 
       <button type="button" className="primary" onClick={onAddRoutine}>
         {tr('routine.addRoutine')}
@@ -113,6 +117,6 @@ export function RoutineEditorScreen({
           getConflict={getScheduleConflict}
         />
       ))}
-    </main>
+    </div>
   )
 }

@@ -417,13 +417,12 @@ export function FloatingPlateCalculatorButton() {
     <>
       <button
         type="button"
-        className="fixed bottom-[calc(20px+env(safe-area-inset-bottom))] right-5 z-20 inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-[var(--accent)] text-white text-sm font-semibold shadow-lg hover:opacity-90 active:scale-95 transition-all cursor-pointer"
+        className="fixed bottom-[calc(20px+env(safe-area-inset-bottom))] right-5 z-20 inline-flex items-center justify-center w-12 h-12 rounded-full bg-[var(--accent)] text-white shadow-lg hover:opacity-90 active:scale-95 transition-all cursor-pointer"
         onClick={() => setOpen(true)}
         aria-label={tr('calc.title')}
         title={tr('calc.title')}
       >
-        <Icon name="calculator" size={20} />
-        <span>{tr('calc.btn')}</span>
+        <Icon name="calculator" size={24} />
       </button>
 
       {open && <CalculatorModal onClose={() => setOpen(false)} />}

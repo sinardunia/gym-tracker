@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useI18n, type Lang } from '../i18n'
+import { Icon } from '../components/Icon'
 import { BackupControls } from '../components/BackupControls'
 import { FeedbackCard } from '../components/FeedbackCard'
 import { InstallPwaBanner } from '../components/InstallPwaBanner'
@@ -16,9 +17,7 @@ export function HomeScreen({
   onStart,
   onStartWithExercises,
   onViewSession,
-  onOpenRoutines,
-  onOpenPrograms,
-  onOpenProgress,
+  onOpenHistory,
   backupState,
   onImportBackup,
   lang,
@@ -31,9 +30,7 @@ export function HomeScreen({
   onStart: () => void
   onStartWithExercises: (exerciseNames: string[], routineId?: string, dayId?: string) => void
   onViewSession: (session: Workout) => void
-  onOpenRoutines: () => void
-  onOpenPrograms: () => void
-  onOpenProgress: () => void
+  onOpenHistory: () => void
   backupState: PersistedState
   onImportBackup: (state: PersistedState) => void
   lang: Lang
@@ -41,9 +38,8 @@ export function HomeScreen({
 }) {
   const { tr, p } = useI18n()
   const [pickingRoutine, setPickingRoutine] = useState(false)
-  const [showAllSessions, setShowAllSessions] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
-  const visibleSessions = showAllSessions ? sessions : sessions.slice(0, 10)
+  const previewSessions = sessions.slice(0, 2)
   const recommendation = getRecommendedWorkout(routines, sessions)
   const [overrideSelection, setOverrideSelection] = useState<'recommended' | 'calendar' | null>(null)
 
@@ -66,14 +62,25 @@ export function HomeScreen({
           <h1>Gym Tracker</h1>
           <p className="muted">{tr('home.tagline')}</p>
         </div>
-        <button
-          type="button"
-          className="btn-sm secondary lang-toggle"
-          onClick={onToggleLang}
-          aria-label={lang === 'id' ? tr('lang.switchToEn') : tr('lang.switchToId')}
-        >
-          {lang === 'id' ? 'EN' : 'ID'}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            className="btn-sm secondary lang-toggle"
+            onClick={onToggleLang}
+            aria-label={lang === 'id' ? tr('lang.switchToEn') : tr('lang.switchToId')}
+          >
+            {lang === 'id' ? 'EN' : 'ID'}
+          </button>
+          <button
+            type="button"
+            className={`icon-btn${settingsOpen ? ' active' : ''}`}
+            onClick={() => setSettingsOpen((open) => !open)}
+            aria-label={tr('home.settings')}
+            title={tr('home.settings')}
+          >
+            <Icon name="settings" size={18} />
+          </button>
+        </div>
       </header>
 
       {activeWorkout && (
@@ -242,30 +249,6 @@ export function HomeScreen({
         </section>
       )}
 
-      <div className="backup-actions">
-        <button
-          type="button"
-          className="secondary"
-          onClick={onOpenPrograms}
-        >
-          {tr('home.chooseProgram')}
-        </button>
-        <button
-          type="button"
-          className="secondary"
-          onClick={onOpenRoutines}
-        >
-          {tr('home.routines')}
-        </button>
-        <button
-          type="button"
-          className="secondary"
-          onClick={onOpenProgress}
-        >
-          {tr('home.progress')}
-        </button>
-      </div>
-
       <section className="recent">
         <h2>{tr('home.recentSessions')}</h2>
         {sessions.length === 0 ? (
@@ -273,7 +256,7 @@ export function HomeScreen({
         ) : (
           <>
             <ul className="session-list">
-              {visibleSessions.map((session) => {
+              {previewSessions.map((session) => {
                 const totalSets = countSets(session)
                 const exNames = session.exercises.map((e) => e.name)
                 const previewText = exNames.length > 0
@@ -299,30 +282,30 @@ export function HomeScreen({
                 )
               })}
             </ul>
-            {sessions.length > 10 && !showAllSessions && (
-              <button
-                type="button"
-                className="btn-sm secondary"
-                onClick={() => setShowAllSessions(true)}
-              >
-                {tr('home.showMore')}
-              </button>
-            )}
+            <button
+              type="button"
+              className="btn-sm secondary mt-2"
+              onClick={onOpenHistory}
+            >
+              {tr('home.viewAllHistory')}
+            </button>
           </>
         )}
       </section>
 
-      <section className="card settings-card">
-        <button
-          type="button"
-          className="settings-toggle"
-          onClick={() => setSettingsOpen((open) => !open)}
-        >
-          <span>{tr('home.settings')}</span>
-          <span className="muted">{settingsOpen ? '▲' : '▼'}</span>
-        </button>
+      {settingsOpen && (
+        <section className="card settings-card">
+          <div className="settings-toggle">
+            <span>{tr('home.settings')}</span>
+            <button
+              type="button"
+              className="btn-sm secondary"
+              onClick={() => setSettingsOpen(false)}
+            >
+              ✕
+            </button>
+          </div>
 
-        {settingsOpen && (
           <div className="settings-content">
             <BackupControls state={backupState} onImport={onImportBackup} />
 
@@ -352,8 +335,8 @@ export function HomeScreen({
               <FeedbackCard />
             </section>
           </div>
-        )}
-      </section>
+        </section>
+      )}
     </main>
   )
 }

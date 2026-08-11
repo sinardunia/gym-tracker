@@ -4,9 +4,10 @@ import { I18nProvider, useI18n, LANG_KEY, type Lang } from './i18n'
 import { HomeScreen } from './screens/HomeScreen'
 import { WorkoutScreen } from './screens/WorkoutScreen'
 import { SummaryScreen } from './screens/SummaryScreen'
-import { RoutineEditorScreen } from './screens/RoutineEditorScreen'
-import { ProgramPickerScreen } from './screens/ProgramPickerScreen'
+import { PlanningScreen } from './screens/PlanningScreen'
+import { HistoryScreen } from './screens/HistoryScreen'
 import { ProgressScreen } from './screens/ProgressScreen'
+import { BottomNav, type TabKey } from './components/BottomNav'
 import { clearTimerSnapshots } from './lib/timer'
 import {
   normalizeWorkout,
@@ -61,10 +62,8 @@ function AppContent({
 }) {
   const { tr } = useI18n()
   const [state, setState] = useState<PersistedState>(loadState)
+  const [activeTab, setActiveTab] = useState<TabKey>('home')
   const [viewedSession, setViewedSession] = useState<Workout | null>(null)
-  const [routinesOpen, setRoutinesOpen] = useState(false)
-  const [programsOpen, setProgramsOpen] = useState(false)
-  const [progressOpen, setProgressOpen] = useState(false)
   const [progressExercise, setProgressExercise] = useState<string | null>(null)
   const [workoutPaused, setWorkoutPaused] = useState(false)
   const [collapsedExerciseIds, setCollapsedExerciseIds] = useState<Set<string>>(
@@ -400,8 +399,6 @@ function AppContent({
       ...s,
       routines: [routine, ...s.routines],
     }))
-    setProgramsOpen(false)
-    setRoutinesOpen(true)
   }
 
   function renameRoutine(routineId: string, name: string) {
@@ -607,78 +604,84 @@ function AppContent({
     )
   }
 
-  if (viewedSession) {
-    return (
-      <SummaryScreen
-        workout={viewedSession}
-        onStartAnother={startWorkout}
-        onBack={() => setViewedSession(null)}
-        onEdit={editSession}
-        onDelete={deleteSession}
-      />
-    )
-  }
-
-  if (routinesOpen) {
-    return (
-      <RoutineEditorScreen
-        routines={state.routines}
-        onBack={() => setRoutinesOpen(false)}
-        onAddRoutine={addRoutine}
-        onRenameRoutine={renameRoutine}
-        onDeleteRoutine={deleteRoutine}
-        onAddDay={addDay}
-        onRenameDay={renameDay}
-        onRemoveDay={removeDay}
-        onMoveDay={moveDay}
-        onAddExercise={addExerciseToDay}
-        onRemoveExercise={removeExerciseFromDay}
-        onMoveExercise={moveExerciseInDay}
-        onSetSchedule={setDaySchedule}
-      />
-    )
-  }
-
-  if (programsOpen) {
-    return (
-      <ProgramPickerScreen
-        onBack={() => setProgramsOpen(false)}
-        onApply={applyTemplate}
-      />
-    )
-  }
-
-  if (progressOpen) {
-    return (
-      <ProgressScreen
-        sessions={state.sessions}
-        selected={progressExercise}
-        onSelect={setProgressExercise}
-        onBack={() => {
-          setProgressOpen(false)
-          setProgressExercise(null)
-        }}
-      />
-    )
-  }
-
   return (
-    <HomeScreen
-      sessions={state.sessions}
-      routines={state.routines}
-      activeWorkout={activeWorkout}
-      onResumeWorkout={() => setWorkoutPaused(false)}
-      onStart={() => startWorkout()}
-      onStartWithExercises={(names, routineId, dayId) => startWorkout(names, routineId, dayId)}
-      onViewSession={setViewedSession}
-      onOpenRoutines={() => setRoutinesOpen(true)}
-      onOpenPrograms={() => setProgramsOpen(true)}
-      onOpenProgress={() => setProgressOpen(true)}
-      backupState={state}
-      onImportBackup={importBackup}
-      lang={lang}
-      onToggleLang={onToggleLang}
-    />
+    <div className="app-layout flex flex-col min-h-dvh pb-[72px]">
+      {viewedSession ? (
+        <SummaryScreen
+          workout={viewedSession}
+          onStartAnother={startWorkout}
+          onBack={() => setViewedSession(null)}
+          onEdit={editSession}
+          onDelete={deleteSession}
+        />
+      ) : (
+        <>
+          {activeTab === 'home' && (
+            <HomeScreen
+              sessions={state.sessions}
+              routines={state.routines}
+              activeWorkout={activeWorkout}
+              onResumeWorkout={() => setWorkoutPaused(false)}
+              onStart={() => startWorkout()}
+              onStartWithExercises={(names, routineId, dayId) => startWorkout(names, routineId, dayId)}
+              onViewSession={setViewedSession}
+              onOpenHistory={() => setActiveTab('history')}
+              backupState={state}
+              onImportBackup={importBackup}
+              lang={lang}
+              onToggleLang={onToggleLang}
+            />
+          )}
+
+          {activeTab === 'planning' && (
+            <main className="screen">
+              <PlanningScreen
+                routines={state.routines}
+                onAddRoutine={addRoutine}
+                onRenameRoutine={renameRoutine}
+                onDeleteRoutine={deleteRoutine}
+                onAddDay={addDay}
+                onRenameDay={renameDay}
+                onRemoveDay={removeDay}
+                onMoveDay={moveDay}
+                onAddExercise={addExerciseToDay}
+                onRemoveExercise={removeExerciseFromDay}
+                onMoveExercise={moveExerciseInDay}
+                onSetSchedule={setDaySchedule}
+                onApplyTemplate={applyTemplate}
+              />
+            </main>
+          )}
+
+          {activeTab === 'history' && (
+            <main className="screen">
+              <HistoryScreen
+                sessions={state.sessions}
+                onViewSession={setViewedSession}
+                lang={lang}
+              />
+            </main>
+          )}
+
+          {activeTab === 'progress' && (
+            <ProgressScreen
+              sessions={state.sessions}
+              selected={progressExercise}
+              onSelect={setProgressExercise}
+              onBack={() => {
+                setProgressExercise(null)
+                setActiveTab('home')
+              }}
+            />
+          )}
+        </>
+      )}
+
+      <BottomNav activeTab={activeTab} onTabChange={(tab) => {
+        setViewedSession(null)
+        setActiveTab(tab)
+      }} />
+    </div>
   )
 }
 

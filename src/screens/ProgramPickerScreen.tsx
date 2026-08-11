@@ -5,9 +5,11 @@ import type { ProgramGoal, ProgramTemplate } from '../lib/types'
 
 export function ProgramPickerScreen({
   onBack,
+  hideHeader = false,
   onApply,
 }: {
   onBack: () => void
+  hideHeader?: boolean
   onApply: (template: ProgramTemplate) => void
 }) {
   const { tr, p } = useI18n()
@@ -48,15 +50,19 @@ export function ProgramPickerScreen({
   }
 
   return (
-    <main className="screen">
-      <header className="screen-header">
-        <h1>{tr('program.title')}</h1>
-        <p className="muted">{tr('program.desc')}</p>
-      </header>
+    <div className="flex flex-col gap-4">
+      {!hideHeader && (
+        <>
+          <header className="screen-header">
+            <h1>{tr('program.title')}</h1>
+            <p className="muted">{tr('program.desc')}</p>
+          </header>
 
-      <button type="button" className="btn-sm secondary" onClick={onBack}>
-        {tr('program.back')}
-      </button>
+          <button type="button" className="btn-sm secondary" onClick={onBack}>
+            {tr('program.back')}
+          </button>
+        </>
+      )}
 
       {selected ? (
         <section className="card">
@@ -144,6 +150,6 @@ export function ProgramPickerScreen({
           ).map(renderProgramCard)}
         </>
       )}
-    </main>
+    </div>
   )
 }
