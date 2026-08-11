@@ -170,6 +170,11 @@ export function SetList({
               {weightText ? ` · ${weightText}` : ''}
             </span>
           </span>
+          {onUpdateSet && (
+            <span className="completed-check-icon" title={tr('ex.completed')}>
+              <Icon name="check" size={14} />
+            </span>
+          )}
         </button>
         {onRemoveSet && (
           <button
