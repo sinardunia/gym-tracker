@@ -272,21 +272,84 @@ input {
   }
 }
 
-.set-badge {
-  margin-left: 6px;
-  font-size: 12px;
-  padding: 2px 6px;
-  border-radius: 999px;
+.completed-check-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--positive);
+  margin-left: 4px;
+}
 
-  &.warmup {
-    background: var(--accent-bg);
-    color: var(--accent);
+.exercise-options-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--row-bg);
+  border-radius: 8px;
+  border: 1px solid var(--border);
+
+  .options-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
   }
 
-  &.dropset {
-    background: var(--danger-bg);
-    color: var(--danger);
+  .options-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-h);
   }
+
+  .options-actions {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+}
+
+.current-set-execution-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  background: var(--row-bg);
+  border: 1.5px solid var(--accent);
+  border-radius: 10px;
+}
+
+.current-set-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.current-set-title {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.set-fields-grid {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.complete-set-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  font-size: 16px;
+  font-weight: 600;
+  width: 100%;
 }
 
 .previous-block {
