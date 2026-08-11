@@ -28,7 +28,7 @@ export function HomeScreen({
   activeWorkout: Workout | null
   onResumeWorkout: () => void
   onStart: () => void
-  onStartWithExercises: (exerciseNames: string[]) => void
+  onStartWithExercises: (exerciseNames: string[], routineId?: string, dayId?: string) => void
   onViewSession: (session: Workout) => void
   onOpenRoutines: () => void
   onOpenPrograms: () => void

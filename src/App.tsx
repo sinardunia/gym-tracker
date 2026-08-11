@@ -78,12 +78,14 @@ function AppContent({
     saveState(state)
   }, [state])
 
-  function startWorkout(exerciseNames: string[] = []) {
+  function startWorkout(exerciseNames: string[] = [], routineId?: string, dayId?: string) {
     editingSessionIdRef.current = null
     setState((s) => ({
       ...s,
       activeWorkout: {
         ...createWorkout(),
+        routineId,
+        dayId,
         exercises: exerciseNames.map((name) => ({
           id: newId(),
           name,
@@ -666,7 +668,7 @@ function AppContent({
       activeWorkout={activeWorkout}
       onResumeWorkout={() => setWorkoutPaused(false)}
       onStart={() => startWorkout()}
-      onStartWithExercises={(names) => startWorkout(names)}
+      onStartWithExercises={(names, routineId, dayId) => startWorkout(names, routineId, dayId)}
       onViewSession={setViewedSession}
       onOpenRoutines={() => setRoutinesOpen(true)}
       onOpenPrograms={() => setProgramsOpen(true)}
