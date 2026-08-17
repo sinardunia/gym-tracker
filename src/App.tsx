@@ -8,6 +8,7 @@ import { PlanningScreen } from './screens/PlanningScreen'
 import { HistoryScreen } from './screens/HistoryScreen'
 import { ProgressScreen } from './screens/ProgressScreen'
 import { BottomNav, type TabKey } from './components/BottomNav'
+import { UpdateBanner } from './components/UpdateBanner'
 import { clearTimerSnapshots } from './lib/timer'
 import {
   normalizeWorkout,
@@ -21,10 +22,13 @@ import {
 } from './lib/types'
 import {
   createWorkout,
+  loadAsyncState,
   loadState,
   newId,
+  parseBackup,
   saveState,
 } from './lib/data'
+import { useTheme, type Theme } from './lib/theme'
 import './App.css'
 
 function App() {
@@ -35,6 +39,7 @@ function App() {
       return 'id'
     }
   })
+  const [theme, setTheme] = useTheme()
 
   useEffect(() => {
     try {
@@ -47,7 +52,13 @@ function App() {
 
   return (
     <I18nProvider lang={lang}>
-      <AppContent lang={lang} onToggleLang={() => setLang((cur) => (cur === 'id' ? 'en' : 'id'))} />
+      <AppContent
+        lang={lang}
+        onToggleLang={() => setLang((cur) => (cur === 'id' ? 'en' : 'id'))}
+        theme={theme}
+        onSetTheme={setTheme}
+      />
+      <UpdateBanner />
       {process.env.NODE_ENV === 'development' && <Agentation />}
     </I18nProvider>
   )
@@ -56,9 +67,13 @@ function App() {
 function AppContent({
   lang,
   onToggleLang,
+  theme,
+  onSetTheme,
 }: {
   lang: Lang
   onToggleLang: () => void
+  theme: Theme
+  onSetTheme: (theme: Theme) => void
 }) {
   const { tr } = useI18n()
   const [state, setState] = useState<PersistedState>(loadState)
@@ -76,6 +91,56 @@ function AppContent({
   useEffect(() => {
     saveState(state)
   }, [state])
+
+  useEffect(() => {
+    let cancelled = false
+    void (async () => {
+      const idb = await loadAsyncState()
+      if (cancelled || !idb) return
+      setState((current) => {
+        const localSavedAt = current.savedAt ? Date.parse(current.savedAt) : NaN
+        const idbSavedAt = idb.savedAt ? Date.parse(idb.savedAt) : NaN
+        if (!Number.isFinite(idbSavedAt)) return current
+        if (!Number.isFinite(localSavedAt) || idbSavedAt > localSavedAt) return idb
+        return current
+      })
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!import.meta.env.DEV) return
+    if (state.sessions.length > 0 || state.routines.length > 0) return
+    try {
+      if (localStorage.getItem('gym-tracker.seeded') === '1') return
+    } catch {
+      return
+    }
+    let cancelled = false
+    void fetch('gym-tracker-dummy-backup.json')
+      .then((res) => res.text())
+      .then((text) => {
+        if (cancelled) return
+        const backup = parseBackup(text)
+        if (!backup) return
+        try {
+          localStorage.setItem('gym-tracker.seeded', '1')
+        } catch {
+          // Storage unavailable.
+        }
+        setState(backup)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [state.sessions.length, state.routines.length])
+
+  useEffect(() => {
+    void navigator.storage?.persist?.().catch(() => {})
+  }, [])
 
   function startWorkout(exerciseNames: string[] = [], routineId?: string, dayId?: string) {
     editingSessionIdRef.current = null
@@ -385,15 +450,21 @@ function AppContent({
   }
 
   function applyTemplate(template: ProgramTemplate) {
+    const days = template.days.map((day) => ({
+      id: day.id ?? newId(),
+      name: tr(day.name),
+      exerciseNames: [...day.exerciseNames],
+    }))
+    const schedule: Partial<Record<Weekday, string>> = {}
+    for (const [weekday, dayId] of Object.entries(template.schedule ?? {})) {
+      const day = days.find((d) => d.id === dayId)
+      if (day) schedule[Number(weekday) as Weekday] = day.id
+    }
     const routine: Routine = {
       id: newId(),
       name: tr(template.title),
-      days: template.days.map((day) => ({
-        id: newId(),
-        name: tr(day.name),
-        exerciseNames: [...day.exerciseNames],
-      })),
-      schedule: {},
+      days,
+      schedule,
     }
     setState((s) => ({
       ...s,
@@ -630,6 +701,8 @@ function AppContent({
               onImportBackup={importBackup}
               lang={lang}
               onToggleLang={onToggleLang}
+              theme={theme}
+              onSetTheme={onSetTheme}
             />
           )}
 

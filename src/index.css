@@ -67,7 +67,7 @@
 
   --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
 
-  color-scheme: light dark;
+  color-scheme: light;
   color: var(--text);
   background: var(--bg);
   font: 16px/1.5 var(--sans);
@@ -77,21 +77,21 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #121217;
-    --card-bg: #1c1d24;
-    --row-bg: #26272f;
-    --border: #2e303a;
-    --accent: #a78bfa;
-    --accent-bg: rgba(167, 139, 250, 0.18);
-    --danger: #f87171;
-    --danger-bg: rgba(248, 113, 113, 0.12);
-    --positive: #4ade80;
-    --positive-bg: rgba(74, 222, 128, 0.15);
-  }
+:root[data-theme='dark'] {
+  --text: #9ca3af;
+  --text-h: #f3f4f6;
+  --bg: #121217;
+  --card-bg: #1c1d24;
+  --row-bg: #26272f;
+  --border: #2e303a;
+  --accent: #a78bfa;
+  --accent-bg: rgba(167, 139, 250, 0.18);
+  --danger: #f87171;
+  --danger-bg: rgba(248, 113, 113, 0.12);
+  --positive: #4ade80;
+  --positive-bg: rgba(74, 222, 128, 0.15);
+
+  color-scheme: dark;
 }
 
 * {

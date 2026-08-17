@@ -47,6 +47,9 @@ const ID: Record<string, string> = {
   'pwa.installDesc': 'Akses cepat & 100% offline dari layar utama HP kamu.',
   'pwa.installBtn': 'Install',
   'pwa.iosGuide': 'Tekan ikon Bagikan (Share) lalu pilih "Tambah ke Layar Utama".',
+  'pwa.updateAvailable': 'Versi baru tersedia.',
+  'pwa.updateReload': 'Muat ulang',
+  'pwa.offlineReady': 'Aplikasi siap digunakan offline.',
 
   'count.days.one': 'hari',
   'count.days.other': 'hari',
@@ -232,6 +235,14 @@ const ID: Record<string, string> = {
   'program.ppl.dayPush2': 'Push 2',
   'program.ppl.dayPull2': 'Pull 2',
   'program.ppl.dayLegs2': 'Legs 2',
+  'program.ppl5.title': 'PPL 5x',
+  'program.ppl5.desc':
+    'Push, pull, dan legs lima hari per minggu — porsi isolasi ekstra untuk bentuk proporsional.',
+  'program.ppl5.dayPushA': 'Push A',
+  'program.ppl5.dayPullA': 'Pull A',
+  'program.ppl5.dayLegs': 'Legs',
+  'program.ppl5.dayPushB': 'Push B',
+  'program.ppl5.dayPullB': 'Pull B',
   'program.strength.title': 'Strength Foundation',
   'program.strength.desc':
     'Pondasi kekuatan: squat, bench, dan deadlift sebagai tulang punggung.',
@@ -270,18 +281,16 @@ const ID: Record<string, string> = {
 
   'about.title': 'Tentang',
   'about.desc':
-    'Gym Tracker v{version} — gratis, open source, semua data tetap di perangkatmu.',
+    'Gym Tracker v{version} — gratis, open source.',
   'about.github': 'GitHub',
   'about.support': 'Dukung (Saweria)',
 
-  'feedback.send': 'Kirim masukan',
-  'feedback.title': 'Masukan & saran',
-  'feedback.body':
-    'Ada yang mengganggu atau kurang? Tulis di sini — tersimpan di perangkatmu. Lebih suka diskusi publik? Buka issue di GitHub.',
-  'feedback.placeholder': 'Ide, masalah, atau kritik-saran…',
-  'feedback.messageLabel': 'Pesan masukan',
-  'feedback.saved': 'Terima kasih, tercatat!',
-  'feedback.save': 'Simpan masukan',
+  'theme.title': 'Tampilan',
+  'theme.light': 'Terang',
+  'theme.dark': 'Gelap',
+  'theme.system': 'Ikuti Sistem',
+
+  'feedback.email': 'Kirim email',
   'feedback.openIssue': 'Buka issue GitHub',
   'feedback.close': 'Tutup',
 
@@ -332,6 +341,9 @@ const EN: Record<string, string> = {
   'pwa.installDesc': 'Fast access & 100% offline right from your home screen.',
   'pwa.installBtn': 'Install',
   'pwa.iosGuide': 'Tap the Share button then select "Add to Home Screen".',
+  'pwa.updateAvailable': 'A new version is available.',
+  'pwa.updateReload': 'Reload',
+  'pwa.offlineReady': 'The app is ready to work offline.',
 
   'count.days.one': 'day',
   'count.days.other': 'days',
@@ -516,6 +528,14 @@ const EN: Record<string, string> = {
   'program.ppl.dayPush2': 'Push 2',
   'program.ppl.dayPull2': 'Pull 2',
   'program.ppl.dayLegs2': 'Legs 2',
+  'program.ppl5.title': 'PPL 5x',
+  'program.ppl5.desc':
+    'Push, pull, and legs five days per week — extra isolation volume for a balanced physique.',
+  'program.ppl5.dayPushA': 'Push A',
+  'program.ppl5.dayPullA': 'Pull A',
+  'program.ppl5.dayLegs': 'Legs',
+  'program.ppl5.dayPushB': 'Push B',
+  'program.ppl5.dayPullB': 'Pull B',
   'program.strength.title': 'Strength Foundation',
   'program.strength.desc':
     'A strength base built around squat, bench, and deadlift.',
@@ -554,18 +574,16 @@ const EN: Record<string, string> = {
 
   'about.title': 'About',
   'about.desc':
-    'Gym Tracker v{version} — free, open source, all data stays on your device.',
+    'Gym Tracker v{version} — free, open source.',
   'about.github': 'GitHub',
   'about.support': 'Support (Saweria)',
 
-  'feedback.send': 'Send feedback',
-  'feedback.title': 'Feedback & suggestions',
-  'feedback.body':
-    'Anything annoying or missing? Write it here — it is saved on your device. Prefer public discussion? Open a GitHub issue.',
-  'feedback.placeholder': 'Ideas, problems, or feedback…',
-  'feedback.messageLabel': 'Feedback message',
-  'feedback.saved': 'Thanks, noted!',
-  'feedback.save': 'Save feedback',
+  'theme.title': 'Appearance',
+  'theme.light': 'Light',
+  'theme.dark': 'Dark',
+  'theme.system': 'System',
+
+  'feedback.email': 'Send email',
   'feedback.openIssue': 'Open GitHub issue',
   'feedback.close': 'Close',
 

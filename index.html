@@ -8,6 +8,17 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <title>Gym Tracker</title>
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem('gym-tracker.theme')
+          var theme = stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'system'
+          var dark = theme === 'dark' ||
+            (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+          document.documentElement.dataset.theme = dark ? 'dark' : 'light'
+        } catch (e) { /* Storage unavailable; keep the CSS default. */ }
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>
