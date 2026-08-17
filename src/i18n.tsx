@@ -294,6 +294,47 @@ const ID: Record<string, string> = {
   'feedback.openIssue': 'Buka issue GitHub',
   'feedback.close': 'Tutup',
 
+  // ConsistencyWidget
+  'consistency.weekStreak': 'Minggu ke-{n} berturut-turut',
+  'consistency.weekStreakOne': 'Minggu pertama aktif',
+  'consistency.totalSessions': '{n} sesi total',
+  'consistency.lastTrained': 'Terakhir latihan {n} hari lalu',
+  'consistency.newChapter': 'Mulai babak baru',
+  'consistency.comeback7': 'Sudah {n} hari. Kamu kembali sekarang.',
+  'consistency.comeback14': 'Sudah {n} hari. Kamu kembali sekarang — itu yang penting.',
+  'consistency.startStory': 'Mulai ceritamu hari ini.',
+
+  // SummaryScreen identity line
+  'summary.identityLine1': 'Sesi pertamamu. Setiap kali kamu kembali, ini jadi bukti siapa kamu.',
+  'summary.identityLine': 'Minggu ke-{n} berturut-turut. Kamu orang yang melatih diri.',
+  'summary.identityLineSessions': '{n} sesi. Kamu mulai membangun sesuatu.',
+  'summary.comebackLine': 'Kamu kembali. {n} sesi total. Lanjutkan dari sini.',
+
+  // PR callout
+  'summary.prTitle': 'PR Baru',
+  'summary.prLine': '{exercise} — {weight} × {reps}',
+  'summary.prLinePrev': '(sebelumnya {weight} × {reps})',
+  'summary.prLineFirst': '(pertama kali dicatat)',
+  'summary.prBodyweight': '{exercise} — {reps} reps',
+  'summary.prBodyweightPrev': '(sebelumnya {reps} reps)',
+
+  // Milestone callouts
+  'milestone.first-workout': 'Sesi pertama selesai.',
+  'milestone.first-workout.sub': 'Setiap perjalanan dimulai dari langkah pertama.',
+  'milestone.sessions-10': '10 sesi selesai.',
+  'milestone.sessions-10.sub': 'Kebiasaan ini mulai terbentuk.',
+  'milestone.sessions-50': '50 sesi selesai.',
+  'milestone.sessions-50.sub': 'Ini bukan lagi kebiasaan — ini bagian dari siapa kamu.',
+  'milestone.streak-4w': '4 minggu berturut-turut.',
+  'milestone.streak-4w.sub': 'Ini bukan lagi coba-coba — ini bagian dari siapa kamu.',
+  'milestone.streak-8w': '8 minggu berturut-turut.',
+  'milestone.streak-8w.sub': 'Kamu membuktikan kepada dirimu sendiri.',
+  'milestone.first-pr': 'PR pertamamu.',
+  'milestone.first-pr.sub': 'Data menunjukkan kamu semakin kuat.',
+  'milestone.comeback-7d': 'Kamu kembali setelah istirahat.',
+  'milestone.comeback-7d.sub': '{n} sesi total. Lanjutkan.',
+  'milestone.dismiss': 'Tutup',
+
   'unit.kg': 'kg',
   'unit.plates': 'plat',
 
@@ -586,6 +627,47 @@ const EN: Record<string, string> = {
   'feedback.email': 'Send email',
   'feedback.openIssue': 'Open GitHub issue',
   'feedback.close': 'Close',
+
+  // ConsistencyWidget
+  'consistency.weekStreak': 'Week {n} in a row',
+  'consistency.weekStreakOne': 'First active week',
+  'consistency.totalSessions': '{n} sessions total',
+  'consistency.lastTrained': 'Last trained {n} days ago',
+  'consistency.newChapter': 'Start a new chapter',
+  'consistency.comeback7': '{n} days since last session. Good to be back.',
+  'consistency.comeback14': '{n} days away. You\'re back now — that\'s what matters.',
+  'consistency.startStory': 'Start your story today.',
+
+  // SummaryScreen identity line
+  'summary.identityLine1': 'Your first session. Every time you come back, this becomes evidence of who you are.',
+  'summary.identityLine': 'Week {n} in a row. You are someone who trains.',
+  'summary.identityLineSessions': '{n} sessions. You\'re starting to build something.',
+  'summary.comebackLine': 'You\'re back. {n} sessions total. Continue from here.',
+
+  // PR callout
+  'summary.prTitle': 'New PR',
+  'summary.prLine': '{exercise} — {weight} × {reps}',
+  'summary.prLinePrev': '(was {weight} × {reps})',
+  'summary.prLineFirst': '(first time recorded)',
+  'summary.prBodyweight': '{exercise} — {reps} reps',
+  'summary.prBodyweightPrev': '(was {reps} reps)',
+
+  // Milestone callouts
+  'milestone.first-workout': 'First session complete.',
+  'milestone.first-workout.sub': 'Every journey starts with a first step.',
+  'milestone.sessions-10': '10 sessions done.',
+  'milestone.sessions-10.sub': 'The habit is forming.',
+  'milestone.sessions-50': '50 sessions done.',
+  'milestone.sessions-50.sub': 'This is no longer a habit — it\'s part of who you are.',
+  'milestone.streak-4w': '4 weeks in a row.',
+  'milestone.streak-4w.sub': 'This is no longer a trial — it\'s part of who you are.',
+  'milestone.streak-8w': '8 weeks in a row.',
+  'milestone.streak-8w.sub': 'You\'ve proven it to yourself.',
+  'milestone.first-pr': 'Your first personal record.',
+  'milestone.first-pr.sub': 'The data shows you\'re getting stronger.',
+  'milestone.comeback-7d': 'You\'re back after a break.',
+  'milestone.comeback-7d.sub': '{n} sessions total. Keep going.',
+  'milestone.dismiss': 'Close',
 
   'unit.kg': 'kg',
   'unit.plates': 'plates',
