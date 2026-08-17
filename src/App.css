@@ -1592,3 +1592,187 @@ button.danger {
     font-weight: 700;
   }
 }
+
+/* ─── ConsistencyWidget ─────────────────────────────────────── */
+
+.consistency-widget {
+  padding: 10px 14px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.consistency-widget.comeback {
+  background: var(--positive-bg);
+  border-color: var(--positive);
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.consistency-streak {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.consistency-streak-number {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.consistency-streak-number.animating {
+  animation: streak-count-in 400ms ease-out forwards;
+}
+
+@keyframes streak-count-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.88);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.consistency-streak-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.consistency-meta {
+  font-size: 13px;
+  color: var(--text);
+  text-align: right;
+}
+
+.consistency-comeback-main {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--positive);
+}
+
+.consistency-comeback-sub {
+  font-size: 13px;
+  color: var(--text);
+}
+
+/* ─── PR Callout Card (SummaryScreen) ───────────────────────── */
+
+.pr-callout-card {
+  background: var(--positive-bg);
+  border: 1px solid var(--positive);
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pr-callout-title {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--positive);
+}
+
+.pr-callout-item {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.pr-callout-main {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.pr-callout-prev {
+  font-size: 13px;
+  color: var(--text);
+}
+
+/* ─── Milestone Card (SummaryScreen) ────────────────────────── */
+
+.milestone-card {
+  background: var(--accent-bg);
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.milestone-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.milestone-card-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-h);
+}
+
+.milestone-card-sub {
+  font-size: 13px;
+  color: var(--text);
+}
+
+/* ─── Identity Line (SummaryScreen) ─────────────────────────── */
+
+.summary-identity-line {
+  text-align: center;
+  font-size: 14px;
+  font-style: italic;
+  color: var(--text);
+  padding: 4px 0;
+}
+
+/* ─── ExerciseChart ─────────────────────────────────────────── */
+
+.exercise-chart {
+  width: 100%;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.exercise-chart-axis-label {
+  font-size: 11px;
+  fill: var(--text);
+}
+
+.exercise-chart-line {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.exercise-chart-dot {
+  fill: var(--card-bg);
+  stroke: var(--accent);
+  stroke-width: 2;
+}
+
+.exercise-chart-dot.pr-dot {
+  fill: var(--positive);
+  stroke: var(--positive);
+}
