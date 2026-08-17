@@ -56,6 +56,8 @@ export type PersistedState = {
   activeWorkout: Workout | null
   sessions: Workout[]
   routines: Routine[]
+  /** ISO timestamp of the last save, used to pick the freshest store on load. */
+  savedAt?: string
 }
 
 export type BackupMessage = {
@@ -75,7 +77,30 @@ export type ProgramTemplate = {
   title: string
   description: string
   goal: ProgramGoal
-  days: { name: string; exerciseNames: string[] }[]
+  days: { id?: string; name: string; exerciseNames: string[] }[]
+  /** Optional pre-filled weekday schedule, referencing day ids. */
+  schedule?: Partial<Record<Weekday, string>>
+}
+
+export type ConsistencyStats = {
+  /** Consecutive Mon–Sun calendar weeks with ≥ 1 finished session, counting backward from current week. */
+  currentWeekStreak: number
+  /** All-time highest week streak. */
+  longestWeekStreak: number
+  /** Total count of all finished sessions. */
+  totalSessions: number
+  /** ISO string of finishedAt from the most recent finished session, or null. */
+  lastTrainedAt: string | null
+  /** Calendar days elapsed since lastTrainedAt, or null if no sessions. */
+  gapDays: number | null
+}
+
+export type PRDetection = {
+  exerciseName: string
+  unit: ExerciseUnit
+  newBest: { weightKg: number; reps: number }
+  /** null if this is the first time the exercise was ever logged. */
+  previousBest: { weightKg: number; reps: number } | null
 }
 
 export function isSetType(value: unknown): value is SetType {
