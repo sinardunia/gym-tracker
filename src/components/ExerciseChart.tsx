@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useI18n } from '../i18n'
 import { formatSetWeight } from '../lib/format'
 import type { ExerciseUnit } from '../lib/types'
@@ -41,7 +41,6 @@ export function ExerciseChart({
       return { x, y, value: v }
     })
 
-    // Find PR index (highest value; first occurrence on tie)
     let prIndex = 0
     for (let i = 1; i < values.length; i++) {
       if (values[i] > values[prIndex]) prIndex = i
@@ -49,6 +48,29 @@ export function ExerciseChart({
 
     return { points, minVal, maxVal, prIndex }
   }, [entries, unit])
+
+  const [hoveredDot, setHoveredDot] = useState<number | null>(null)
+
+  const nearestDotIdx = useMemo(() => {
+    return (clientX: number, clientY: number, svgRect: DOMRect) => {
+      const svgX = ((clientX - svgRect.left) / svgRect.width) * VIEW_W
+      const svgY = ((clientY - svgRect.top) / svgRect.height) * VIEW_H
+      let best = -1
+      let bestDist = Infinity
+      points.forEach((p, i) => {
+        const dx = p.x - svgX
+        const dy = p.y - svgY
+        const dist = dx * dx + dy * dy
+        if (dist < bestDist) {
+          bestDist = dist
+          best = i
+        }
+      })
+      return best >= 0 && bestDist < 400 ? best : null
+    }
+  }, [points])
+
+  if (entries.length < 4) return null
 
   const polylinePoints = points.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ')
 
@@ -64,8 +86,28 @@ export function ExerciseChart({
       className="exercise-chart"
       viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
       aria-hidden="true"
+      onPointerEnter={(e) => {
+        const rect = e.currentTarget.getBoundingClientRect()
+        const idx = nearestDotIdx(e.clientX, e.clientY, rect)
+        setHoveredDot(idx)
+      }}
+      onPointerMove={(e) => {
+        const rect = e.currentTarget.getBoundingClientRect()
+        const idx = nearestDotIdx(e.clientX, e.clientY, rect)
+        setHoveredDot(idx)
+      }}
+      onPointerLeave={() => setHoveredDot(null)}
     >
       {/* Y-axis labels */}
+      <text
+        x={PAD_LEFT - 4}
+        y={PAD_TOP - 2}
+        textAnchor="end"
+        dominantBaseline="hanging"
+        className="exercise-chart-tick-label"
+      >
+        {tr('progress.chart.yAxisUnit', { unit: unit === 'kg' ? 'kg' : 'r' })}
+      </text>
       <text
         x={0}
         y={PAD_TOP + 4}
@@ -96,9 +138,29 @@ export function ExerciseChart({
           cx={p.x}
           cy={p.y}
           r={i === prIndex ? 4.5 : 3}
-          className={`exercise-chart-dot${i === prIndex ? ' pr-dot' : ''}`}
+          className={`exercise-chart-dot${i === prIndex ? ' pr-dot' : ' weight-dot'}${hoveredDot === i ? ' hovered' : ''}`}
         />
       ))}
+
+      {/* Hover tooltip */}
+      {hoveredDot !== null && (() => {
+        const p = points[hoveredDot]
+        const e = entries[hoveredDot]
+        const label = unit === 'kg'
+          ? `${e.best.weightKg} kg × ${e.best.reps}`
+          : `${e.best.reps}r`
+        return (
+          <text
+            x={p.x}
+            y={p.y - 10}
+            textAnchor="middle"
+            className="exercise-chart-tick-label"
+            style={{ fontWeight: 600 }}
+          >
+            {label}
+          </text>
+        )
+      })()}
     </svg>
   )
 }

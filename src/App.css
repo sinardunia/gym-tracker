@@ -1776,3 +1776,17 @@ button.danger {
   fill: var(--positive);
   stroke: var(--positive);
 }
+
+.exercise-chart-dot.weight-dot {
+  fill: var(--card-bg);
+  stroke: var(--accent);
+}
+
+.exercise-chart-dot.hovered {
+  stroke-width: 3;
+}
+
+.exercise-chart-tick-label {
+  font-size: 10px;
+  fill: var(--text-muted);
+}

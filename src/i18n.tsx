@@ -278,6 +278,7 @@ const ID: Record<string, string> = {
     'Belum ada sesi yang selesai — selesaikan workout pertama untuk melihat progress.',
   'progress.noExercises': 'Belum ada exercise yang pernah dicatat.',
   'progress.backToList': 'Kembali ke daftar exercise',
+  'progress.chart.yAxisUnit': '{unit}',
 
   'about.title': 'Tentang',
   'about.desc':
@@ -612,6 +613,7 @@ const EN: Record<string, string> = {
     'No finished sessions yet — complete your first workout to see progress.',
   'progress.noExercises': 'No exercises logged yet.',
   'progress.backToList': 'Back to exercises',
+  'progress.chart.yAxisUnit': '{unit}',
 
   'about.title': 'About',
   'about.desc':
