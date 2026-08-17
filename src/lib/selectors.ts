@@ -1,7 +1,9 @@
 import { EXERCISE_LIBRARY } from './data'
 import type {
+  ConsistencyStats,
   ExerciseUnit,
   LibraryExercise,
+  PRDetection,
   Routine,
   RoutineDay,
   Weekday,
@@ -390,4 +392,216 @@ export function exerciseHistory(sessions: Workout[]): ExerciseHistory[] {
       ),
   )
   return result
+}
+
+/** Returns the ISO date string (YYYY-MM-DD) of the Monday starting the week containing `date`. */
+function getMondayISO(date: Date): string {
+  const d = new Date(date)
+  const day = d.getUTCDay() // 0 = Sunday
+  const diff = day === 0 ? -6 : 1 - day
+  d.setUTCDate(d.getUTCDate() + diff)
+  d.setUTCHours(0, 0, 0, 0)
+  return d.toISOString().slice(0, 10)
+}
+
+/**
+ * Computes consistency stats from finished sessions.
+ *
+ * Week streak logic:
+ * - Collect the set of distinct Mon–Sun training weeks from finishedAt timestamps.
+ * - Walking backward from the current week, count consecutive weeks that have at least one session.
+ * - The current (ongoing) week does NOT break the streak even if it has no session yet.
+ * - A fully elapsed past week with no session breaks the streak.
+ */
+export function computeConsistency(sessions: Workout[]): ConsistencyStats {
+  const finished = sessions.filter((s) => s.finishedAt !== null)
+  const totalSessions = finished.length
+
+  if (finished.length === 0) {
+    return {
+      currentWeekStreak: 0,
+      longestWeekStreak: 0,
+      totalSessions: 0,
+      lastTrainedAt: null,
+      gapDays: null,
+    }
+  }
+
+  // Sort finished sessions newest-first for gap calc
+  const sorted = [...finished].sort((a, b) =>
+    (b.finishedAt as string).localeCompare(a.finishedAt as string),
+  )
+
+  const lastTrainedAt = sorted[0].finishedAt as string
+  const now = new Date()
+  const lastDate = new Date(lastTrainedAt)
+  const msPerDay = 1000 * 60 * 60 * 24
+  const gapDays = Math.floor((now.getTime() - lastDate.getTime()) / msPerDay)
+
+  // Build set of training week Mondays from all finished sessions
+  const trainingWeeks = new Set<string>()
+  for (const s of finished) {
+    trainingWeeks.add(getMondayISO(new Date(s.finishedAt as string)))
+  }
+
+  // Count current streak: walk backward week by week from current week
+  const currentWeekMonday = getMondayISO(now)
+  let currentWeekStreak = 0
+  let longestWeekStreak = 0
+  let runLength = 0
+
+  // Build a sorted list of all weeks that had training (newest-first)
+  const allWeeks = Array.from(trainingWeeks).sort((a, b) => b.localeCompare(a))
+
+  // Walk backward from the most recent trained week
+  if (allWeeks.length === 0) {
+    return { currentWeekStreak: 0, longestWeekStreak: 0, totalSessions, lastTrainedAt, gapDays }
+  }
+
+  // Determine starting week for streak count
+  // If the most recent training week is the current week or last week, count from there.
+  // Otherwise, streak is 0 (a full elapsed week was missed).
+  const msPerWeek = msPerDay * 7
+  const mostRecentWeek = allWeeks[0]
+  const mostRecentWeekDate = new Date(mostRecentWeek + 'T00:00:00Z')
+  const currentWeekDate = new Date(currentWeekMonday + 'T00:00:00Z')
+  const weeksDiff = Math.round((currentWeekDate.getTime() - mostRecentWeekDate.getTime()) / msPerWeek)
+
+  if (weeksDiff > 1) {
+    // Most recent training was > 1 week ago — a full elapsed week was missed
+    currentWeekStreak = 0
+  } else {
+    // Walk the sorted weeks backward, counting consecutive weeks
+    let expectedWeekDate = mostRecentWeekDate
+    for (const weekMonday of allWeeks) {
+      const weekDate = new Date(weekMonday + 'T00:00:00Z')
+      const diff = Math.round((expectedWeekDate.getTime() - weekDate.getTime()) / msPerWeek)
+      if (diff === 0) {
+        runLength += 1
+        expectedWeekDate = new Date(weekDate.getTime() - msPerWeek)
+      } else {
+        break
+      }
+    }
+    currentWeekStreak = runLength
+  }
+
+  // Compute longest streak across all time
+  // Reset and do a full pass
+  runLength = 0
+  for (let i = 0; i < allWeeks.length; i++) {
+    if (i === 0) {
+      runLength = 1
+    } else {
+      const prev = new Date(allWeeks[i - 1] + 'T00:00:00Z')
+      const cur = new Date(allWeeks[i] + 'T00:00:00Z')
+      const diff = Math.round((prev.getTime() - cur.getTime()) / msPerWeek)
+      if (diff === 1) {
+        runLength += 1
+      } else {
+        runLength = 1
+      }
+    }
+    if (runLength > longestWeekStreak) longestWeekStreak = runLength
+  }
+
+  return { currentWeekStreak, longestWeekStreak, totalSessions, lastTrainedAt, gapDays }
+}
+
+/**
+ * Detects new personal records in `justFinished` compared to all prior finished sessions.
+ * `sessions` should NOT include `justFinished` yet (pass the sessions array before prepending).
+ * Only compares working sets. Bodyweight exercises compare reps; kg/plate compare weightKg.
+ */
+export function detectNewPRs(
+  sessions: Workout[],
+  justFinished: Workout,
+): PRDetection[] {
+  const results: PRDetection[] = []
+
+  for (const exercise of justFinished.exercises) {
+    let newBestSet: WorkoutSet | null = null
+    for (const set of exercise.sets) {
+      if (set.type !== 'working') continue
+      if (
+        !newBestSet ||
+        set.weightKg > newBestSet.weightKg ||
+        (set.weightKg === newBestSet.weightKg && set.reps > newBestSet.reps)
+      ) {
+        newBestSet = set
+      }
+    }
+    if (!newBestSet) continue
+
+    const previousBest = findPersonalBest(sessions, exercise.name, exercise.unit)
+
+    const isNewPR =
+      exercise.unit === 'bodyweight'
+        ? !previousBest || newBestSet.reps > previousBest.reps
+        : !previousBest || newBestSet.weightKg > previousBest.weightKg
+
+    if (isNewPR) {
+      results.push({
+        exerciseName: exercise.name,
+        unit: exercise.unit,
+        newBest: { weightKg: newBestSet.weightKg, reps: newBestSet.reps },
+        previousBest: previousBest
+          ? { weightKg: previousBest.weightKg, reps: previousBest.reps }
+          : null,
+      })
+    }
+  }
+
+  return results
+}
+
+export const MILESTONE_IDS = {
+  FIRST_WORKOUT: 'first-workout',
+  SESSIONS_10: 'sessions-10',
+  SESSIONS_50: 'sessions-50',
+  STREAK_4W: 'streak-4w',
+  STREAK_8W: 'streak-8w',
+  FIRST_PR: 'first-pr',
+  COMEBACK_7D: 'comeback-7d',
+} as const
+
+export type MilestoneId = (typeof MILESTONE_IDS)[keyof typeof MILESTONE_IDS]
+
+/**
+ * Returns milestone IDs that newly apply and have not yet been seen.
+ * `comeback-7d` is repeatable — it re-fires whenever gapDays >= 7 and a workout was just finished.
+ * `newPRsCount` is the number of PRs detected in the just-finished workout.
+ */
+export function checkMilestones(
+  stats: ConsistencyStats,
+  seenMilestones: ReadonlySet<string>,
+  newPRsCount: number,
+): MilestoneId[] {
+  const triggered: MilestoneId[] = []
+
+  if (stats.totalSessions === 1 && !seenMilestones.has(MILESTONE_IDS.FIRST_WORKOUT)) {
+    triggered.push(MILESTONE_IDS.FIRST_WORKOUT)
+  }
+  if (stats.totalSessions >= 10 && !seenMilestones.has(MILESTONE_IDS.SESSIONS_10)) {
+    triggered.push(MILESTONE_IDS.SESSIONS_10)
+  }
+  if (stats.totalSessions >= 50 && !seenMilestones.has(MILESTONE_IDS.SESSIONS_50)) {
+    triggered.push(MILESTONE_IDS.SESSIONS_50)
+  }
+  if (stats.currentWeekStreak >= 4 && !seenMilestones.has(MILESTONE_IDS.STREAK_4W)) {
+    triggered.push(MILESTONE_IDS.STREAK_4W)
+  }
+  if (stats.currentWeekStreak >= 8 && !seenMilestones.has(MILESTONE_IDS.STREAK_8W)) {
+    triggered.push(MILESTONE_IDS.STREAK_8W)
+  }
+  if (newPRsCount > 0 && !seenMilestones.has(MILESTONE_IDS.FIRST_PR)) {
+    triggered.push(MILESTONE_IDS.FIRST_PR)
+  }
+  // comeback-7d is repeatable: only check seenMilestones for the current "batch"
+  // The caller clears this from seen after each session completes.
+  if (stats.gapDays !== null && stats.gapDays >= 7 && !seenMilestones.has(MILESTONE_IDS.COMEBACK_7D)) {
+    triggered.push(MILESTONE_IDS.COMEBACK_7D)
+  }
+
+  return triggered
 }
