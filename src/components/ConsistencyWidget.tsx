@@ -19,6 +19,7 @@ export function ConsistencyWidget({ stats }: { stats: ConsistencyStats }) {
       return () => clearTimeout(timeout)
     }
     prevStreakRef.current = stats.currentWeekStreak
+    setIsAnimating(false)
   }, [stats.currentWeekStreak])
 
   // On first render after animation, persist the new value
