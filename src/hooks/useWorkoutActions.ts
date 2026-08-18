@@ -37,8 +37,8 @@ export function useWorkoutActions(
     }))
   }
 
-  function finishWorkout() {
-    if (!state.activeWorkout) return
+  function finishWorkout(): Workout | null {
+    if (!state.activeWorkout) return null
     const finished: Workout = normalizeWorkout({
       ...state.activeWorkout,
       finishedAt: new Date().toISOString(),
@@ -55,6 +55,7 @@ export function useWorkoutActions(
           )
         : [finished, ...s.sessions],
     }))
+    return finished
   }
 
   function editSession(session: Workout) {
