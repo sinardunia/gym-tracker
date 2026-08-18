@@ -69,6 +69,7 @@ function AppContent({
   onSetTheme: (theme: Theme) => void
 }) {
   const { state, setState, workoutActions, routineActions } = useApp()
+  const { takeLastFinished } = workoutActions
   const [activeTab, setActiveTab] = useState<TabKey>('home')
   const [viewedSession, setViewedSession] = useState<Workout | null>(null)
   const [progressExercise, setProgressExercise] = useState<string | null>(null)
@@ -90,12 +91,15 @@ function AppContent({
   useEffect(() => {
     const stats = computeConsistency(state.sessions)
     setConsistencyStats(stats)
-    const justFinished = workoutActions.takeLastFinished()
+    const justFinished = takeLastFinished()
     if (justFinished) {
-      const prs = detectNewPRs(state.sessions, justFinished)
+      const priorSessions = state.sessions.filter(
+        (session) => session.id !== justFinished.id,
+      )
+      const prs = detectNewPRs(priorSessions, justFinished)
       setNewPRs(prs)
     }
-  }, [state.sessions, workoutActions])
+  }, [state.sessions, takeLastFinished])
 
   useEffect(() => {
     if (state.sessions.length === 0) return

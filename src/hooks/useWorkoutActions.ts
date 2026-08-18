@@ -1,4 +1,4 @@
-import { useRef, type Dispatch, type SetStateAction } from 'react'
+import { useCallback, useRef, type Dispatch, type SetStateAction } from 'react'
 import { createWorkout, newId } from '../lib/storage'
 import { normalizeWorkout } from '../lib/types'
 import type {
@@ -296,11 +296,11 @@ export function useWorkoutActions(
     setState((s) => ({ ...s, activeWorkout: null }))
   }
 
-  function takeLastFinished(): Workout | null {
+  const takeLastFinished = useCallback((): Workout | null => {
     const finished = lastFinishedRef.current
     lastFinishedRef.current = null
     return finished
-  }
+  }, [])
 
   return {
     startWorkout,
