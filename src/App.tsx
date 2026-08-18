@@ -96,8 +96,7 @@ function AppContent({
     gapDays: null,
   })
   const [newPRs, setNewPRs] = useState<PRDetection[]>([])
-  const [dismissedMilestoneId, setDismissedMilestoneId] = useState<string | null>(null)
-  const [milestoneToDisplay, setMilestoneToDisplay] = useState<string | null>(null)
+  const lastFinishedRef = useRef<Workout | null>(null)
   const editingSessionIdRef = useRef<string | null>(null)
 
   const activeWorkout = state.activeWorkout
@@ -165,19 +164,25 @@ function AppContent({
   useEffect(() => {
     const stats = computeConsistency(state.sessions)
     setConsistencyStats(stats)
-    const prs = detectNewPRs(state.sessions)
-    setNewPRs(prs)
+    const justFinished = lastFinishedRef.current
+    if (justFinished) {
+      lastFinishedRef.current = null
+      const prs = detectNewPRs(state.sessions, justFinished)
+      setNewPRs(prs)
+    }
   }, [state.sessions])
 
   useEffect(() => {
     if (state.sessions.length === 0) return
+    const stats = computeConsistency(state.sessions)
     const seen = loadSeenMilestones()
-    const milestone = checkMilestones(state.sessions, seen)
-    if (milestone) {
-      setMilestoneToDisplay(milestone)
-      saveSeenMilestones([...seen, milestone])
+    const milestones = checkMilestones(stats, seen, newPRs.length)
+    if (milestones.length > 0) {
+      const next = new Set(seen)
+      for (const m of milestones) next.add(m)
+      saveSeenMilestones(next)
     }
-  }, [state.sessions])
+  }, [state.sessions, newPRs.length])
 
   useEffect(() => {
     void navigator.storage?.persist?.().catch(() => {})
@@ -211,6 +216,7 @@ function AppContent({
       ...activeWorkout,
       finishedAt: new Date().toISOString(),
     })
+    lastFinishedRef.current = finished
     const editingId = editingSessionIdRef.current
     editingSessionIdRef.current = null
     setState((s) => ({
