@@ -2,8 +2,9 @@ import { useState } from 'react'
 import { useI18n } from '../i18n'
 import { SetList } from '../components/SetList'
 import { ConfirmDialog } from '../components/ConfirmDialog'
-import { countSets, formatDate } from '../lib/format'
-import type { Workout } from '../lib/types'
+import { countSets, formatDate, formatSetWeight } from '../lib/format'
+import { computeConsistency } from '../lib/selectors'
+import type { PRDetection, Workout } from '../lib/types'
 
 export function SummaryScreen({
   workout,
@@ -11,15 +12,20 @@ export function SummaryScreen({
   onBack,
   onEdit,
   onDelete,
+  newPRs,
+  sessions,
 }: {
   workout: Workout
   onStartAnother: () => void
   onBack: () => void
   onEdit: (session: Workout) => void
   onDelete: (sessionId: string) => void
+  newPRs: PRDetection[]
+  sessions: Workout[]
 }) {
   const { tr, p, lang } = useI18n()
   const [confirmingDelete, setConfirmingDelete] = useState(false)
+  const consistencyStats = computeConsistency(sessions)
   return (
     <main className="screen">
       <header className="screen-header">
@@ -34,6 +40,44 @@ export function SummaryScreen({
         </div>
       </div>
 
+      {newPRs.length > 0 && (
+        <div className="pr-callout-card">
+          <span className="pr-callout-title">{tr('summary.prTitle')}</span>
+          {newPRs.slice(0, 3).map((pr) => {
+            const isBodyweight = pr.unit === 'bodyweight'
+            const newWeightText = isBodyweight ? null : formatSetWeight(pr.unit, pr.newBest.weightKg, tr)
+            const prevWeightText =
+              pr.previousBest && !isBodyweight
+                ? formatSetWeight(pr.unit, pr.previousBest.weightKg, tr)
+                : null
+
+            const mainLine = isBodyweight
+              ? tr('summary.prBodyweight', { exercise: pr.exerciseName, reps: pr.newBest.reps })
+              : tr('summary.prLine', {
+                  exercise: pr.exerciseName,
+                  weight: newWeightText ?? '',
+                  reps: pr.newBest.reps,
+                })
+
+            const prevLine = pr.previousBest === null
+              ? tr('summary.prLineFirst')
+              : isBodyweight
+                ? tr('summary.prBodyweightPrev', { reps: pr.previousBest.reps })
+                : tr('summary.prLinePrev', {
+                    weight: prevWeightText ?? '',
+                    reps: pr.previousBest.reps,
+                  })
+
+            return (
+              <div key={pr.exerciseName} className="pr-callout-item">
+                <span className="pr-callout-main">{mainLine}</span>
+                <span className="pr-callout-prev">{prevLine}</span>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
       {workout.note && (
         <p className="summary-note">{workout.note}</p>
       )}
@@ -45,6 +89,28 @@ export function SummaryScreen({
           <SetList sets={exercise.sets} unit={exercise.unit} />
         </section>
       ))}
+
+      {(() => {
+        const { currentWeekStreak, totalSessions } = consistencyStats
+        if (totalSessions === 1) {
+          return <p className="summary-identity-line">{tr('summary.identityLine1')}</p>
+        }
+        if (currentWeekStreak >= 2) {
+          return (
+            <p className="summary-identity-line">
+              {tr('summary.identityLine', { n: currentWeekStreak })}
+            </p>
+          )
+        }
+        if (totalSessions >= 2) {
+          return (
+            <p className="summary-identity-line">
+              {tr('summary.identityLineSessions', { n: totalSessions })}
+            </p>
+          )
+        }
+        return null
+      })()}
 
       <p className="summary-count font-semibold">
         {p(workout.exercises.length, 'count.exercises')} ·{' '}

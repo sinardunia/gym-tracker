@@ -726,6 +726,7 @@ function AppContent({
           onEdit={editSession}
           onDelete={deleteSession}
           newPRs={newPRs}
+          sessions={state.sessions}
         />
       ) : (
         <>
