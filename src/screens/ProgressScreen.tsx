@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { useI18n } from '../i18n'
 import { exerciseHistory } from '../lib/selectors'
+import { ExerciseChart } from '../components/ExerciseChart'
 import { formatDate, formatSetWeight } from '../lib/format'
 import type { Workout } from '../lib/types'
 
@@ -63,6 +64,9 @@ export function ProgressScreen({
               </p>
             )}
           </section>
+          {item.entries.length >= 4 && item.best && (
+            <ExerciseChart entries={item.entries} unit={item.best.unit} />
+          )}
           <ul className="sets">
             {item.entries.map((entry) => {
               const weightText = formatSetWeight(
