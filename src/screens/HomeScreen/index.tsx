@@ -1,16 +1,24 @@
 import { useEffect, useRef, useState } from 'react'
-import { useI18n, type Lang } from '../i18n'
-import { Icon } from '../components/Icon'
-import { BackupControls } from '../components/BackupControls'
-import { ConfirmDialog } from '../components/ConfirmDialog'
-import { FeedbackCard } from '../components/FeedbackCard'
-import { InstallPwaBanner } from '../components/InstallPwaBanner'
-import { ConsistencyWidget } from '../components/ConsistencyWidget'
-import { GITHUB_URL, SAWERIA_URL } from '../lib/config'
-import { getRecommendedWorkout } from '../lib/selectors'
-import { countSets, formatDateShort, formatTimeShort, formatTime } from '../lib/format'
-import { THEMES, type Theme } from '../lib/theme'
-import type { ConsistencyStats, PersistedState, Routine, Workout } from '../lib/types'
+import { useI18n, type Lang } from '../../i18n'
+import { Icon } from '../../components/Icon'
+import { InstallPwaBanner } from '../../components/InstallPwaBanner'
+import { ConsistencyWidget } from '../../components/ConsistencyWidget'
+import { ActiveWorkoutBanner } from './ActiveWorkoutBanner'
+import { RoutinePicker } from './RoutinePicker'
+import { SettingsModal } from './SettingsModal'
+import { getRecommendedWorkout } from '../../lib/selectors'
+import {
+  countSets,
+  formatDateShort,
+  formatTimeShort,
+} from '../../lib/format'
+import { type Theme } from '../../lib/theme'
+import type {
+  ConsistencyStats,
+  PersistedState,
+  Routine,
+  Workout,
+} from '../../lib/types'
 
 function resolveDayName(workout: Workout, routines: Routine[]): string | null {
   if (!workout.routineId || !workout.dayId) return null
@@ -67,7 +75,9 @@ export function HomeScreen({
   const settingsBtnRef = useRef<HTMLButtonElement | null>(null)
   const previewSessions = sessions.slice(0, 2)
   const recommendation = getRecommendedWorkout(routines, sessions)
-  const [overrideSelection, setOverrideSelection] = useState<'recommended' | 'calendar' | null>(null)
+  const [overrideSelection, setOverrideSelection] = useState<
+    'recommended' | 'calendar' | null
+  >(null)
 
   useEffect(() => {
     if (!settingsOpen) return
@@ -85,7 +95,8 @@ export function HomeScreen({
         ? recommendation.recommended
         : (recommendation.recommended ?? recommendation.calendarScheduled)
 
-  const isShowingCalendar = activePlan && activePlan === recommendation.calendarScheduled
+  const isShowingCalendar =
+    activePlan && activePlan === recommendation.calendarScheduled
   const canStart = activeWorkout === null
 
   return (
@@ -102,7 +113,9 @@ export function HomeScreen({
             type="button"
             className="btn-sm secondary lang-toggle"
             onClick={onToggleLang}
-            aria-label={lang === 'id' ? tr('lang.switchToEn') : tr('lang.switchToId')}
+            aria-label={
+              lang === 'id' ? tr('lang.switchToEn') : tr('lang.switchToId')
+            }
           >
             {lang === 'id' ? 'EN' : 'ID'}
           </button>
@@ -120,20 +133,7 @@ export function HomeScreen({
       </header>
 
       {activeWorkout && (
-        <div className="active-workout-banner">
-          <div className="active-workout-info">
-            <span className="pulse-dot" />
-            <div>
-              <strong>{tr('home.workoutInProgress')}</strong>
-              <span className="muted">
-                {' · '}{tr('home.startedAt', { time: formatTime(activeWorkout.startedAt, lang) })}
-              </span>
-            </div>
-          </div>
-          <button type="button" className="primary btn-sm" onClick={onResumeWorkout}>
-            {tr('home.resumeWorkout')}
-          </button>
-        </div>
+        <ActiveWorkoutBanner workout={activeWorkout} onResume={onResumeWorkout} />
       )}
 
       <ConsistencyWidget stats={consistencyStats} />
@@ -243,48 +243,13 @@ export function HomeScreen({
       </section>
 
       {pickingRoutine && (
-        <section className="card">
-          <h3>{tr('home.pickRoutine')}</h3>
-          {routines.length === 0 ? (
-            <p className="muted">{tr('home.noRoutines')}</p>
-          ) : (
-            <ul className="days">
-              {routines.map((routine) => (
-                <li key={routine.id} className="day">
-                  <div className="day-head">
-                    <strong>{routine.name}</strong>
-                    <span className="muted">
-                      {routine.days.length} {p(routine.days.length, 'count.days')}
-                    </span>
-                  </div>
-                  {routine.days.length === 0 ? (
-                    <p className="muted">{tr('home.noDaysInRoutine')}</p>
-                  ) : (
-                    <div className="day-body">
-                      {routine.days.map((day) => (
-                        <button
-                          key={day.id}
-                          type="button"
-                          className="day-toggle pick-day"
-                          onClick={() => {
-                            onStartWithExercises(day.exerciseNames)
-                            setPickingRoutine(false)
-                          }}
-                        >
-                          <span>{day.name}</span>
-                          <span className="muted">
-                            {day.exerciseNames.length}{' '}
-                            {p(day.exerciseNames.length, 'count.exercises')}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
+        <RoutinePicker
+          routines={routines}
+          onPick={(names) => {
+            onStartWithExercises(names)
+            setPickingRoutine(false)
+          }}
+        />
       )}
 
       <section className="recent">
@@ -300,7 +265,8 @@ export function HomeScreen({
                 const hasDayName = resolveDayName(session, routines) !== null
                 const exNames = session.exercises.map((e) => e.name)
                 const preview = hasDayName
-                  ? exNames.slice(0, 3).join(' · ') + (exNames.length > 3 ? ` +${exNames.length - 3}` : '')
+                  ? exNames.slice(0, 3).join(' · ') +
+                    (exNames.length > 3 ? ` +${exNames.length - 3}` : '')
                   : ''
                 const dateStr = formatDateShort(session.startedAt, lang)
                 const timeStr = formatTimeShort(session.startedAt, lang)
@@ -314,13 +280,16 @@ export function HomeScreen({
                     >
                       <div className="session-item-main">
                         <span className="session-name">{primary}</span>
-                        {preview && <span className="muted session-preview">{preview}</span>}
+                        {preview && (
+                          <span className="muted session-preview">{preview}</span>
+                        )}
                         <span className="session-date-secondary muted">
                           {dateStr} · {timeStr}
                         </span>
                       </div>
                       <span className="muted session-meta">
-                        {p(session.exercises.length, 'count.exercises')} ({totalSets} set)
+                        {p(session.exercises.length, 'count.exercises')} (
+                        {totalSets} set)
                       </span>
                     </button>
                   </li>
@@ -339,64 +308,14 @@ export function HomeScreen({
       </section>
 
       {settingsOpen && (
-        <div className="settings-modal">
-          <ConfirmDialog
-            title={tr('home.settings')}
-            onClose={() => setSettingsOpen(false)}
-            returnFocusRef={settingsBtnRef}
-            ariaLabel={tr('home.settings')}
-          >
-            <div className="settings-content">
-              <BackupControls state={backupState} onImport={onImportBackup} />
-
-              <section className="about-sub">
-                <h3>{tr('theme.title')}</h3>
-                <div className="theme-options" role="group" aria-label={tr('theme.title')}>
-                  {THEMES.map((option) => (
-                    <button
-                      key={option}
-                      type="button"
-                      className={`theme-option${theme === option ? ' active' : ''}`}
-                      onClick={() => onSetTheme(option)}
-                    >
-                      <Icon
-                        name={option === 'light' ? 'sun' : option === 'dark' ? 'moon' : 'monitor'}
-                        size={16}
-                      />
-                      <span>{tr(`theme.${option}`)}</span>
-                    </button>
-                  ))}
-                </div>
-              </section>
-
-              <section className="about-sub">
-                <h3>{tr('about.title')}</h3>
-                <p className="muted">
-                  {tr('about.desc', { version: __APP_VERSION__ })}
-                </p>
-                <div className="backup-actions">
-                  <a
-                    className="file-button btn-sm secondary"
-                    href={GITHUB_URL}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    {tr('about.github')}
-                  </a>
-                  <a
-                    className="file-button btn-sm secondary"
-                    href={SAWERIA_URL}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    {tr('about.support')}
-                  </a>
-                </div>
-                <FeedbackCard />
-              </section>
-            </div>
-          </ConfirmDialog>
-        </div>
+        <SettingsModal
+          onClose={() => setSettingsOpen(false)}
+          returnFocusRef={settingsBtnRef}
+          theme={theme}
+          onSetTheme={onSetTheme}
+          backupState={backupState}
+          onImportBackup={onImportBackup}
+        />
       )}
     </main>
   )
