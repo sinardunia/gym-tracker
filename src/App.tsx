@@ -12,8 +12,10 @@ import { UpdateBanner } from './components/UpdateBanner'
 import { clearTimerSnapshots } from './lib/timer'
 import {
   normalizeWorkout,
+  type ConsistencyStats,
   type ExerciseUnit,
   type PersistedState,
+  type PRDetection,
   type ProgramTemplate,
   type Routine,
   type SetType,
@@ -29,6 +31,8 @@ import {
   saveState,
 } from './lib/data'
 import { useTheme, type Theme } from './lib/theme'
+import { computeConsistency, detectNewPRs, checkMilestones } from './lib/selectors'
+import { loadSeenMilestones, saveSeenMilestones } from './lib/milestones'
 import './App.css'
 
 function App() {
@@ -84,6 +88,16 @@ function AppContent({
   const [collapsedExerciseIds, setCollapsedExerciseIds] = useState<Set<string>>(
     () => new Set(),
   )
+  const [consistencyStats, setConsistencyStats] = useState<ConsistencyStats>({
+    currentWeekStreak: 0,
+    longestWeekStreak: 0,
+    totalSessions: 0,
+    lastTrainedAt: null,
+    gapDays: null,
+  })
+  const [newPRs, setNewPRs] = useState<PRDetection[]>([])
+  const [dismissedMilestoneId, setDismissedMilestoneId] = useState<string | null>(null)
+  const [milestoneToDisplay, setMilestoneToDisplay] = useState<string | null>(null)
   const editingSessionIdRef = useRef<string | null>(null)
 
   const activeWorkout = state.activeWorkout
@@ -100,8 +114,18 @@ function AppContent({
       setState((current) => {
         const localSavedAt = current.savedAt ? Date.parse(current.savedAt) : NaN
         const idbSavedAt = idb.savedAt ? Date.parse(idb.savedAt) : NaN
+        const idbEmpty =
+          idb.sessions.length === 0 &&
+          idb.routines.length === 0 &&
+          idb.activeWorkout === null
+        const localEmpty =
+          current.sessions.length === 0 &&
+          current.routines.length === 0 &&
+          current.activeWorkout === null
         if (!Number.isFinite(idbSavedAt)) return current
-        if (!Number.isFinite(localSavedAt) || idbSavedAt > localSavedAt) return idb
+        if (idbEmpty && !localEmpty) return current
+        if (!Number.isFinite(localSavedAt)) return idb
+        if (idbSavedAt > localSavedAt) return idb
         return current
       })
     })()
@@ -137,6 +161,23 @@ function AppContent({
       cancelled = true
     }
   }, [state.sessions.length, state.routines.length])
+
+  useEffect(() => {
+    const stats = computeConsistency(state.sessions)
+    setConsistencyStats(stats)
+    const prs = detectNewPRs(state.sessions)
+    setNewPRs(prs)
+  }, [state.sessions])
+
+  useEffect(() => {
+    if (state.sessions.length === 0) return
+    const seen = loadSeenMilestones()
+    const milestone = checkMilestones(state.sessions, seen)
+    if (milestone) {
+      setMilestoneToDisplay(milestone)
+      saveSeenMilestones([...seen, milestone])
+    }
+  }, [state.sessions])
 
   useEffect(() => {
     void navigator.storage?.persist?.().catch(() => {})
@@ -684,6 +725,7 @@ function AppContent({
           onBack={() => setViewedSession(null)}
           onEdit={editSession}
           onDelete={deleteSession}
+          newPRs={newPRs}
         />
       ) : (
         <>
