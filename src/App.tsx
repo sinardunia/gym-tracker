@@ -9,6 +9,7 @@ import { HistoryScreen } from './screens/HistoryScreen'
 import { ProgressScreen } from './screens/ProgressScreen'
 import { BottomNav, type TabKey } from './components/BottomNav'
 import { UpdateBanner } from './components/UpdateBanner'
+import { ErrorBoundary } from './components/ErrorBoundary'
 import { clearTimerSnapshots } from './lib/timer'
 import type { ConsistencyStats, PersistedState, PRDetection, Workout } from './lib/types'
 import { useTheme, type Theme } from './lib/theme'
@@ -41,12 +42,14 @@ function App() {
   return (
     <I18nProvider lang={lang}>
       <AppStore>
-        <AppContent
-          lang={lang}
-          onToggleLang={() => setLang((cur) => (cur === 'id' ? 'en' : 'id'))}
-          theme={theme}
-          onSetTheme={setTheme}
-        />
+        <ErrorBoundary>
+          <AppContent
+            lang={lang}
+            onToggleLang={() => setLang((cur) => (cur === 'id' ? 'en' : 'id'))}
+            theme={theme}
+            onSetTheme={setTheme}
+          />
+        </ErrorBoundary>
       </AppStore>
       <UpdateBanner />
       {process.env.NODE_ENV === 'development' && <Agentation />}

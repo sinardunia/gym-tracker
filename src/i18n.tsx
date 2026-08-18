@@ -341,6 +341,9 @@ const ID: Record<string, string> = {
 
   'calc.title': 'Kalkulator',
   'calc.btn': 'Kalkulator',
+
+  'error.title': 'Terjadi kesalahan',
+  'error.reload': 'Muat ulang aplikasi',
 }
 
 const EN: Record<string, string> = {
@@ -676,6 +679,9 @@ const EN: Record<string, string> = {
 
   'calc.title': 'Calculator',
   'calc.btn': 'Calculator',
+
+  'error.title': 'Something went wrong',
+  'error.reload': 'Reload app',
 }
 
 const DICTS: Record<Lang, Record<string, string>> = { id: ID, en: EN }
@@ -699,7 +705,9 @@ type I18n = {
   p: (count: number, key: string) => string
 }
 
-const I18nContext = createContext<I18n | null>(null)
+export type { I18n }
+
+export const I18nContext = createContext<I18n | null>(null)
 
 export function I18nProvider({
   lang,
