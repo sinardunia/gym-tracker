@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useI18n } from '../i18n'
-import { PROGRAM_GOALS, PROGRAM_TEMPLATES } from '../lib/data'
+import { PROGRAM_GOALS, PROGRAM_TEMPLATES } from '../lib/programs'
 import type { ProgramGoal, ProgramTemplate } from '../lib/types'
 
 export function ProgramPickerScreen({

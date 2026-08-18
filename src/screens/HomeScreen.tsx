@@ -8,9 +8,25 @@ import { InstallPwaBanner } from '../components/InstallPwaBanner'
 import { ConsistencyWidget } from '../components/ConsistencyWidget'
 import { GITHUB_URL, SAWERIA_URL } from '../lib/config'
 import { getRecommendedWorkout } from '../lib/selectors'
-import { countSets, formatDate, formatTime } from '../lib/format'
+import { countSets, formatDateShort, formatTimeShort, formatTime } from '../lib/format'
 import { THEMES, type Theme } from '../lib/theme'
 import type { ConsistencyStats, PersistedState, Routine, Workout } from '../lib/types'
+
+function resolveDayName(workout: Workout, routines: Routine[]): string | null {
+  if (!workout.routineId || !workout.dayId) return null
+  const routine = routines.find((r) => r.id === workout.routineId)
+  if (!routine) return null
+  const day = routine.days.find((d) => d.id === workout.dayId)
+  return day?.name ?? null
+}
+
+function sessionLabel(workout: Workout, routines: Routine[]): string {
+  const dayName = resolveDayName(workout, routines)
+  if (dayName) return dayName
+  const names = workout.exercises.map((e) => e.name)
+  if (names.length === 0) return '—'
+  return names.slice(0, 2).join(' · ') + (names.length > 2 ? ` +${names.length - 2}` : '')
+}
 
 export function HomeScreen({
   sessions,
@@ -280,10 +296,14 @@ export function HomeScreen({
             <ul className="session-list">
               {previewSessions.map((session) => {
                 const totalSets = countSets(session)
+                const primary = sessionLabel(session, routines)
+                const hasDayName = resolveDayName(session, routines) !== null
                 const exNames = session.exercises.map((e) => e.name)
-                const previewText = exNames.length > 0
-                  ? exNames.slice(0, 2).join(', ') + (exNames.length > 2 ? ` +${exNames.length - 2}` : '')
+                const preview = hasDayName
+                  ? exNames.slice(0, 3).join(' · ') + (exNames.length > 3 ? ` +${exNames.length - 3}` : '')
                   : ''
+                const dateStr = formatDateShort(session.startedAt, lang)
+                const timeStr = formatTimeShort(session.startedAt, lang)
 
                 return (
                   <li key={session.id}>
@@ -293,8 +313,11 @@ export function HomeScreen({
                       onClick={() => onViewSession(session)}
                     >
                       <div className="session-item-main">
-                        <span className="session-date">{formatDate(session.startedAt, lang)}</span>
-                        {previewText && <span className="muted session-preview">{previewText}</span>}
+                        <span className="session-name">{primary}</span>
+                        {preview && <span className="muted session-preview">{preview}</span>}
+                        <span className="session-date-secondary muted">
+                          {dateStr} · {timeStr}
+                        </span>
                       </div>
                       <span className="muted session-meta">
                         {p(session.exercises.length, 'count.exercises')} ({totalSets} set)

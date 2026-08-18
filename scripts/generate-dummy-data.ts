@@ -182,7 +182,12 @@ for (let d = new Date(start); d < today; d.setDate(d.getDate() + 1)) {
   weekCounters.set(day.id, weekIndex + 1)
 }
 
-const state = { activeWorkout: null, sessions, routines: [buildRoutine()] }
+const state = {
+  activeWorkout: null,
+  sessions,
+  routines: [buildRoutine()],
+  savedAt: new Date().toISOString(),
+}
 
 if (!isPersistedState(state)) {
   console.error('Generated state failed validation')

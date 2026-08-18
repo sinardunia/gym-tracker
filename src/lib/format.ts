@@ -32,6 +32,22 @@ export function formatDate(iso: string, lang: Lang): string {
   })
 }
 
+/** Short date: "28 Apr" or "Apr 28" */
+export function formatDateShort(iso: string, lang: Lang): string {
+  return new Date(iso).toLocaleDateString(localeOf(lang), {
+    day: 'numeric',
+    month: 'short',
+  })
+}
+
+/** Time only: "19:06" */
+export function formatTimeShort(iso: string, lang: Lang): string {
+  return new Date(iso).toLocaleTimeString(localeOf(lang), {
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
 export function formatTimer(totalSeconds: number): string {
   const minutes = Math.floor(totalSeconds / 60)
   const seconds = totalSeconds % 60

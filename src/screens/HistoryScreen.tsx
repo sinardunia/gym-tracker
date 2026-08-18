@@ -1,14 +1,41 @@
 import { useState } from 'react'
 import { useI18n, type Lang } from '../i18n'
-import { countSets, formatDate } from '../lib/format'
-import type { Workout } from '../lib/types'
+import { countSets, formatDateShort, formatTimeShort } from '../lib/format'
+import type { Routine, Workout } from '../lib/types'
+
+/** Resolve the day name from a workout's routineId/dayId, or null if not found. */
+function resolveDayName(workout: Workout, routines: Routine[]): string | null {
+  if (!workout.routineId || !workout.dayId) return null
+  const routine = routines.find((r) => r.id === workout.routineId)
+  if (!routine) return null
+  const day = routine.days.find((d) => d.id === workout.dayId)
+  return day?.name ?? null
+}
+
+/** Primary display label for a session: day name > exercise names > fallback */
+function sessionLabel(workout: Workout, routines: Routine[]): string {
+  const dayName = resolveDayName(workout, routines)
+  if (dayName) return dayName
+  const names = workout.exercises.map((e) => e.name)
+  if (names.length === 0) return '—'
+  return names.slice(0, 2).join(' · ') + (names.length > 2 ? ` +${names.length - 2}` : '')
+}
+
+/** Compact exercise preview line (shown under the primary label when primary is day name) */
+function exercisePreview(workout: Workout): string {
+  const names = workout.exercises.map((e) => e.name)
+  if (names.length === 0) return ''
+  return names.slice(0, 3).join(' · ') + (names.length > 3 ? ` +${names.length - 3}` : '')
+}
 
 export function HistoryScreen({
   sessions,
+  routines,
   onViewSession,
   lang,
 }: {
   sessions: Workout[]
+  routines: Routine[]
   onViewSession: (session: Workout) => void
   lang: Lang
 }) {
@@ -30,12 +57,11 @@ export function HistoryScreen({
           <ul className="session-list">
             {visibleSessions.map((session) => {
               const totalSets = countSets(session)
-              const exNames = session.exercises.map((e) => e.name)
-              const previewText =
-                exNames.length > 0
-                  ? exNames.slice(0, 2).join(', ') +
-                    (exNames.length > 2 ? ` +${exNames.length - 2}` : '')
-                  : ''
+              const primary = sessionLabel(session, routines)
+              const hasDayName = resolveDayName(session, routines) !== null
+              const preview = hasDayName ? exercisePreview(session) : ''
+              const dateStr = formatDateShort(session.startedAt, lang)
+              const timeStr = formatTimeShort(session.startedAt, lang)
 
               return (
                 <li key={session.id}>
@@ -45,14 +71,13 @@ export function HistoryScreen({
                     onClick={() => onViewSession(session)}
                   >
                     <div className="session-item-main">
-                      <span className="session-date">
-                        {formatDate(session.startedAt, lang)}
-                      </span>
-                      {previewText && (
-                        <span className="muted session-preview">
-                          {previewText}
-                        </span>
+                      <span className="session-name">{primary}</span>
+                      {preview && (
+                        <span className="muted session-preview">{preview}</span>
                       )}
+                      <span className="session-date-secondary muted">
+                        {dateStr} · {timeStr}
+                      </span>
                     </div>
                     <span className="muted session-meta">
                       {p(session.exercises.length, 'count.exercises')} (

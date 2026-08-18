@@ -27,9 +27,9 @@ import {
   loadAsyncState,
   loadState,
   newId,
-  parseBackup,
   saveState,
-} from './lib/data'
+} from './lib/storage'
+import { parseBackup } from './lib/backup'
 import { useTheme, type Theme } from './lib/theme'
 import { computeConsistency, detectNewPRs, checkMilestones } from './lib/selectors'
 import { loadSeenMilestones, saveSeenMilestones } from './lib/milestones'
@@ -136,11 +136,6 @@ function AppContent({
   useEffect(() => {
     if (!import.meta.env.DEV) return
     if (state.sessions.length > 0 || state.routines.length > 0) return
-    try {
-      if (localStorage.getItem('gym-tracker.seeded') === '1') return
-    } catch {
-      return
-    }
     let cancelled = false
     void fetch('gym-tracker-dummy-backup.json')
       .then((res) => res.text())
@@ -148,11 +143,6 @@ function AppContent({
         if (cancelled) return
         const backup = parseBackup(text)
         if (!backup) return
-        try {
-          localStorage.setItem('gym-tracker.seeded', '1')
-        } catch {
-          // Storage unavailable.
-        }
         setState(backup)
       })
       .catch(() => {})
@@ -780,6 +770,7 @@ function AppContent({
             <main className="screen">
               <HistoryScreen
                 sessions={state.sessions}
+                routines={state.routines}
                 onViewSession={setViewedSession}
                 lang={lang}
               />

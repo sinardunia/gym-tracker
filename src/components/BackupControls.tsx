@@ -1,6 +1,6 @@
 import { useState, type ChangeEvent } from 'react'
 import { useI18n } from '../i18n'
-import { parseBackup } from '../lib/data'
+import { parseBackup } from '../lib/backup'
 import type { BackupMessage, PersistedState } from '../lib/types'
 
 export function BackupControls({

@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { useI18n } from '../i18n'
-import { exerciseHistory } from '../lib/selectors'
+import { exerciseHistory, computeConsistency } from '../lib/selectors'
 import { ExerciseChart } from '../components/ExerciseChart'
 import { formatDate, formatSetWeight } from '../lib/format'
 import type { Workout } from '../lib/types'
@@ -18,6 +18,7 @@ export function ProgressScreen({
 }) {
   const { tr, p, lang } = useI18n()
   const history = useMemo(() => exerciseHistory(sessions), [sessions])
+  const stats = useMemo(() => computeConsistency(sessions), [sessions])
 
   if (sessions.length === 0) {
     return (
@@ -55,25 +56,28 @@ export function ProgressScreen({
           <section className="card">
             <h2>{item.name}</h2>
             {item.best && (
-              <p className="muted">
-                {tr('ex.best', {
-                  weight:
-                    formatSetWeight(item.best.unit, item.best.weightKg, tr) ?? '',
-                  reps: item.best.reps,
-                })}
-              </p>
+              <div className="progress-best-block">
+                <span className="progress-pr-badge">PR</span>
+                <span className="progress-best-value">
+                  {formatSetWeight(item.best.unit, item.best.weightKg, tr) ?? `${item.best.reps}r`}
+                </span>
+                <span className="muted">
+                  {item.best.unit !== 'bodyweight'
+                    ? `× ${item.best.reps} reps`
+                    : `${item.best.reps} reps`}
+                </span>
+              </div>
             )}
+            <p className="muted" style={{ fontSize: '13px', marginTop: 0 }}>
+              {item.entries.length} {p(item.entries.length, 'count.sessions')} tercatat
+            </p>
           </section>
           {item.entries.length >= 4 && item.best && (
             <ExerciseChart entries={item.entries} unit={item.best.unit} />
           )}
           <ul className="sets">
             {item.entries.map((entry) => {
-              const weightText = formatSetWeight(
-                entry.unit,
-                entry.best.weightKg,
-                tr,
-              )
+              const weightText = formatSetWeight(entry.unit, entry.best.weightKg, tr)
               return (
                 <li key={entry.finishedAt}>
                   <span>{formatDate(entry.finishedAt, lang)}</span>
@@ -89,24 +93,81 @@ export function ProgressScreen({
       ) : history.length === 0 ? (
         <p className="muted empty">{tr('progress.noExercises')}</p>
       ) : (
-        <ul className="days">
-          {history.map((h) => (
-            <li key={h.name} className="day">
-              <button
-                type="button"
-                className="day-toggle"
-                onClick={() => onSelect(h.name)}
-              >
-                <span className="day-toggle-main">
-                  <span>{h.name}</span>
-                  <span className="muted">
-                    {h.entries.length} {p(h.entries.length, 'count.sessions')}
-                  </span>
-                </span>
-              </button>
-            </li>
-          ))}
-        </ul>
+        <>
+          {/* Summary strip */}
+          <div className="progress-summary-strip">
+            <div className="progress-summary-stat">
+              <span className="progress-summary-value">{stats.totalSessions}</span>
+              <span className="progress-summary-label">
+                {p(stats.totalSessions, 'count.sessions')}
+              </span>
+            </div>
+            <div className="progress-summary-divider" />
+            <div className="progress-summary-stat">
+              <span className="progress-summary-value">{stats.currentWeekStreak}w</span>
+              <span className="progress-summary-label">streak</span>
+            </div>
+            <div className="progress-summary-divider" />
+            <div className="progress-summary-stat">
+              <span className="progress-summary-value">{history.length}</span>
+              <span className="progress-summary-label">
+                {p(history.length, 'count.exercises')}
+              </span>
+            </div>
+          </div>
+
+          {/* Exercise list */}
+          <ul className="progress-exercise-list">
+            {history.map((h) => {
+              const bestLabel = h.best
+                ? h.best.unit === 'bodyweight'
+                  ? `${h.best.reps}r`
+                  : `${formatSetWeight(h.best.unit, h.best.weightKg, tr)} × ${h.best.reps}`
+                : null
+              const trend = (() => {
+                if (h.entries.length < 2) return null
+                const last = h.entries[h.entries.length - 1]
+                const prev = h.entries[h.entries.length - 2]
+                const lastVal = h.best?.unit === 'bodyweight' ? last.best.reps : last.best.weightKg
+                const prevVal = h.best?.unit === 'bodyweight' ? prev.best.reps : prev.best.weightKg
+                if (lastVal > prevVal) return 'up'
+                if (lastVal < prevVal) return 'down'
+                return 'flat'
+              })()
+
+              return (
+                <li key={h.name}>
+                  <button
+                    type="button"
+                    className="progress-exercise-row"
+                    onClick={() => onSelect(h.name)}
+                  >
+                    <div className="progress-exercise-info">
+                      <span className="progress-exercise-name">{h.name}</span>
+                      <span className="progress-exercise-count muted">
+                        {h.entries.length} {p(h.entries.length, 'count.sessions')}
+                      </span>
+                    </div>
+                    <div className="progress-exercise-right">
+                      {bestLabel && (
+                        <span className="progress-exercise-best">{bestLabel}</span>
+                      )}
+                      {trend === 'up' && (
+                        <span className="progress-trend up" aria-label="trending up">↑</span>
+                      )}
+                      {trend === 'down' && (
+                        <span className="progress-trend down" aria-label="trending down">↓</span>
+                      )}
+                      {trend === 'flat' && (
+                        <span className="progress-trend flat" aria-label="stable">—</span>
+                      )}
+                    </div>
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
+        </>
       )}
     </main>
   )

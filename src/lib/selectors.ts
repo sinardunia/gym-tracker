@@ -1,4 +1,4 @@
-import { EXERCISE_LIBRARY } from './data'
+import { EXERCISE_LIBRARY } from './library'
 import type {
   ConsistencyStats,
   ExerciseUnit,
