@@ -745,6 +745,7 @@ function AppContent({
               onToggleLang={onToggleLang}
               theme={theme}
               onSetTheme={onSetTheme}
+              consistencyStats={consistencyStats}
             />
           )}
 

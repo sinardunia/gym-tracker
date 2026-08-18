@@ -5,11 +5,12 @@ import { BackupControls } from '../components/BackupControls'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { FeedbackCard } from '../components/FeedbackCard'
 import { InstallPwaBanner } from '../components/InstallPwaBanner'
+import { ConsistencyWidget } from '../components/ConsistencyWidget'
 import { GITHUB_URL, SAWERIA_URL } from '../lib/config'
 import { getRecommendedWorkout } from '../lib/selectors'
 import { countSets, formatDate, formatTime } from '../lib/format'
 import { THEMES, type Theme } from '../lib/theme'
-import type { PersistedState, Routine, Workout } from '../lib/types'
+import type { ConsistencyStats, PersistedState, Routine, Workout } from '../lib/types'
 
 export function HomeScreen({
   sessions,
@@ -26,6 +27,7 @@ export function HomeScreen({
   onToggleLang,
   theme,
   onSetTheme,
+  consistencyStats,
 }: {
   sessions: Workout[]
   routines: Routine[]
@@ -41,6 +43,7 @@ export function HomeScreen({
   onToggleLang: () => void
   theme: Theme
   onSetTheme: (theme: Theme) => void
+  consistencyStats: ConsistencyStats
 }) {
   const { tr, p } = useI18n()
   const [pickingRoutine, setPickingRoutine] = useState(false)
@@ -116,6 +119,8 @@ export function HomeScreen({
           </button>
         </div>
       )}
+
+      <ConsistencyWidget stats={consistencyStats} />
 
       <section className="card today-card">
         <h2>
