@@ -1,7 +1,8 @@
 import { useState, type FormEvent } from 'react'
+import { Plus } from 'lucide-react'
 import { useI18n } from '../i18n'
 import { findLibraryMatches } from '../lib/selectors'
-import { Icon } from './Icon'
+import { Button, Input } from './ui'
 
 export function AddRoutineExerciseForm({
   onAdd,
@@ -47,10 +48,10 @@ export function AddRoutineExerciseForm({
   const matches = query ? findLibraryMatches(query).slice(0, 5) : []
 
   return (
-    <div className="add-routine-exercise-wrapper">
-      <form onSubmit={handleSubmit} className="add-exercise-day-inline">
-        <div className="input-with-suggestions">
-          <input
+    <div>
+      <form onSubmit={handleSubmit}>
+        <div>
+          <Input
             type="text"
             value={name}
             placeholder={tr('routine.exercisePlaceholder')}
@@ -63,14 +64,10 @@ export function AddRoutineExerciseForm({
             }}
           />
           {focused && matches.length > 0 && (
-            <ul className="routine-suggestions-dropdown">
+            <ul>
               {matches.map((item) => (
                 <li key={item.name}>
-                  <button
-                    type="button"
-                    className="suggestion-item"
-                    onMouseDown={() => pick(item.name)}
-                  >
+                  <button type="button" onMouseDown={() => pick(item.name)}>
                     {item.name}
                   </button>
                 </li>
@@ -78,12 +75,12 @@ export function AddRoutineExerciseForm({
             </ul>
           )}
         </div>
-        <button type="submit" className="btn-sm positive flex-shrink-0 inline-add-btn">
-          <Icon name="plus" size={14} />
+        <Button type="submit" variant="positive" sm className="flex-shrink-0">
+          <Plus size={14} aria-hidden="true" />
           <span>{tr('addEx.add')}</span>
-        </button>
+        </Button>
       </form>
-      {error && <p className="error">{error}</p>}
+      {error && <p className="text-brand-danger text-sm m-0">{error}</p>}
     </div>
   )
 }

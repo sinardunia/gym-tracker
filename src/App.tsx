@@ -8,6 +8,7 @@ import { PlanningScreen } from './screens/PlanningScreen'
 import { HistoryScreen } from './screens/HistoryScreen'
 import { ProgressScreen } from './screens/ProgressScreen'
 import { BottomNav, type TabKey } from './components/BottomNav'
+import { Screen } from './components/ui'
 import { UpdateBanner } from './components/UpdateBanner'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { clearTimerSnapshots } from './lib/timer'
@@ -18,7 +19,6 @@ import { loadSeenMilestones, saveSeenMilestones } from './lib/milestones'
 import { useDevSeedData } from './hooks/useDevSeedData'
 import { AppStore } from './store/AppStore'
 import { useApp } from './store/AppContext'
-import './App.css'
 
 function App() {
   const [lang, setLang] = useState<Lang>(() => {
@@ -199,7 +199,7 @@ function AppContent({
   }
 
   return (
-    <div className="app-layout flex flex-col min-h-dvh pb-[72px]">
+    <div className="flex flex-col min-h-dvh pb-[72px]">
       {viewedSession ? (
         <SummaryScreen
           workout={viewedSession}
@@ -235,7 +235,7 @@ function AppContent({
           )}
 
           {activeTab === 'planning' && (
-            <main className="screen">
+            <Screen>
               <PlanningScreen
                 routines={state.routines}
                 onAddRoutine={routineActions.addRoutine}
@@ -251,18 +251,18 @@ function AppContent({
                 onSetSchedule={routineActions.setDaySchedule}
                 onApplyTemplate={routineActions.applyTemplate}
               />
-            </main>
+            </Screen>
           )}
 
           {activeTab === 'history' && (
-            <main className="screen">
+            <Screen>
               <HistoryScreen
                 sessions={state.sessions}
                 routines={state.routines}
                 onViewSession={setViewedSession}
                 lang={lang}
               />
-            </main>
+            </Screen>
           )}
 
           {activeTab === 'progress' && (

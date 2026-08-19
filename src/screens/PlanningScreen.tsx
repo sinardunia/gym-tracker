@@ -47,12 +47,12 @@ export function PlanningScreen({
 
   return (
     <div className="flex flex-col gap-4">
-      <header className="screen-header">
+      <header className="mb-1 [&_h1]:mb-1">
         <h1>{tr('nav.planning')}</h1>
-        <p className="muted">{tr('routine.desc')}</p>
+        <p className="text-brand-text">{tr('routine.desc')}</p>
       </header>
 
-      <div className="planning-tab-bar flex p-1 bg-[var(--row-bg)] rounded-xl border border-[var(--border)]">
+      <div className="flex p-1 bg-[var(--row-bg)] rounded-xl border border-[var(--border)]">
         <button
           type="button"
           className={`flex-1 py-2 px-3 text-sm font-semibold rounded-lg transition-all cursor-pointer ${

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useI18n, type Lang } from '../i18n'
 import { countSets, formatDateShort, formatTimeShort } from '../lib/format'
+import { Button } from '../components/ui'
 import type { Routine, Workout } from '../lib/types'
 
 /** Resolve the day name from a workout's routineId/dayId, or null if not found. */
@@ -45,16 +46,16 @@ export function HistoryScreen({
 
   return (
     <div className="flex flex-col gap-4">
-      <header className="screen-header">
+      <header className="mb-1 [&_h1]:mb-1">
         <h1>{tr('nav.history')}</h1>
-        <p className="muted">{tr('home.recentSessions')}</p>
+        <p className="text-brand-text">{tr('home.recentSessions')}</p>
       </header>
 
       {sessions.length === 0 ? (
-        <p className="muted empty">{tr('home.noSessions')}</p>
+        <p className="text-brand-text py-2">{tr('home.noSessions')}</p>
       ) : (
         <>
-          <ul className="session-list">
+          <ul className="list-none m-0 p-0 flex flex-col gap-2">
             {visibleSessions.map((session) => {
               const totalSets = countSets(session)
               const primary = sessionLabel(session, routines)
@@ -67,19 +68,19 @@ export function HistoryScreen({
                 <li key={session.id}>
                   <button
                     type="button"
-                    className="session-item"
+                    className="w-full flex justify-between items-center gap-2 text-left text-[15px] bg-brand-card border border-brand-border rounded-[10px] p-3 hover:border-brand-accent focus-visible:outline-2 focus-visible:outline-[var(--accent)] focus-visible:outline-offset-1"
                     onClick={() => onViewSession(session)}
                   >
-                    <div className="session-item-main">
-                      <span className="session-name">{primary}</span>
+                    <div className="flex flex-col gap-0.5">
+                      <span className="font-semibold text-brand-heading text-[15px] leading-[1.3]">{primary}</span>
                       {preview && (
-                        <span className="muted session-preview">{preview}</span>
+                        <span className="text-brand-text text-[13px]">{preview}</span>
                       )}
-                      <span className="session-date-secondary muted">
+                      <span className="text-xs mt-px text-brand-text">
                         {dateStr} · {timeStr}
                       </span>
                     </div>
-                    <span className="muted session-meta">
+                    <span className="text-brand-text text-[13px] whitespace-nowrap shrink-0">
                       {p(session.exercises.length, 'count.exercises')} (
                       {totalSets} set)
                     </span>
@@ -89,13 +90,9 @@ export function HistoryScreen({
             })}
           </ul>
           {sessions.length > 15 && !showAll && (
-            <button
-              type="button"
-              className="btn-sm secondary"
-              onClick={() => setShowAll(true)}
-            >
+            <Button sm variant="secondary" type="button" onClick={() => setShowAll(true)}>
               {tr('home.showMore')}
-            </button>
+            </Button>
           )}
         </>
       )}

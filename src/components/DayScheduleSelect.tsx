@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useI18n } from '../i18n'
 import { WEEKDAY_KEYS, type ScheduleConflict, type Weekday } from '../lib/types'
+import { Button, Select } from './ui'
 
 export function DayScheduleSelect({
   id,
@@ -43,11 +44,11 @@ export function DayScheduleSelect({
   }
 
   return (
-    <div className="schedule-row">
-      <label htmlFor={`weekday-${id}`} className="muted">
+    <div className="flex flex-col gap-1 mt-1">
+      <label htmlFor={`weekday-${id}`} className="text-brand-text">
         {tr('routine.weekday')}
       </label>
-      <select
+      <Select
         id={`weekday-${id}`}
         value={draft}
         onChange={(e) => handleChange(e.target.value)}
@@ -62,10 +63,10 @@ export function DayScheduleSelect({
             {tr(`weekday.${key}`)}
           </option>
         ))}
-      </select>
+      </Select>
 
       {pending && (
-        <div className="import-confirm">
+        <div className="flex flex-col gap-2 p-3 rounded-[10px] bg-brand-row">
           <p>
             {tr('routine.conflict', {
               weekday: tr(`weekday.${WEEKDAY_KEYS[pending.weekday]}`),
@@ -73,27 +74,27 @@ export function DayScheduleSelect({
               day: pending.conflict.dayName,
             })}
           </p>
-          <div className="backup-actions">
-            <button
+          <div className="flex gap-2 flex-wrap [&_button]:flex-1">
+            <Button
               type="button"
-              className="danger"
+              variant="danger"
               onClick={() => {
                 onSchedule(pending.weekday)
                 setPending(null)
               }}
             >
               {tr('routine.replace')}
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
-              className="secondary"
+              variant="secondary"
               onClick={() => {
                 setDraft(assignedWeekday)
                 setPending(null)
               }}
             >
               {tr('cancel')}
-            </button>
+            </Button>
           </div>
         </div>
       )}

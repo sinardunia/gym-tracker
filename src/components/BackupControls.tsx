@@ -2,6 +2,7 @@ import { useState, type ChangeEvent } from 'react'
 import { useI18n } from '../i18n'
 import { parseBackup } from '../lib/backup'
 import type { BackupMessage, PersistedState } from '../lib/types'
+import { Button, Card } from './ui'
 
 export function BackupControls({
   state,
@@ -56,42 +57,42 @@ export function BackupControls({
   }
 
   return (
-    <section className="card backup">
+    <Card>
       <h2>{tr('backup.title')}</h2>
-      <p className="muted">{tr('backup.desc')}</p>
-      <div className="backup-actions">
-        <button type="button" className="secondary" onClick={handleExport}>
+      <p className="text-brand-text">{tr('backup.desc')}</p>
+      <div className="flex gap-2 flex-wrap [&_button]:flex-1 [&_.file-button]:flex-1">
+        <Button type="button" variant="secondary" onClick={handleExport}>
           {tr('backup.export')}
-        </button>
-        <label className="file-button">
+        </Button>
+        <label className="inline-flex items-center justify-center px-4 py-3 border border-brand-border rounded-[10px] text-brand-heading cursor-pointer hover:border-brand-accent [&_input]:hidden">
           {tr('backup.import')}
           <input type="file" accept="application/json,.json" onChange={handleImportFile} />
         </label>
       </div>
 
       {pendingImport && (
-        <div className="import-confirm">
+        <div className="flex flex-col gap-2 p-3 rounded-[10px] bg-brand-row">
           <p>{tr('backup.importWarning')}</p>
-          <div className="backup-actions">
-            <button type="button" className="danger" onClick={confirmImport}>
+          <div className="flex gap-2 flex-wrap [&_button]:flex-1 [&_.file-button]:flex-1">
+            <Button type="button" variant="danger" onClick={confirmImport}>
               {tr('backup.confirmImport')}
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
-              className="secondary"
+              variant="secondary"
               onClick={() => setPendingImport(null)}
             >
               {tr('cancel')}
-            </button>
+            </Button>
           </div>
         </div>
       )}
 
       {message && (
-        <p className={message.kind === 'error' ? 'error' : 'muted'}>
+        <p className={message.kind === 'error' ? 'text-brand-danger text-sm m-0' : 'text-brand-text'}>
           {message.text}
         </p>
       )}
-    </section>
+    </Card>
   )
 }

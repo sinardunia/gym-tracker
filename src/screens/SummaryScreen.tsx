@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useI18n } from '../i18n'
 import { SetList } from '../components/SetList'
 import { ConfirmDialog } from '../components/ConfirmDialog'
+import { Button, Card, Screen } from '../components/ui'
 import { countSets, formatDate, formatSetWeight } from '../lib/format'
 import { computeConsistency } from '../lib/selectors'
 import type { PRDetection, Workout } from '../lib/types'
@@ -27,22 +28,30 @@ export function SummaryScreen({
   const [confirmingDelete, setConfirmingDelete] = useState(false)
   const consistencyStats = computeConsistency(sessions)
   return (
-    <main className="screen">
-      <header className="screen-header">
+    <Screen>
+      <header className="mb-1 [&_h1]:mb-1">
         <h1>{tr('summary.title')}</h1>
-        <p className="muted">{formatDate(workout.startedAt, lang)}</p>
+        <p className="text-brand-text">{formatDate(workout.startedAt, lang)}</p>
       </header>
 
-      <div className="active-workout-banner" style={{ background: 'var(--positive-bg)', borderColor: 'var(--positive)' }}>
-        <div className="active-workout-info">
-          <span className="pulse-dot" style={{ background: 'var(--positive)', boxShadow: 'none' }} />
+      <div
+        className="flex justify-between items-center gap-3 px-3.5 py-2.5 bg-brand-accent-bg border border-brand-accent rounded-[10px] text-brand-heading"
+        style={{ background: 'var(--positive-bg)', borderColor: 'var(--positive)' }}
+      >
+        <div className="flex items-center gap-2.5 [&_strong]:text-brand-heading">
+          <span
+            className="w-2.5 h-2.5 rounded-full bg-brand-accent shadow-[0_0_0_0_rgba(124,58,237,0.7)] animate-[pulse-ring_1.8s_infinite]"
+            style={{ background: 'var(--positive)', boxShadow: 'none' }}
+          />
           <strong style={{ color: 'var(--positive)' }}>{tr('summary.savedNotice')}</strong>
         </div>
       </div>
 
       {newPRs.length > 0 && (
-        <div className="pr-callout-card">
-          <span className="pr-callout-title">{tr('summary.prTitle')}</span>
+        <div className="bg-brand-positive-bg border border-brand-positive rounded-[10px] px-3.5 py-3 flex flex-col gap-2">
+          <span className="text-[13px] font-bold uppercase tracking-wider text-brand-positive">
+            {tr('summary.prTitle')}
+          </span>
           {newPRs.slice(0, 3).map((pr) => {
             const isBodyweight = pr.unit === 'bodyweight'
             const newWeightText = isBodyweight ? null : formatSetWeight(pr.unit, pr.newBest.weightKg, tr)
@@ -69,9 +78,9 @@ export function SummaryScreen({
                   })
 
             return (
-              <div key={pr.exerciseName} className="pr-callout-item">
-                <span className="pr-callout-main">{mainLine}</span>
-                <span className="pr-callout-prev">{prevLine}</span>
+              <div key={pr.exerciseName} className="flex flex-col gap-px">
+                <span className="text-[15px] font-semibold text-brand-heading">{mainLine}</span>
+                <span className="text-[13px] text-brand-text">{prevLine}</span>
               </div>
             )
           })}
@@ -79,32 +88,38 @@ export function SummaryScreen({
       )}
 
       {workout.note && (
-        <p className="summary-note">{workout.note}</p>
+        <p className="m-0 px-2.5 py-2 border-l-[3px] border-l-brand-accent bg-brand-row rounded-r-md text-sm text-brand-text whitespace-pre-wrap break-words">
+          {workout.note}
+        </p>
       )}
 
       {workout.exercises.map((exercise) => (
-        <section key={exercise.id} className="card">
+        <Card key={exercise.id}>
           <h3>{exercise.name}</h3>
-          {exercise.note && <p className="summary-note">{exercise.note}</p>}
+          {exercise.note && (
+            <p className="m-0 px-2.5 py-2 border-l-[3px] border-l-brand-accent bg-brand-row rounded-r-md text-sm text-brand-text whitespace-pre-wrap break-words">
+              {exercise.note}
+            </p>
+          )}
           <SetList sets={exercise.sets} unit={exercise.unit} />
-        </section>
+        </Card>
       ))}
 
       {(() => {
         const { currentWeekStreak, totalSessions } = consistencyStats
         if (totalSessions === 1) {
-          return <p className="summary-identity-line">{tr('summary.identityLine1')}</p>
+          return <p className="text-center text-sm italic text-brand-text py-1">{tr('summary.identityLine1')}</p>
         }
         if (currentWeekStreak >= 2) {
           return (
-            <p className="summary-identity-line">
+            <p className="text-center text-sm italic text-brand-text py-1">
               {tr('summary.identityLine', { n: currentWeekStreak })}
             </p>
           )
         }
         if (totalSessions >= 2) {
           return (
-            <p className="summary-identity-line">
+            <p className="text-center text-sm italic text-brand-text py-1">
               {tr('summary.identityLineSessions', { n: totalSessions })}
             </p>
           )
@@ -112,30 +127,32 @@ export function SummaryScreen({
         return null
       })()}
 
-      <p className="summary-count font-semibold">
+      <p className="text-center my-1 font-semibold">
         {p(workout.exercises.length, 'count.exercises')} ·{' '}
         {p(countSets(workout), 'count.sets')}
       </p>
 
       <div className="flex flex-col gap-2">
-        <button type="button" className="primary" onClick={onStartAnother}>
+        <Button type="button" onClick={onStartAnother}>
           {tr('summary.startAnother')}
-        </button>
-        <button type="button" className="secondary" onClick={onBack}>
+        </Button>
+        <Button type="button" variant="secondary" onClick={onBack}>
           {tr('summary.back')}
-        </button>
+        </Button>
 
         <div className="flex gap-2 mt-4 pt-4 border-t border-[var(--border)]">
-          <button type="button" className="btn-sm secondary flex-1" onClick={() => onEdit(workout)}>
+          <Button sm type="button" variant="secondary" className="flex-1" onClick={() => onEdit(workout)}>
             {tr('summary.edit')}
-          </button>
-          <button
+          </Button>
+          <Button
+            sm
             type="button"
-            className="btn-sm danger flex-1"
+            variant="danger"
+            className="flex-1"
             onClick={() => setConfirmingDelete(true)}
           >
             {tr('summary.delete')}
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -145,27 +162,27 @@ export function SummaryScreen({
           body={tr('summary.deleteBody')}
           onClose={() => setConfirmingDelete(false)}
         >
-          <div className="confirm-actions">
-            <button
+          <div className="flex gap-2 flex-wrap [&_button]:flex-1">
+            <Button
               type="button"
-              className="danger"
+              variant="danger"
               onClick={() => {
                 setConfirmingDelete(false)
                 onDelete(workout.id)
               }}
             >
               {tr('summary.confirmDelete')}
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
-              className="secondary"
+              variant="secondary"
               onClick={() => setConfirmingDelete(false)}
             >
               {tr('cancel')}
-            </button>
+            </Button>
           </div>
         </ConfirmDialog>
       )}
-    </main>
+    </Screen>
   )
 }

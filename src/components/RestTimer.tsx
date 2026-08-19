@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
+import { Clock } from 'lucide-react'
 import { useI18n } from '../i18n'
-import { Icon } from './Icon'
 import { formatTimer } from '../lib/format'
+import { Button, Input } from './ui'
 import {
   loadTimerSnapshot,
   saveTimerSnapshot,
@@ -111,69 +112,76 @@ export function RestTimer({ workoutId }: { workoutId: string }) {
 
   return (
     <div
-      className={`rest-timer${status === 'done' ? ' done' : ''}${
-        status === 'idle' && !idleExpanded ? ' compact' : ''
+      className={`flex items-center gap-2.5 flex-wrap w-full${
+        status === 'idle' && !idleExpanded ? ' pt-0 border-t-0' : ''
       }`}
     >
       {status === 'running' ? (
         <>
           <button
             type="button"
-            className="timer-display-btn"
+            className="inline-flex items-center justify-center px-1.5 py-1 -ml-1.5 border-none rounded-[10px] bg-transparent text-inherit cursor-pointer hover:bg-brand-row focus-visible:outline-2 focus-visible:outline-[var(--accent)] focus-visible:outline-offset-1"
             onClick={reset}
             aria-label={tr('timer.resetAria')}
           >
-            <span className="timer-display" role="timer">
+            <span
+              className="text-[38px] font-extrabold tabular-nums text-brand-heading min-w-[90px] leading-none"
+              role="timer"
+            >
               {formatTimer(remaining)}
             </span>
           </button>
-          <div className="timer-progress" aria-hidden="true">
+          <div
+            className="flex-1 min-w-12 h-1 rounded-full bg-brand-row overflow-hidden [&_div]:h-full [&_div]:bg-brand-positive [&_div]:transition-[width] [&_div]:duration-[250ms] [&_div]:ease-linear"
+            aria-hidden="true"
+          >
             <div style={{ width: `${progress}%` }} />
           </div>
-          <button type="button" className="btn-sm secondary" onClick={reset}>
+          <Button type="button" sm variant="secondary" onClick={reset}>
             {tr('timer.reset')}
-          </button>
+          </Button>
         </>
       ) : status === 'done' ? (
         <>
           <button
             type="button"
-            className="timer-display-btn"
+            className="inline-flex items-center justify-center px-1.5 py-1 -ml-1.5 border-none rounded-[10px] bg-transparent text-inherit cursor-pointer hover:bg-brand-row focus-visible:outline-2 focus-visible:outline-[var(--accent)] focus-visible:outline-offset-1"
             onClick={() => start(duration)}
             aria-label={tr('timer.restartAria')}
           >
-            <span className="timer-display" role="timer">
+            <span
+              className="text-[38px] font-extrabold tabular-nums text-brand-heading text-brand-positive min-w-[90px] leading-none"
+              role="timer"
+            >
               0:00
             </span>
           </button>
-          <span className="timer-done-msg">{tr('timer.timeUp')}</span>
-          <button
-            type="button"
-            className="btn-sm positive"
-            onClick={() => start(duration)}
-          >
+          <span className="text-brand-positive text-[13px] font-semibold">
+            {tr('timer.timeUp')}
+          </span>
+          <Button type="button" sm variant="positive" onClick={() => start(duration)}>
             {tr('timer.restart')}
-          </button>
+          </Button>
         </>
       ) : (
         <>
           <button
             type="button"
-            className="timer-chip timer-quick"
+            className="text-[15px] px-3.5 py-2.5 rounded-[10px] border border-brand-border bg-transparent text-brand-heading cursor-pointer font-medium hover:border-brand-positive hover:text-brand-positive [&.active]:border-brand-positive [&.active]:text-brand-positive [&.active]:bg-brand-positive-bg flex-1 inline-flex justify-center items-center gap-2 text-[17px] font-bold px-4 py-3.5 rounded-xl bg-brand-row"
             onClick={() => start(duration)}
             aria-label={tr('timer.startRest', { durasi: formatTimer(duration) })}
           >
             {tr('timer.rest')}{' '}
-            <span className="timer-chip-duration">{formatTimer(duration)}</span>
+            <span className="tabular-nums font-bold">{formatTimer(duration)}</span>
           </button>
           <button
             type="button"
-            className="timer-chip timer-settings"
+            className="text-[15px] px-3.5 py-2.5 rounded-[10px] border border-brand-border bg-transparent text-brand-heading cursor-pointer font-medium hover:border-brand-positive hover:text-brand-positive [&.active]:border-brand-positive [&.active]:text-brand-positive [&.active]:bg-brand-positive-bg inline-flex items-center justify-center px-3.5 py-3 rounded-xl"
             onClick={() => setIdleExpanded((expanded) => !expanded)}
             aria-label={tr('timer.setRest')}
             aria-expanded={idleExpanded}
           >
-            <Icon name="clock" size={14} />
+            <Clock size={14} aria-hidden="true" />
           </button>
           {idleExpanded && (
             <>
@@ -181,29 +189,27 @@ export function RestTimer({ workoutId }: { workoutId: string }) {
                 <button
                   key={seconds}
                   type="button"
-                  className={`timer-chip${duration === seconds ? ' active' : ''}`}
+                  className={`text-[15px] px-3.5 py-2.5 rounded-[10px] border border-brand-border bg-transparent text-brand-heading cursor-pointer font-medium hover:border-brand-positive hover:text-brand-positive [&.active]:border-brand-positive [&.active]:text-brand-positive [&.active]:bg-brand-positive-bg${
+                    duration === seconds ? ' active' : ''
+                  }`}
                   onClick={() => start(seconds)}
                 >
                   {formatTimer(seconds)}
                 </button>
               ))}
-              <input
+              <Input
                 type="number"
                 min={0.1}
                 step={0.5}
                 inputMode="decimal"
-                className="timer-custom"
+                className="w-16! px-2.5 py-2 text-[15px]"
                 value={customMinutes}
                 aria-label={tr('timer.customMinutes')}
                 onChange={(e) => setCustomMinutes(e.target.value)}
               />
-              <button
-                type="button"
-                className="btn-sm primary"
-                onClick={startCustom}
-              >
+              <Button type="button" sm onClick={startCustom}>
                 {tr('timer.start')}
-              </button>
+              </Button>
             </>
           )}
         </>

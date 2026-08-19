@@ -1,5 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
 import { I18nContext, type I18n } from '../i18n'
+import { Button, Card, Screen } from './ui'
 
 type Props = { children: ReactNode }
 type State = { hasError: boolean }
@@ -22,20 +23,16 @@ export class ErrorBoundary extends Component<Props, State> {
     if (this.state.hasError) {
       const { tr } = this.context
       return (
-        <main className="screen">
-          <div className="card">
+        <Screen>
+          <Card>
             <h1>{tr('error.title')}</h1>
-            <div className="backup-actions">
-              <button
-                type="button"
-                className="primary"
-                onClick={() => window.location.reload()}
-              >
+            <div className="flex gap-2 flex-wrap [&_button]:flex-1 [&_.file-button]:flex-1">
+              <Button type="button" onClick={() => window.location.reload()}>
                 {tr('error.reload')}
-              </button>
+              </Button>
             </div>
-          </div>
-        </main>
+          </Card>
+        </Screen>
       )
     }
     return this.props.children

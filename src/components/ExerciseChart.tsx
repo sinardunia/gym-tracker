@@ -83,7 +83,7 @@ export function ExerciseChart({
 
   return (
     <svg
-      className="exercise-chart"
+      className="w-full block mb-1"
       viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
       aria-hidden="true"
       onPointerEnter={(e) => {
@@ -104,14 +104,14 @@ export function ExerciseChart({
         y={PAD_TOP - 2}
         textAnchor="end"
         dominantBaseline="hanging"
-        className="exercise-chart-tick-label"
+        className="text-[10px] fill-[var(--text-muted)]"
       >
         {tr('progress.chart.yAxisUnit', { unit: unit === 'kg' ? 'kg' : 'r' })}
       </text>
       <text
         x={0}
         y={PAD_TOP + 4}
-        className="exercise-chart-axis-label"
+        className="text-[11px] fill-[var(--text)]"
         dominantBaseline="hanging"
       >
         {maxLabel}
@@ -119,7 +119,7 @@ export function ExerciseChart({
       <text
         x={0}
         y={VIEW_H - PAD_BOTTOM + 2}
-        className="exercise-chart-axis-label"
+        className="text-[11px] fill-[var(--text)]"
         dominantBaseline="auto"
       >
         {minLabel}
@@ -127,7 +127,7 @@ export function ExerciseChart({
 
       {/* Line */}
       <polyline
-        className="exercise-chart-line"
+        className="fill-none stroke-brand-accent stroke-2 stroke-linecap-round stroke-linejoin-round"
         points={polylinePoints}
       />
 
@@ -138,7 +138,7 @@ export function ExerciseChart({
           cx={p.x}
           cy={p.y}
           r={i === prIndex ? 4.5 : 3}
-          className={`exercise-chart-dot${i === prIndex ? ' pr-dot' : ' weight-dot'}${hoveredDot === i ? ' hovered' : ''}`}
+          className={`fill-brand-card stroke-brand-accent stroke-2 [&.pr-dot]:fill-brand-positive [&.pr-dot]:stroke-brand-positive [&.weight-dot]:fill-brand-card [&.weight-dot]:stroke-brand-accent [&.hovered]:stroke-[3]${i === prIndex ? ' pr-dot' : ' weight-dot'}${hoveredDot === i ? ' hovered' : ''}`}
         />
       ))}
 
@@ -154,7 +154,7 @@ export function ExerciseChart({
             x={p.x}
             y={p.y - 10}
             textAnchor="middle"
-            className="exercise-chart-tick-label"
+            className="text-[10px] fill-[var(--text-muted)]"
             style={{ fontWeight: 600 }}
           >
             {label}

@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
+import { Pencil } from 'lucide-react'
 import { useI18n } from '../../i18n'
-import { Icon } from '../Icon'
 import { SetList } from '../SetList'
+import { Button, CARD_CLASSES, Input } from '../ui'
 import { ExerciseHeader } from './ExerciseHeader'
 import { ExerciseOptionsPanel } from './ExerciseOptionsPanel'
 import { SetEntryForm } from './SetEntryForm'
@@ -165,7 +166,7 @@ export function ExerciseCard({
 
   return (
     <section
-      className={`card exercise${isActiveExercise ? ' active-exercise' : ' inactive-exercise'}`}
+      className={`${CARD_CLASSES}${isActiveExercise ? ' border-brand-accent shadow-[0_2px_8px_rgba(124,58,237,0.08)]' : ' opacity-85 transition-opacity duration-150 ease-in hover:opacity-100 hover:border-brand-border'}`}
       onClick={!isActiveExercise && onSelectActive ? onSelectActive : undefined}
     >
       <ExerciseHeader
@@ -194,18 +195,24 @@ export function ExerciseCard({
       )}
 
       {collapsed && (
-        <div className="collapsed-actions">
+        <div className="flex flex-col gap-2 items-start [&_button]:w-full">
           {prevSessionSummary && (
-            <p className="muted previous-summary">{prevSessionSummary}</p>
+            <p className="text-brand-text whitespace-nowrap overflow-hidden text-ellipsis max-w-full px-2.5 py-1.5 bg-brand-row rounded-lg">
+              {prevSessionSummary}
+            </p>
           )}
-          {targetText && <p className="target-line">{targetText}</p>}
+          {targetText && (
+            <p className="text-brand-accent font-semibold text-sm m-0">{targetText}</p>
+          )}
           {previous && previous.unit === exercise.unit && (
-            <button
+            <Button
               type="button"
-              className="btn-sm secondary repeat-btn"
+              variant="secondary"
+              sm
+              className="inline-flex items-center justify-center gap-2"
               onClick={() => setPrefillToken((token) => token + 1)}
             >
-              <Icon name="pencil" size={14} />
+              <Pencil size={14} aria-hidden="true" />
               <span>
                 {exercise.unit === 'bodyweight'
                   ? tr('ex.fillInputBodyweight', { reps: previous.reps })
@@ -214,7 +221,7 @@ export function ExerciseCard({
                       reps: previous.reps,
                     })}
               </span>
-            </button>
+            </Button>
           )}
         </div>
       )}
@@ -222,19 +229,25 @@ export function ExerciseCard({
       {!collapsed && (
         <>
           {prevSession && prevSession.sets.length > 0 && (
-            <section className="previous-block">
+            <section className="p-2.5 bg-brand-row border-l-[3px] border-l-brand-accent rounded-r-lg [&_h4]:text-[13px] [&_h4]:text-brand-text [&_h4]:mb-1.5">
               <h4>
                 {tr('ex.previous', { date: formatDate(prevSession.finishedAt, lang) })}
-                {bestText && <span className="best-line">{bestText}</span>}
+                {bestText && <span className="ml-2 text-brand-accent">{bestText}</span>}
               </h4>
-              <SetList sets={prevSession.sets} unit={exercise.unit} />
+              <SetList
+                sets={prevSession.sets}
+                unit={exercise.unit}
+                rowClassName="bg-brand-bg"
+              />
             </section>
           )}
-          {targetText && <p className="target-line">{targetText}</p>}
+          {targetText && (
+            <p className="text-brand-accent font-semibold text-sm m-0">{targetText}</p>
+          )}
 
           {editingName && (
-            <form onSubmit={handleRenameSubmit} className="rename-form">
-              <input
+            <form onSubmit={handleRenameSubmit} className="flex flex-col gap-2">
+              <Input
                 type="text"
                 value={nameDraft}
                 onChange={(e) => {
@@ -249,24 +262,25 @@ export function ExerciseCard({
                 }}
                 autoFocus
               />
-              <div className="rename-actions">
-                <button type="submit" className="btn-sm secondary">
+              <div className="flex gap-2">
+                <Button type="submit" sm variant="secondary">
                   {tr('save')}
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
-                  className="btn-sm secondary"
+                  sm
+                  variant="secondary"
                   onClick={() => setEditingName(false)}
                 >
                   {tr('cancel')}
-                </button>
+                </Button>
               </div>
-              {nameError && <p className="error">{nameError}</p>}
+              {nameError && <p className="text-brand-danger text-sm m-0">{nameError}</p>}
             </form>
           )}
 
           {exercise.sets.length === 0 ? (
-            <p className="muted">{tr('ex.noSets')}</p>
+            <p className="text-brand-text">{tr('ex.noSets')}</p>
           ) : (
             <SetList
               sets={exercise.sets}

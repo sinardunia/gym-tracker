@@ -38,11 +38,11 @@ export function ConsistencyWidget({ stats }: { stats: ConsistencyStats }) {
   if (gapDays !== null && gapDays >= 7) {
     const copyKey = gapDays >= 14 ? 'consistency.comeback14' : 'consistency.comeback7'
     return (
-      <div className="consistency-widget comeback">
-        <span className="consistency-comeback-main">
+      <div className="px-3.5 py-2.5 bg-brand-card border border-brand-border rounded-[10px] flex items-center justify-between gap-3 bg-brand-positive-bg border-brand-positive flex-col items-start gap-1">
+        <span className="text-[15px] font-semibold text-brand-positive">
           {tr(copyKey, { n: gapDays })}
         </span>
-        <span className="consistency-comeback-sub">
+        <span className="text-[13px] text-brand-text">
           {tr('consistency.totalSessions', { n: totalSessions })}
         </span>
       </div>
@@ -52,11 +52,11 @@ export function ConsistencyWidget({ stats }: { stats: ConsistencyStats }) {
   // No active streak (streak broke — a full elapsed week had no session)
   if (currentWeekStreak === 0) {
     return (
-      <div className="consistency-widget">
-        <span className="consistency-meta">
+      <div className="px-3.5 py-2.5 bg-brand-card border border-brand-border rounded-[10px] flex items-center justify-between gap-3">
+        <span className="text-[13px] text-brand-text text-right">
           {tr('consistency.newChapter')}
         </span>
-        <span className="consistency-meta">
+        <span className="text-[13px] text-brand-text text-right">
           {tr('consistency.totalSessions', { n: totalSessions })}
         </span>
       </div>
@@ -72,17 +72,17 @@ export function ConsistencyWidget({ stats }: { stats: ConsistencyStats }) {
       : tr('consistency.weekStreak', { n: currentWeekStreak })
 
   return (
-    <div className="consistency-widget">
-      <div className="consistency-streak">
+    <div className="px-3.5 py-2.5 bg-brand-card border border-brand-border rounded-[10px] flex items-center justify-between gap-3">
+      <div className="flex items-baseline gap-1.5">
         <span
-          className={`consistency-streak-number${isAnimating ? ' animating' : ''}`}
+          className={`text-[22px] font-extrabold text-brand-accent tabular-nums leading-none${isAnimating ? ' animate-[streak-count-in_400ms_ease-out_forwards]' : ''}`}
           aria-label={streakLabel}
         >
           {currentWeekStreak}w
         </span>
-        <span className="consistency-streak-label">{streakLabel}</span>
+        <span className="text-[13px] font-semibold text-brand-heading">{streakLabel}</span>
       </div>
-      <div className="consistency-meta">
+      <div className="text-[13px] text-brand-text text-right">
         {showLastTrained
           ? tr('consistency.lastTrained', { n: gapDays! })
           : tr('consistency.totalSessions', { n: totalSessions })}

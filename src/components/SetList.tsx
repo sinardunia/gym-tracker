@@ -1,9 +1,13 @@
 import { useState, type Ref } from 'react'
+import { Check } from 'lucide-react'
 import { useI18n } from '../i18n'
-import { Icon } from './Icon'
+import { Button, Input, Select } from './ui'
 import { groupSetRows } from '../lib/selectors'
 import { formatSetWeight } from '../lib/format'
 import { SET_TYPES, type ExerciseUnit, type SetType, type WorkoutSet } from '../lib/types'
+
+const ROW_BASE_CLASSES =
+  'px-2.5 py-2 bg-brand-row rounded-lg scroll-mt-[calc(100px+env(safe-area-inset-top))]'
 
 export function SetList({
   sets,
@@ -12,6 +16,7 @@ export function SetList({
   onUpdateSet,
   highlightId,
   lastRowRef,
+  rowClassName,
 }: {
   sets: WorkoutSet[]
   unit: ExerciseUnit
@@ -24,6 +29,7 @@ export function SetList({
   ) => void
   highlightId?: string | null
   lastRowRef?: Ref<HTMLLIElement>
+  rowClassName?: string
 }) {
   const { tr } = useI18n()
   const rows = groupSetRows(sets)
@@ -82,9 +88,9 @@ export function SetList({
 
   function renderEditRow(set: WorkoutSet) {
     return (
-      <li key={set.id} className="set-edit-row">
-        <div className="set-edit-form">
-          <select
+      <li key={set.id} className={`${ROW_BASE_CLASSES} flex flex-col gap-2`}>
+        <div className="flex gap-2 items-center flex-wrap [&_select]:flex-1 [&_input]:flex-1 [&_select]:min-w-0 [&_input]:min-w-0">
+          <Select
             value={draft?.type ?? set.type}
             onChange={(e) =>
               setDraft((d) => (d ? { ...d, type: e.target.value as SetType } : d))
@@ -96,8 +102,8 @@ export function SetList({
                 {tr(`setType.${t}`)}
               </option>
             ))}
-          </select>
-          <input
+          </Select>
+          <Input
             type="number"
             min={1}
             step={1}
@@ -109,7 +115,7 @@ export function SetList({
             aria-label={tr('ex.reps')}
           />
           {unit !== 'bodyweight' && (
-            <input
+            <Input
               type="number"
               min={0}
               step={unit === 'plate' ? 1 : 'any'}
@@ -122,26 +128,26 @@ export function SetList({
             />
           )}
         </div>
-        {editError && <p className="error">{editError}</p>}
-        <div className="rename-actions">
-          <button type="button" className="btn-sm primary" onClick={() => saveEdit(set)}>
+        {editError && <p className="text-brand-danger text-sm m-0">{editError}</p>}
+        <div className="flex gap-2">
+          <Button sm onClick={() => saveEdit(set)}>
             {tr('save')}
-          </button>
+          </Button>
           {onRemoveSet && (
-            <button
-              type="button"
-              className="btn-sm danger"
+            <Button
+              sm
+              variant="danger"
               onClick={() => {
                 onRemoveSet(set.id)
                 cancelEdit()
               }}
             >
               {tr('ex.remove')}
-            </button>
+            </Button>
           )}
-          <button type="button" className="btn-sm secondary" onClick={cancelEdit}>
+          <Button sm variant="secondary" onClick={cancelEdit}>
             {tr('cancel')}
-          </button>
+          </Button>
         </div>
       </li>
     )
@@ -154,28 +160,24 @@ export function SetList({
       <li
         key={set.id}
         ref={set.id === lastSetId ? lastRowRef : undefined}
-        className={`${isDrop ? 'drop-row' : ''}${
-          highlightId === set.id ? ' set-highlight' : ''
-        }`}
+        className={`${ROW_BASE_CLASSES} flex justify-between items-center gap-2${rowClassName ?? ''}${
+          isDrop ? ' drop-row' : ''
+        }${highlightId === set.id ? ' set-highlight' : ''}`}
       >
         <button
           type="button"
-          className="set-edit-toggle"
+          className="flex-1 min-w-0 flex items-center gap-2 text-left font-[inherit] text-[inherit] bg-transparent border-none p-0 cursor-pointer disabled:opacity-100 disabled:cursor-default focus-visible:outline-2 focus-visible:outline-[var(--accent)] focus-visible:outline-offset-1 focus-visible:rounded"
           onClick={onUpdateSet ? () => startEdit(set) : undefined}
           disabled={!onUpdateSet}
           aria-label={tr('ex.editSet')}
         >
           {isDrop && (
-            <span className="drop-marker" aria-hidden="true">↳</span>
+            <span className="text-brand-text text-[13px] shrink-0" aria-hidden="true">↳</span>
           )}
-          <span className="set-edit-toggle-info">
+          <span className="flex-1 min-w-0 flex justify-between items-center gap-2">
             <span>
               {!isDrop && tr('ex.setLabel', { n: setNumber })}
-              {set.type !== 'working' && (
-                <span className={`set-badge ${set.type}`}>
-                  {tr(`setType.${set.type}`)}
-                </span>
-              )}
+              {set.type !== 'working' && tr(`setType.${set.type}`)}
             </span>
             <span>
               {tr('ex.repsCount', { reps: set.reps })}
@@ -183,8 +185,8 @@ export function SetList({
             </span>
           </span>
           {onUpdateSet && (
-            <span className="completed-check-icon" title={tr('ex.completed')}>
-              <Icon name="check" size={14} />
+            <span className="inline-flex items-center justify-center text-brand-positive ml-1" title={tr('ex.completed')}>
+              <Check size={14} aria-hidden="true" />
             </span>
           )}
         </button>
@@ -193,7 +195,7 @@ export function SetList({
   }
 
   return (
-    <ul className="sets">
+    <ul className="list-none m-0 p-0 flex flex-col gap-1.5">
       {rows.flatMap(({ set, drops }) => {
         number += 1
         const setNumber = number

@@ -52,14 +52,16 @@ export function ConfirmDialog({
     const previous = document.activeElement as HTMLElement | null
     const target = returnFocusRef?.current ?? previous
     return () => {
-      target?.focus()
+      if (target && document.contains(target)) {
+        target.focus()
+      }
     }
   }, [returnFocusRef])
 
   return (
     <div
       ref={dialogRef}
-      className="confirm-dialog"
+      className="fixed inset-0 z-10 flex items-center justify-center px-4 pt-[calc(16px+env(safe-area-inset-top))] pb-[calc(16px+env(safe-area-inset-bottom))] bg-black/45"
       role="dialog"
       aria-modal="true"
       aria-label={ariaLabel}
@@ -69,7 +71,7 @@ export function ConfirmDialog({
         }
       }}
     >
-      <div className="confirm-card">
+      <div className="w-full max-w-[400px] flex flex-col gap-3 p-4 bg-brand-card border border-brand-border rounded-xl shadow-[0_16px_32px_rgba(0,0,0,0.2)]">
         {title && (
           <div className="flex items-center justify-between gap-2">
             <h3>{title}</h3>
@@ -83,7 +85,7 @@ export function ConfirmDialog({
             </button>
           </div>
         )}
-        {body && <p className="muted">{body}</p>}
+        {body && <p className="text-brand-text">{body}</p>}
         {children}
       </div>
     </div>

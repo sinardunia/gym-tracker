@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
+import { Settings } from 'lucide-react'
 import { useI18n, type Lang } from '../../i18n'
-import { Icon } from '../../components/Icon'
+import { Button, Card, IconButton, Screen } from '../../components/ui'
 import { InstallPwaBanner } from '../../components/InstallPwaBanner'
 import { ConsistencyWidget } from '../../components/ConsistencyWidget'
 import { ActiveWorkoutBanner } from './ActiveWorkoutBanner'
@@ -100,24 +101,25 @@ export function HomeScreen({
   const canStart = activeWorkout === null
 
   return (
-    <main className="screen">
+    <Screen>
       <InstallPwaBanner />
 
-      <header className="screen-header header-row">
+      <header className="mb-1 [&_h1]:mb-1 flex justify-between items-start gap-3">
         <div>
           <h1>Gym Tracker</h1>
-          <p className="muted">{tr('home.tagline')}</p>
+          <p className="text-brand-text">{tr('home.tagline')}</p>
         </div>
-        <button
-          type="button"
-          ref={settingsBtnRef}
-          className={`icon-btn${settingsOpen ? ' active' : ''}`}
-          onClick={() => setSettingsOpen((open) => !open)}
-          aria-label={tr('home.settings')}
-          title={tr('home.settings')}
-        >
-          <Icon name="settings" size={18} />
-        </button>
+        <div>
+          <IconButton
+            type="button"
+            ref={settingsBtnRef}
+            onClick={() => setSettingsOpen((open) => !open)}
+            aria-label={tr('home.settings')}
+            title={tr('home.settings')}
+          >
+            <Settings size={18} aria-hidden="true" />
+          </IconButton>
+        </div>
       </header>
 
       {activeWorkout && (
@@ -126,7 +128,7 @@ export function HomeScreen({
 
       <ConsistencyWidget stats={consistencyStats} />
 
-      <section className="card today-card">
+      <Card>
         <h2>
           {recommendation.isSequenceMismatch && !isShowingCalendar
             ? tr('home.recommendedNext')
@@ -134,23 +136,23 @@ export function HomeScreen({
         </h2>
         {activePlan ? (
           <>
-            <div className="plan-header-info">
+            <div>
               <h3>{activePlan.day.name}</h3>
-              <p className="muted exercise-summary">{activePlan.routine.name}</p>
+              <p className="mt-1 text-brand-text text-sm">{activePlan.routine.name}</p>
             </div>
 
             {recommendation.isSequenceMismatch && (
-              <div className="sequence-mismatch-banner">
+              <div className="flex flex-col items-start gap-1.5 my-2.5 mb-3.5 px-3 py-2.5 rounded-[10px] bg-brand-row border border-dashed border-brand-border">
                 {isShowingCalendar ? (
                   <>
-                    <span className="mismatch-tag">
+                    <span className="text-[13px] font-medium text-brand-text">
                       {tr('home.calendarContext', {
                         day: recommendation.calendarScheduled?.day.name ?? '',
                       })}
                     </span>
                     <button
                       type="button"
-                      className="btn-link"
+                      className="bg-none border-none p-0 text-[13px] font-semibold text-brand-accent cursor-pointer underline hover:opacity-85"
                       onClick={() => setOverrideSelection('recommended')}
                     >
                       {tr('home.switchToSequence', {
@@ -160,14 +162,14 @@ export function HomeScreen({
                   </>
                 ) : (
                   <>
-                    <span className="mismatch-tag">
+                    <span className="text-[13px] font-medium text-brand-text">
                       {tr('home.calendarContext', {
                         day: recommendation.calendarScheduled?.day.name ?? '',
                       })}
                     </span>
                     <button
                       type="button"
-                      className="btn-link"
+                      className="bg-none border-none p-0 text-[13px] font-semibold text-brand-accent cursor-pointer underline hover:opacity-85"
                       onClick={() => setOverrideSelection('calendar')}
                     >
                       {tr('home.switchToCalendar', {
@@ -180,9 +182,9 @@ export function HomeScreen({
             )}
 
             {activePlan.day.exerciseNames.length === 0 ? (
-              <p className="muted">{tr('home.todayNoExercises')}</p>
+              <p className="text-brand-text">{tr('home.todayNoExercises')}</p>
             ) : (
-              <ul className="today-exercises">
+              <ul className="list-none m-0 p-0 flex flex-col gap-1 max-h-[220px] overflow-y-auto text-sm">
                 {activePlan.day.exerciseNames.map((name) => (
                   <li key={name}>{name}</li>
                 ))}
@@ -190,9 +192,8 @@ export function HomeScreen({
             )}
             {canStart && (
               <>
-                <button
+                <Button
                   type="button"
-                  className="primary"
                   onClick={() =>
                     onStartWithExercises(
                       activePlan.day.exerciseNames,
@@ -202,33 +203,32 @@ export function HomeScreen({
                   }
                 >
                   {tr('home.startWorkout')}
-                </button>
-                <button type="button" className="secondary" onClick={onStart}>
+                </Button>
+                <Button type="button" variant="secondary" onClick={onStart}>
                   {tr('home.startEmpty')}
-                </button>
+                </Button>
               </>
             )}
           </>
         ) : (
           <>
-            <p className="muted">{tr('home.todayScheduled')}</p>
+            <p className="text-brand-text">{tr('home.todayScheduled')}</p>
             {canStart && (
-              <div className="backup-actions">
-                <button
+              <div className="flex gap-2 flex-wrap [&_button]:flex-1 [&_.file-button]:flex-1">
+                <Button
                   type="button"
-                  className="primary"
                   onClick={() => setPickingRoutine(true)}
                 >
                   {tr('home.pickRoutine')}
-                </button>
-                <button type="button" className="secondary" onClick={onStart}>
+                </Button>
+                <Button type="button" variant="secondary" onClick={onStart}>
                   {tr('home.startEmpty')}
-                </button>
+                </Button>
               </div>
             )}
           </>
         )}
-      </section>
+      </Card>
 
       {pickingRoutine && (
         <RoutinePicker
@@ -240,13 +240,13 @@ export function HomeScreen({
         />
       )}
 
-      <section className="recent">
+      <section className="flex flex-col gap-2">
         <h2>{tr('home.recentSessions')}</h2>
         {sessions.length === 0 ? (
-          <p className="muted">{tr('home.noSessions')}</p>
+          <p className="text-brand-text">{tr('home.noSessions')}</p>
         ) : (
           <>
-            <ul className="session-list">
+            <ul className="list-none m-0 p-0 flex flex-col gap-2">
               {previewSessions.map((session) => {
                 const totalSets = countSets(session)
                 const primary = sessionLabel(session, routines)
@@ -263,19 +263,21 @@ export function HomeScreen({
                   <li key={session.id}>
                     <button
                       type="button"
-                      className="session-item"
+                      className="w-full flex justify-between items-center gap-2 text-left text-[15px] bg-brand-card border border-brand-border rounded-[10px] p-3 hover:border-brand-accent focus-visible:outline-2 focus-visible:outline-[var(--accent)] focus-visible:outline-offset-1"
                       onClick={() => onViewSession(session)}
                     >
-                      <div className="session-item-main">
-                        <span className="session-name">{primary}</span>
+                      <div className="flex flex-col gap-0.5">
+                        <span className="font-semibold text-brand-heading text-[15px] leading-[1.3]">
+                          {primary}
+                        </span>
                         {preview && (
-                          <span className="muted session-preview">{preview}</span>
+                          <span className="text-brand-text text-[13px]">{preview}</span>
                         )}
-                        <span className="session-date-secondary muted">
+                        <span className="text-xs mt-px text-brand-text">
                           {dateStr} · {timeStr}
                         </span>
                       </div>
-                      <span className="muted session-meta">
+                      <span className="text-brand-text text-[13px] whitespace-nowrap shrink-0">
                         {p(session.exercises.length, 'count.exercises')} (
                         {totalSets} set)
                       </span>
@@ -284,13 +286,14 @@ export function HomeScreen({
                 )
               })}
             </ul>
-            <button
-              type="button"
-              className="btn-sm secondary mt-2"
+            <Button
+              sm
+              variant="secondary"
+              className="mt-2"
               onClick={onOpenHistory}
             >
               {tr('home.viewAllHistory')}
-            </button>
+            </Button>
           </>
         )}
       </section>
@@ -307,6 +310,6 @@ export function HomeScreen({
           onToggleLang={onToggleLang}
         />
       )}
-    </main>
+    </Screen>
   )
 }

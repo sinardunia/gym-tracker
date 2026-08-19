@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
+import { ArrowDown, ArrowUp, ChevronDown, ChevronUp, MoreVertical, Trash2 } from 'lucide-react'
 import { useI18n } from '../i18n'
-import { Icon } from './Icon'
+import { Button, IconButton } from './ui'
 import { InlineRename } from './InlineRename'
 import { AddRoutineExerciseForm } from './AddRoutineExerciseForm'
 import { DayScheduleSelect } from './DayScheduleSelect'
@@ -18,15 +19,14 @@ function DropdownMenu({
 
   return (
     <div className="relative" ref={ref}>
-      <button
+      <IconButton
         type="button"
-        className="icon-btn"
         onClick={() => setOpen((o) => !o)}
         aria-label={ariaLabel}
         aria-expanded={open}
       >
-        <Icon name="more" size={18} />
-      </button>
+        <MoreVertical size={18} aria-hidden="true" />
+      </IconButton>
       {open && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
@@ -93,8 +93,8 @@ export function RoutineCard({
   }
 
   return (
-    <section className="card routine transition-shadow duration-200 hover:shadow-md">
-      <div className="routine-head">
+    <section className="bg-brand-card border border-brand-border rounded-xl p-4 flex flex-col gap-3 transition-shadow duration-200 hover:shadow-md">
+      <div className="flex justify-between items-start gap-2">
         {renaming ? (
           <InlineRename
             value={routine.name}
@@ -106,29 +106,31 @@ export function RoutineCard({
           />
         ) : (
           <>
-            <div className="routine-title min-w-0 flex-1">
-              <h3 className="text-lg">{routine.name}</h3>
-              <p className="muted exercise-summary">
+            <div className="min-w-0 flex-1 flex flex-col gap-0.5">
+              <h3>{routine.name}</h3>
+              <p className="text-brand-text text-sm">
                 {routine.days.length} {p(routine.days.length, 'routine.day')}
               </p>
             </div>
             <div className="flex items-center gap-1">
               {confirmDelete ? (
-                <span className="inline-confirm">
-                  <button
+                <span className="flex gap-2 flex-wrap justify-end">
+                  <Button
+                    sm
                     type="button"
-                    className="btn-sm danger"
+                    variant="danger"
                     onClick={onDelete}
                   >
                     {tr('routine.confirm')}
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    sm
                     type="button"
-                    className="btn-sm secondary"
+                    variant="secondary"
                     onClick={() => setConfirmDelete(false)}
                   >
                     {tr('cancel')}
-                  </button>
+                  </Button>
                 </span>
               ) : (
                 <DropdownMenu
@@ -145,11 +147,11 @@ export function RoutineCard({
       </div>
 
       {routine.days.length === 0 && (
-        <p className="muted collapsed-hint">{tr('routine.noDays')}</p>
+        <p className="m-0 mt-1 text-brand-text text-sm">{tr('routine.noDays')}</p>
       )}
 
       {routine.days.length > 0 && (
-        <ul className="days">
+        <ul className="list-none m-0 p-0 flex flex-col gap-2">
           {routine.days.map((day) => {
             const assignedWeekday =
               Object.entries(routine.schedule).find(([, id]) => id === day.id)?.[0] ?? ''
@@ -157,7 +159,7 @@ export function RoutineCard({
               .filter(([, id]) => id !== day.id)
               .map(([w]) => Number(w))
             return (
-              <li key={day.id} className="day">
+              <li key={day.id} className="flex flex-col gap-2 p-2.5 bg-brand-row rounded-lg">
                 {renamingDayId === day.id ? (
                   <InlineRename
                     value={day.name}
@@ -168,20 +170,21 @@ export function RoutineCard({
                     onCancel={() => setRenamingDayId(null)}
                   />
                 ) : (
-                  <div className="day-head">
+                  <div className="flex justify-between items-center gap-2 flex-wrap">
                     <button
                       type="button"
-                      className="day-toggle"
+                      className="flex-1 min-w-0 flex flex-col items-start gap-0.5 text-left text-[15px] bg-transparent border-none text-brand-heading p-1 cursor-pointer"
                       onClick={() => toggleDay(day.id)}
                     >
-                      <span className="day-toggle-main">
+                      <span className="flex items-center justify-between gap-2 w-full">
                         <span>{day.name}</span>
-                        <Icon
-                          name={expandedDayId === day.id ? 'chevron-up' : 'chevron-down'}
-                          size={24}
-                        />
+                        {expandedDayId === day.id ? (
+                          <ChevronUp size={24} aria-hidden="true" />
+                        ) : (
+                          <ChevronDown size={24} aria-hidden="true" />
+                        )}
                       </span>
-                      <span className="muted">
+                      <span className="text-brand-text">
                         {day.exerciseNames.length}{' '}
                         {p(day.exerciseNames.length, 'routine.exercise')}
                       </span>
@@ -199,42 +202,40 @@ export function RoutineCard({
                 )}
 
                 {expandedDayId === day.id && (
-                  <div className="day-body">
+                  <div className="flex flex-col gap-1.5">
                     {day.exerciseNames.length === 0 && (
-                      <p className="muted">{tr('routine.noExercises')}</p>
+                      <p className="text-brand-text">{tr('routine.noExercises')}</p>
                     )}
                     {day.exerciseNames.map((name, index) => (
-                      <div key={`${name}-${index}`} className="exercise-row">
+                      <div key={`${name}-${index}`} className="flex justify-between items-center gap-2 px-2 py-1.5 bg-brand-bg rounded-md text-sm">
                         <span>
                           {index + 1}. {name}
                         </span>
-                        <div className="exercise-actions">
-                          <button
+                        <div className="flex gap-2 flex-wrap justify-end items-center">
+                          <IconButton
                             type="button"
-                            className="icon-btn"
                             disabled={index === 0}
                             onClick={() => onMoveExercise(day.id, index, -1)}
                             aria-label={tr('routine.moveExUp')}
                           >
-                            <Icon name="arrow-up" size={16} />
-                          </button>
-                          <button
+                            <ArrowUp size={16} aria-hidden="true" />
+                          </IconButton>
+                          <IconButton
                             type="button"
-                            className="icon-btn"
                             disabled={index === day.exerciseNames.length - 1}
                             onClick={() => onMoveExercise(day.id, index, 1)}
                             aria-label={tr('routine.moveExDown')}
                           >
-                            <Icon name="arrow-down" size={16} />
-                          </button>
-                          <button
+                            <ArrowDown size={16} aria-hidden="true" />
+                          </IconButton>
+                          <IconButton
                             type="button"
-                            className="icon-btn danger"
+                            variant="danger"
                             onClick={() => onRemoveExercise(day.id, index)}
                             aria-label={tr('routine.removeEx')}
                           >
-                            <Icon name="trash" size={16} />
-                          </button>
+                            <Trash2 size={16} aria-hidden="true" />
+                          </IconButton>
                         </div>
                       </div>
                     ))}
@@ -257,9 +258,9 @@ export function RoutineCard({
         </ul>
       )}
 
-      <button type="button" className="btn-sm secondary" onClick={onAddDay}>
+      <Button sm type="button" variant="secondary" onClick={onAddDay}>
         {tr('routine.addDay')}
-      </button>
+      </Button>
     </section>
   )
 }

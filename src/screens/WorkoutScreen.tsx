@@ -1,11 +1,12 @@
 import { useState, useRef } from 'react'
+import { ArrowLeft } from 'lucide-react'
 import { useI18n } from '../i18n'
-import { Icon } from '../components/Icon'
 import { NoteField } from '../components/NoteField'
 import { RestTimer } from '../components/RestTimer'
 import { ExerciseCard } from '../components/ExerciseCard'
 import { AddExerciseForm } from '../components/AddExerciseForm'
 import { ConfirmDialog } from '../components/ConfirmDialog'
+import { Button, IconButton, Screen } from '../components/ui'
 import { FloatingPlateCalculatorButton } from '../components/PlateCalculator'
 import { recentExerciseNames } from '../lib/selectors'
 import { formatTime } from '../lib/format'
@@ -78,17 +79,17 @@ export function WorkoutScreen({
     null
 
   return (
-    <main className="screen">
-      <header className="screen-header compact-workout-header">
-        <div className="workout-header-title">
+    <Screen>
+      <header className="mb-1 [&_h1]:mb-1 flex justify-between items-center [&_h1]:text-[22px]">
+        <div className="flex items-baseline gap-2.5">
           <h1>{tr('workout.title')}</h1>
-          <span className="muted">
+          <span className="text-brand-text">
             {tr('workout.startedAt', { time: formatTime(workout.startedAt, lang) })}
           </span>
         </div>
       </header>
 
-      <div className="workout-timer-container">
+      <div className="sticky top-[env(safe-area-inset-top)] z-10 px-4 py-3.5 -m-1 mb-3 bg-brand-card border border-brand-border rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.08)]">
         <RestTimer workoutId={workout.id} />
       </div>
 
@@ -99,27 +100,26 @@ export function WorkoutScreen({
           onClose={() => setConfirmingExit(false)}
           returnFocusRef={backButtonRef}
         >
-          <div className="confirm-actions">
-            <button
+          <div className="flex gap-2 flex-wrap [&_button]:flex-1">
+            <Button
               type="button"
-              className="primary"
               onClick={() => {
                 setConfirmingExit(false)
                 onExit()
               }}
             >
               {tr('workout.goHome')}
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
-              className="danger"
+              variant="danger"
               onClick={() => {
                 setConfirmingExit(false)
                 onDiscard()
               }}
             >
               {tr('workout.discard')}
-            </button>
+            </Button>
           </div>
         </ConfirmDialog>
       )}
@@ -129,24 +129,24 @@ export function WorkoutScreen({
           title={tr('workout.finishNotesTitle')}
           onClose={() => setShowFinishModal(false)}
         >
-          <div className="finish-modal-body">
+          <div>
             <NoteField
               value={finishNote}
               onChange={setFinishNote}
               placeholder={tr('workout.notesPlaceholder')}
               label={tr('workout.notes')}
             />
-            <div className="confirm-actions" style={{ marginTop: '1rem' }}>
-              <button
+            <div className="flex gap-2 flex-wrap [&_button]:flex-1" style={{ marginTop: '1rem' }}>
+              <Button
                 type="button"
-                className="secondary"
+                variant="secondary"
                 onClick={() => setShowFinishModal(false)}
               >
                 {tr('common.cancel')}
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
-                className="positive"
+                variant="positive"
                 onClick={() => {
                   onUpdateWorkoutNote(finishNote)
                   setShowFinishModal(false)
@@ -154,14 +154,14 @@ export function WorkoutScreen({
                 }}
               >
                 {tr('workout.finish')}
-              </button>
+              </Button>
             </div>
           </div>
         </ConfirmDialog>
       )}
 
       {workout.exercises.length === 0 ? (
-        <p className="muted empty">{tr('workout.noExercises')}</p>
+        <p className="text-brand-text py-2">{tr('workout.noExercises')}</p>
       ) : (
         workout.exercises.map((exercise, index) => (
           <ExerciseCard
@@ -203,32 +203,32 @@ export function WorkoutScreen({
 
       <AddExerciseForm onAdd={onAddExercise} recent={recent} />
 
-      <div className="workout-bottom-actions">
-        <div className="workout-actions-row">
-          <button
+      <div className="sticky bottom-0 z-[15] flex flex-col gap-2 px-4 py-3.5 mt-5 -mx-4 -mb-4 bg-brand-card border-t border-brand-border shadow-[0_-4px_16px_rgba(0,0,0,0.08)]">
+        <div className="flex items-center gap-2">
+          <IconButton
             type="button"
             ref={backButtonRef}
-            className="icon-btn"
             onClick={() => setConfirmingExit(true)}
             aria-label={tr('workout.backHome')}
           >
-            <Icon name="arrow-left" />
-          </button>
-          <button
+            <ArrowLeft size={18} aria-hidden="true" />
+          </IconButton>
+          <Button
             type="button"
-            className="secondary finish"
+            variant="secondary"
+            className="mt-2"
             onClick={() => setShowFinishModal(true)}
             disabled={!canFinish}
           >
             {tr('workout.finish')}
-          </button>
+          </Button>
         </div>
         {!canFinish && (
-          <p className="error hint">{tr('workout.finishHint')}</p>
+          <p className="text-brand-danger text-sm m-0 text-center">{tr('workout.finishHint')}</p>
         )}
       </div>
 
       <FloatingPlateCalculatorButton />
-    </main>
+    </Screen>
   )
 }

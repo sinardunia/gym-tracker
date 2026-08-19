@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
+import { Calculator } from 'lucide-react'
 import { useI18n } from '../i18n'
-import { Icon } from './Icon'
 import { ConfirmDialog } from './ConfirmDialog'
 
 type Operator = '+' | '-' | '×' | '÷'
@@ -422,7 +422,7 @@ export function FloatingPlateCalculatorButton() {
         aria-label={tr('calc.title')}
         title={tr('calc.title')}
       >
-        <Icon name="calculator" size={24} />
+        <Calculator size={24} aria-hidden="true" />
       </button>
 
       {open && <CalculatorModal onClose={() => setOpen(false)} />}

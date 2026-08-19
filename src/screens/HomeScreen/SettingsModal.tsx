@@ -1,8 +1,8 @@
 import type { RefObject } from 'react'
+import { Monitor, Moon, Sun } from 'lucide-react'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
 import { BackupControls } from '../../components/BackupControls'
 import { FeedbackCard } from '../../components/FeedbackCard'
-import { Icon } from '../../components/Icon'
 import { useI18n, type Lang } from '../../i18n'
 import { GITHUB_URL, SAWERIA_URL } from '../../lib/config'
 import { THEMES, type Theme } from '../../lib/theme'
@@ -35,10 +35,10 @@ export function SettingsModal({
       returnFocusRef={returnFocusRef}
       ariaLabel={tr('home.settings')}
     >
-      <div className="settings-content">
+      <div className="flex flex-col gap-4 mt-3 pt-3 border-t border-brand-border">
         <BackupControls state={backupState} onImport={onImportBackup} />
 
-        <section className="about-sub">
+        <section className="flex flex-col gap-2.5">
           <h3>{tr('lang.title')}</h3>
           <div className="grid grid-cols-2 gap-2" role="group" aria-label={tr('lang.title')}>
             <button
@@ -68,10 +68,10 @@ export function SettingsModal({
           </div>
         </section>
 
-        <section className="about-sub">
+        <section className="flex flex-col gap-2.5">
           <h3>{tr('theme.title')}</h3>
           <div
-            className="theme-options"
+            className="grid grid-cols-3 gap-2"
             role="group"
             aria-label={tr('theme.title')}
           >
@@ -79,31 +79,32 @@ export function SettingsModal({
               <button
                 key={option}
                 type="button"
-                className={`theme-option${theme === option ? ' active' : ''}`}
+                className={`flex flex-col items-center gap-1 px-1 py-2 border rounded-lg bg-brand-card text-brand-text text-[13px] font-[inherit] cursor-pointer transition-[background,color,border-color] duration-[120ms] ${
+                  theme === option
+                    ? 'bg-brand-accent-bg border-brand-accent text-brand-heading font-semibold'
+                    : 'border-brand-border hover:border-brand-accent'
+                }`}
                 onClick={() => onSetTheme(option)}
               >
-                <Icon
-                  name={
-                    option === 'light'
-                      ? 'sun'
-                      : option === 'dark'
-                        ? 'moon'
-                        : 'monitor'
-                  }
-                  size={16}
-                />
+                {option === 'light' ? (
+                  <Sun size={16} aria-hidden="true" />
+                ) : option === 'dark' ? (
+                  <Moon size={16} aria-hidden="true" />
+                ) : (
+                  <Monitor size={16} aria-hidden="true" />
+                )}
                 <span>{tr(`theme.${option}`)}</span>
               </button>
             ))}
           </div>
         </section>
 
-        <section className="about-sub">
+        <section className="flex flex-col gap-2.5">
           <h3>{tr('about.title')}</h3>
-          <p className="muted">{tr('about.desc', { version: __APP_VERSION__ })}</p>
-          <div className="backup-actions">
+          <p className="text-brand-text">{tr('about.desc', { version: __APP_VERSION__ })}</p>
+          <div className="flex gap-2 flex-wrap [&_button]:flex-1 [&_.file-button]:flex-1">
             <a
-              className="file-button btn-sm secondary"
+              className="file-button flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 border rounded-[10px] text-brand-heading cursor-pointer hover:border-brand-accent text-sm font-medium"
               href={GITHUB_URL}
               target="_blank"
               rel="noreferrer"
@@ -111,7 +112,7 @@ export function SettingsModal({
               {tr('about.github')}
             </a>
             <a
-              className="file-button btn-sm secondary"
+              className="file-button flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 border rounded-[10px] text-brand-heading cursor-pointer hover:border-brand-accent text-sm font-medium"
               href={SAWERIA_URL}
               target="_blank"
               rel="noreferrer"

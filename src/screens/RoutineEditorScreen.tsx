@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { useI18n } from '../i18n'
+import { Button } from '../components/ui'
 import { RoutineCard } from '../components/RoutineCard'
 import type { Routine, ScheduleConflict, Weekday } from '../lib/types'
 
@@ -73,23 +74,23 @@ export function RoutineEditorScreen({
   return (
     <div className="flex flex-col gap-4">
       {!hideHeader && (
-        <header className="screen-header flex items-start justify-between gap-3">
+        <header className="mb-1 [&_h1]:mb-1 flex items-start justify-between gap-3">
           <div>
             <h1>{tr('routine.title')}</h1>
-            <p className="muted">{tr('routine.desc')}</p>
+            <p className="text-brand-text">{tr('routine.desc')}</p>
           </div>
-          <button type="button" className="btn-sm secondary flex-shrink-0" onClick={onBack}>
+          <Button sm variant="secondary" className="flex-shrink-0" type="button" onClick={onBack}>
             {tr('routine.back')}
-          </button>
+          </Button>
         </header>
       )}
 
-      <button type="button" className="primary" onClick={onAddRoutine}>
+      <Button type="button" onClick={onAddRoutine}>
         {tr('routine.addRoutine')}
-      </button>
+      </Button>
 
       {routines.length === 0 && (
-        <p className="muted empty">{tr('routine.noRoutines')}</p>
+        <p className="text-brand-text py-2">{tr('routine.noRoutines')}</p>
       )}
 
       {routines.map((routine) => (

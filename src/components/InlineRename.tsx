@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { useI18n } from '../i18n'
+import { Button, Input } from './ui'
 
 export function InlineRename({
   value,
@@ -25,9 +26,9 @@ export function InlineRename({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="rename-form inline-rename">
-      <div className="inline-rename-row">
-        <input
+    <form onSubmit={handleSubmit} className="flex flex-col gap-2">
+      <div className="flex gap-2 items-center flex-wrap [&_input]:flex-1 [&_input]:min-w-0">
+        <Input
           type="text"
           value={draft}
           autoFocus
@@ -42,14 +43,14 @@ export function InlineRename({
             }
           }}
         />
-        <button type="submit" className="btn-sm primary">
+        <Button sm type="submit">
           {tr('save')}
-        </button>
-        <button type="button" className="btn-sm secondary" onClick={onCancel}>
+        </Button>
+        <Button sm type="button" variant="secondary" onClick={onCancel}>
           {tr('cancel')}
-        </button>
+        </Button>
       </div>
-      {error && <p className="error">{error}</p>}
+      {error && <p className="text-brand-danger text-sm m-0">{error}</p>}
     </form>
   )
 }

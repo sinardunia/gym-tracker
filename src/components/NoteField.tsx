@@ -1,3 +1,5 @@
+import { Textarea } from './ui'
+
 export function NoteField({
   value,
   onChange,
@@ -16,8 +18,8 @@ export function NoteField({
   onBlur?: () => void
 }) {
   return (
-    <textarea
-      className={`note-field${compact ? ' compact' : ''}`}
+    <Textarea
+      className={compact ? 'min-h-[36px] resize-none' : undefined}
       value={value}
       placeholder={placeholder}
       aria-label={label}

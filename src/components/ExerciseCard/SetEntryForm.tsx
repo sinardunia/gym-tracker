@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { Icon } from '../Icon'
+import { Check } from 'lucide-react'
 import { useI18n } from '../../i18n'
 import {
   SET_TYPES,
@@ -7,6 +7,7 @@ import {
   type ExerciseUnit,
   type SetType,
 } from '../../lib/types'
+import { Button, Input } from '../ui'
 
 export type PreviousSet = {
   reps: number
@@ -111,16 +112,20 @@ export function SetEntryForm({
   }
 
   return (
-    <div className="current-set-execution-card">
-      <div className="current-set-header">
-        <span className="current-set-title">
+    <div className="flex flex-col gap-2.5 p-3 bg-brand-row border-[1.5px] border-brand-accent rounded-[10px]">
+      <div className="flex items-center justify-between">
+        <span className="text-[13px] font-bold tracking-wider uppercase text-brand-accent">
           {tr('ex.currentSet', { n: exercise.sets.length + 1 })}
         </span>
       </div>
-      <form ref={setFormRef} onSubmit={handleSubmit} className="set-form">
-        <div className="set-form-meta">
+      <form
+        ref={setFormRef}
+        onSubmit={handleSubmit}
+        className="grid grid-cols-2 gap-3 items-end [&_button]:col-span-2 [&_.error]:col-span-2"
+      >
+        <div className="col-span-2 flex gap-2 flex-wrap items-center">
           <div
-            className="set-type-row"
+            className="flex gap-1.5 flex-1 min-w-0"
             role="group"
             aria-label={tr('ex.setTypeLabel')}
           >
@@ -128,7 +133,9 @@ export function SetEntryForm({
               <button
                 key={type}
                 type="button"
-                className={`set-type-btn${setType === type ? ' active' : ''}`}
+                className={`flex-1 text-[13px] px-2.5 py-2 rounded-lg bg-transparent border border-brand-border text-brand-heading cursor-pointer hover:border-brand-accent [&.active]:border-brand-accent [&.active]:bg-brand-accent-bg${
+                  setType === type ? ' active' : ''
+                }`}
                 onClick={() => {
                   setSetType(type)
                   setDropParentId(null)
@@ -139,10 +146,10 @@ export function SetEntryForm({
             ))}
           </div>
         </div>
-        <div className="set-fields-grid">
-          <div className="field">
+        <div className="col-span-2 grid grid-cols-2 gap-2.5">
+          <div className="flex flex-col gap-1 [&_label]:text-[13px]">
             <label htmlFor={`reps-${exercise.id}`}>{tr('ex.reps')}</label>
-            <input
+            <Input
               id={`reps-${exercise.id}`}
               type="number"
               min={1}
@@ -157,11 +164,11 @@ export function SetEntryForm({
             />
           </div>
           {exercise.unit !== 'bodyweight' && (
-            <div className="field">
+            <div className="flex flex-col gap-1 [&_label]:text-[13px]">
               <label htmlFor={`weight-${exercise.id}`}>
                 {exercise.unit === 'plate' ? tr('ex.plates') : tr('ex.weightKg')}
               </label>
-              <input
+              <Input
                 id={`weight-${exercise.id}`}
                 type="number"
                 min={0}
@@ -177,11 +184,15 @@ export function SetEntryForm({
             </div>
           )}
         </div>
-        {error && <p className="error">{error}</p>}
-        <button type="submit" className="positive complete-set-btn">
-          <Icon name="check" size={18} />
+        {error && <p className="text-brand-danger text-sm m-0">{error}</p>}
+        <Button
+          type="submit"
+          variant="positive"
+          className="flex items-center justify-center gap-2 min-h-12 text-base font-semibold w-full"
+        >
+          <Check size={18} aria-hidden="true" />
           <span>{tr('ex.completeSet')}</span>
-        </button>
+        </Button>
       </form>
     </div>
   )

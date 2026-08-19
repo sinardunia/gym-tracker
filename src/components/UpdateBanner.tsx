@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useI18n } from '../i18n'
 import { usePwaUpdate } from '../lib/pwa'
+import { Button, IconButton } from './ui'
 
 export function UpdateBanner() {
   const { tr } = useI18n()
@@ -16,35 +17,35 @@ export function UpdateBanner() {
   if (!needRefresh && !offlineReady) return null
 
   return (
-    <div className={`update-banner${needRefresh ? ' update-banner-refresh' : ' update-banner-toast'}`}>
+    <div
+      className={`fixed bottom-[calc(64px+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 w-[calc(100%-32px)] max-w-[608px] flex items-center justify-between gap-3 px-3 py-2.5 bg-brand-card border border-brand-border rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.15)] z-[45] animate-[sheet-in_180ms_ease-out]${needRefresh ? '' : ' justify-center border-brand-accent'}`}
+    >
       {needRefresh ? (
         <>
-          <span className="update-banner-text">{tr('pwa.updateAvailable')}</span>
-          <div className="update-banner-actions">
-            <button type="button" className="btn-sm primary" onClick={reload}>
+          <span className="text-sm text-brand-heading">{tr('pwa.updateAvailable')}</span>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <Button sm type="button" onClick={reload}>
               {tr('pwa.updateReload')}
-            </button>
-            <button
+            </Button>
+            <IconButton
               type="button"
-              className="icon-btn"
               onClick={dismissRefresh}
               aria-label={tr('common.cancel')}
             >
               ✕
-            </button>
+            </IconButton>
           </div>
         </>
       ) : (
         <>
-          <span className="update-banner-text">{tr('pwa.offlineReady')}</span>
-          <button
+          <span className="text-sm text-brand-heading">{tr('pwa.offlineReady')}</span>
+          <IconButton
             type="button"
-            className="icon-btn"
             onClick={dismissOfflineReady}
             aria-label={tr('common.cancel')}
           >
             ✕
-          </button>
+          </IconButton>
         </>
       )}
     </div>

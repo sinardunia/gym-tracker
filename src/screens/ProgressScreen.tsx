@@ -4,6 +4,7 @@ import { exerciseHistory, computeConsistency, computeHeatmapData, computeMonthly
 import { ExerciseChart } from '../components/ExerciseChart'
 import { HeatmapChart } from '../components/HeatmapChart'
 import { VolumeChart } from '../components/VolumeChart'
+import { Button, Card, Screen } from '../components/ui'
 import { formatDate, formatSetWeight } from '../lib/format'
 import type { Workout } from '../lib/types'
 
@@ -26,79 +27,85 @@ export function ProgressScreen({
 
   if (sessions.length === 0) {
     return (
-      <main className="screen">
-        <header className="screen-header">
+      <Screen>
+        <header className="mb-1 [&_h1]:mb-1">
           <h1>{tr('progress.title')}</h1>
-          <p className="muted">{tr('progress.desc')}</p>
+          <p className="text-brand-text">{tr('progress.desc')}</p>
         </header>
-        <button type="button" className="btn-sm secondary" onClick={onBack}>
+        <Button sm type="button" variant="secondary" onClick={onBack}>
           {tr('program.back')}
-        </button>
-        <p className="muted empty">{tr('progress.noSessions')}</p>
-      </main>
+        </Button>
+        <p className="text-brand-text py-2">{tr('progress.noSessions')}</p>
+      </Screen>
     )
   }
 
   const item = selected ? history.find((h) => h.name === selected) : undefined
 
   return (
-    <main className="screen">
-      <header className="screen-header">
+    <Screen>
+      <header className="mb-1 [&_h1]:mb-1">
         <h1>{tr('progress.title')}</h1>
-        <p className="muted">{tr('progress.desc')}</p>
+        <p className="text-brand-text">{tr('progress.desc')}</p>
       </header>
-      <button
+      <Button
+        sm
         type="button"
-        className="btn-sm secondary"
+        variant="secondary"
         onClick={selected ? () => onSelect(null) : onBack}
       >
         {selected ? tr('progress.backToList') : tr('program.back')}
-      </button>
+      </Button>
 
       {!selected && sessions.length > 0 && (
         <>
-          <section className="card">
+          <Card>
             <h2>12-Minggu Terakhir</h2>
             <HeatmapChart weeks={heatmap.weeks} maxPerDay={heatmap.maxPerDay} />
-          </section>
+          </Card>
           {volume.some((v) => v.count > 0) && (
-            <section className="card">
+            <Card>
               <h2>Volume Bulanan</h2>
               <VolumeChart data={volume} />
-            </section>
+            </Card>
           )}
         </>
       )}
 
       {item ? (
         <>
-          <section className="card">
+          <Card>
             <h2>{item.name}</h2>
             {item.best && (
-              <div className="progress-best-block">
-                <span className="progress-pr-badge">PR</span>
-                <span className="progress-best-value">
+              <div className="flex items-center gap-2">
+                <span className="bg-brand-positive text-white text-[11px] font-bold px-1.5 py-0.5 rounded-[5px] tracking-wide">
+                  PR
+                </span>
+                <span className="text-lg font-bold text-brand-heading">
                   {formatSetWeight(item.best.unit, item.best.weightKg, tr) ?? `${item.best.reps}r`}
                 </span>
-                <span className="muted">
+                <span className="text-brand-text">
                   {item.best.unit !== 'bodyweight'
                     ? `× ${item.best.reps} reps`
                     : `${item.best.reps} reps`}
                 </span>
               </div>
             )}
-            <p className="muted" style={{ fontSize: '13px', marginTop: 0 }}>
+            <p className="text-brand-text" style={{ fontSize: '13px', marginTop: 0 }}>
               {item.entries.length} {p(item.entries.length, 'count.sessions')} tercatat
             </p>
-          </section>
+          </Card>
           {item.entries.length >= 4 && item.best && (
             <ExerciseChart entries={item.entries} unit={item.best.unit} />
           )}
-          <ul className="sets">
+          <ul className="list-none m-0 p-0 flex flex-col gap-1.5">
             {item.entries.map((entry) => {
               const weightText = formatSetWeight(entry.unit, entry.best.weightKg, tr)
               return (
-                <li key={entry.finishedAt}>
+                <li
+                  key={entry.finishedAt}
+                  className="flex justify-between items-center gap-2 px-2.5 py-2 bg-brand-row rounded-lg"
+                >
                   <span>{formatDate(entry.finishedAt, lang)}</span>
                   <span>
                     {tr('ex.repsCount', { reps: entry.best.reps })}
@@ -110,33 +117,33 @@ export function ProgressScreen({
           </ul>
         </>
       ) : history.length === 0 ? (
-        <p className="muted empty">{tr('progress.noExercises')}</p>
+        <p className="text-brand-text py-2">{tr('progress.noExercises')}</p>
       ) : (
         <>
           {/* Summary strip */}
-          <div className="progress-summary-strip">
-            <div className="progress-summary-stat">
-              <span className="progress-summary-value">{stats.totalSessions}</span>
-              <span className="progress-summary-label">
+          <div className="flex items-center justify-around bg-brand-card border border-brand-border rounded-xl p-4 gap-2">
+            <div className="flex flex-col items-center gap-0.5 flex-1">
+              <span className="text-2xl font-bold text-brand-heading leading-none">{stats.totalSessions}</span>
+              <span className="text-xs text-brand-text">
                 {p(stats.totalSessions, 'count.sessions')}
               </span>
             </div>
-            <div className="progress-summary-divider" />
-            <div className="progress-summary-stat">
-              <span className="progress-summary-value">{stats.currentWeekStreak}w</span>
-              <span className="progress-summary-label">streak</span>
+            <div className="w-px h-9 bg-brand-border shrink-0" />
+            <div className="flex flex-col items-center gap-0.5 flex-1">
+              <span className="text-2xl font-bold text-brand-heading leading-none">{stats.currentWeekStreak}w</span>
+              <span className="text-xs text-brand-text">streak</span>
             </div>
-            <div className="progress-summary-divider" />
-            <div className="progress-summary-stat">
-              <span className="progress-summary-value">{history.length}</span>
-              <span className="progress-summary-label">
+            <div className="w-px h-9 bg-brand-border shrink-0" />
+            <div className="flex flex-col items-center gap-0.5 flex-1">
+              <span className="text-2xl font-bold text-brand-heading leading-none">{history.length}</span>
+              <span className="text-xs text-brand-text">
                 {p(history.length, 'count.exercises')}
               </span>
             </div>
           </div>
 
           {/* Exercise list */}
-          <ul className="progress-exercise-list">
+          <ul className="list-none m-0 p-0 flex flex-col gap-1.5">
             {history.map((h) => {
               const bestLabel = h.best
                 ? h.best.unit === 'bodyweight'
@@ -158,27 +165,46 @@ export function ProgressScreen({
                 <li key={h.name}>
                   <button
                     type="button"
-                    className="progress-exercise-row"
+                    className="w-full flex justify-between items-center gap-3 text-left bg-brand-card border border-brand-border rounded-[10px] px-3.5 py-3 font-[inherit] text-[15px] text-inherit cursor-pointer transition-[border-color] duration-[150ms] hover:border-brand-accent focus-visible:outline-2 focus-visible:outline-[var(--accent)] focus-visible:outline-offset-1"
                     onClick={() => onSelect(h.name)}
                   >
-                    <div className="progress-exercise-info">
-                      <span className="progress-exercise-name">{h.name}</span>
-                      <span className="progress-exercise-count muted">
+                    <div className="flex flex-col gap-0.5 min-w-0">
+                      <span className="font-semibold text-brand-heading whitespace-nowrap overflow-hidden text-ellipsis">
+                        {h.name}
+                      </span>
+                      <span className="text-xs text-brand-text">
                         {h.entries.length} {p(h.entries.length, 'count.sessions')}
                       </span>
                     </div>
-                    <div className="progress-exercise-right">
+                    <div className="flex items-center gap-2 shrink-0">
                       {bestLabel && (
-                        <span className="progress-exercise-best">{bestLabel}</span>
+                        <span className="text-[13px] font-semibold text-brand-accent whitespace-nowrap">
+                          {bestLabel}
+                        </span>
                       )}
                       {trend === 'up' && (
-                        <span className="progress-trend up" aria-label="trending up">↑</span>
+                        <span
+                          className="text-base font-bold leading-none w-5 text-center text-brand-positive"
+                          aria-label="trending up"
+                        >
+                          ↑
+                        </span>
                       )}
                       {trend === 'down' && (
-                        <span className="progress-trend down" aria-label="trending down">↓</span>
+                        <span
+                          className="text-base font-bold leading-none w-5 text-center text-brand-text opacity-50"
+                          aria-label="trending down"
+                        >
+                          ↓
+                        </span>
                       )}
                       {trend === 'flat' && (
-                        <span className="progress-trend flat" aria-label="stable">—</span>
+                        <span
+                          className="text-base font-bold leading-none w-5 text-center text-brand-text opacity-40"
+                          aria-label="stable"
+                        >
+                          —
+                        </span>
                       )}
                     </div>
                   </button>
@@ -188,6 +214,6 @@ export function ProgressScreen({
           </ul>
         </>
       )}
-    </main>
+    </Screen>
   )
 }

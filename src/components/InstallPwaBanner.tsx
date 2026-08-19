@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
+import { X } from 'lucide-react'
 import { useI18n } from '../i18n'
-import { Icon } from './Icon'
+import { Button } from './ui'
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>
@@ -66,24 +67,24 @@ export function InstallPwaBanner() {
   if (dismissed) return null
 
   return (
-    <div className="pwa-banner">
-      <div className="pwa-banner-content">
-        <div className="pwa-banner-info">
+    <div className="mb-4 px-4 py-3.5 rounded-xl bg-brand-card border border-brand-accent shadow-[0_4px_16px_rgba(124,58,237,0.12)]">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex flex-col gap-0.5 [&_strong]:text-[15px] [&_strong]:text-brand-heading [&_p]:text-[13px]">
           <strong>{tr('pwa.installTitle')}</strong>
-          <p className="muted">{tr('pwa.installDesc')}</p>
-          {showIosGuide && <p className="ios-guide-text">{tr('pwa.iosGuide')}</p>}
+          <p className="text-brand-text">{tr('pwa.installDesc')}</p>
+          {showIosGuide && <p className="font-semibold text-brand-accent mt-1">{tr('pwa.iosGuide')}</p>}
         </div>
-        <div className="pwa-banner-actions">
-          <button type="button" className="btn-sm primary" onClick={handleInstall}>
+        <div className="flex items-center gap-2">
+          <Button sm type="button" onClick={handleInstall}>
             {tr('pwa.installBtn')}
-          </button>
+          </Button>
           <button
             type="button"
-            className="icon-btn-sm"
+            className="inline-flex items-center justify-center p-1.5 border-none rounded-lg bg-transparent text-brand-text cursor-pointer hover:bg-brand-row"
             onClick={handleDismiss}
             aria-label="Dismiss"
           >
-            <Icon name="x" size={16} />
+            <X size={16} aria-hidden="true" />
           </button>
         </div>
       </div>
