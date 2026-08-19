@@ -35,11 +35,11 @@ export function SettingsModal({
       returnFocusRef={returnFocusRef}
       ariaLabel={tr('home.settings')}
     >
-      <div className="flex flex-col gap-4 mt-3 pt-3 border-t border-brand-border">
+      <div className="flex flex-col gap-5">
         <BackupControls state={backupState} onImport={onImportBackup} />
 
-        <section className="flex flex-col gap-2.5">
-          <h3>{tr('lang.title')}</h3>
+        <section className="flex flex-col gap-3">
+          <h3 className="text-brand-heading text-sm font-semibold uppercase tracking-wide">{tr('lang.title')}</h3>
           <div className="grid grid-cols-2 gap-2" role="group" aria-label={tr('lang.title')}>
             <button
               type="button"
@@ -68,8 +68,8 @@ export function SettingsModal({
           </div>
         </section>
 
-        <section className="flex flex-col gap-2.5">
-          <h3>{tr('theme.title')}</h3>
+        <section className="flex flex-col gap-3">
+          <h3 className="text-brand-heading text-sm font-semibold uppercase tracking-wide">{tr('theme.title')}</h3>
           <div
             className="grid grid-cols-3 gap-2"
             role="group"
@@ -99,9 +99,9 @@ export function SettingsModal({
           </div>
         </section>
 
-        <section className="flex flex-col gap-2.5">
-          <h3>{tr('about.title')}</h3>
-          <p className="text-brand-text">{tr('about.desc', { version: __APP_VERSION__ })}</p>
+        <section className="flex flex-col gap-3">
+          <h3 className="text-brand-heading text-sm font-semibold uppercase tracking-wide">{tr('about.title')}</h3>
+          <p className="text-brand-text text-[13px]">{tr('about.desc', { version: __APP_VERSION__ })}</p>
           <div className="flex gap-2 flex-wrap [&_button]:flex-1 [&_.file-button]:flex-1">
             <a
               className="file-button flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 border rounded-[10px] text-brand-heading cursor-pointer hover:border-brand-accent text-sm font-medium"

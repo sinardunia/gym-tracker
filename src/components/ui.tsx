@@ -29,7 +29,7 @@ export function Screen({ children }: { children: ReactNode }) {
 }
 
 const BUTTON_BASE =
-  'px-4 py-3 rounded-[10px] border border-transparent cursor-pointer font-[inherit] text-base disabled:opacity-50 disabled:cursor-not-allowed'
+  'inline-flex items-center justify-center gap-2 px-4 py-3 rounded-[10px] border border-transparent cursor-pointer font-[inherit] text-base disabled:opacity-50 disabled:cursor-not-allowed'
 
 const BUTTON_VARIANTS = {
   primary: 'bg-brand-accent text-white',

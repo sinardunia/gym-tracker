@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { ArrowLeft } from 'lucide-react'
 import { useI18n } from '../i18n'
 import { NoteField } from '../components/NoteField'
@@ -69,6 +69,8 @@ export function WorkoutScreen({
     () => workout.exercises[0]?.id ?? null,
   )
   const backButtonRef = useRef<HTMLButtonElement | null>(null)
+  const closeExitDialog = useCallback(() => setConfirmingExit(false), [])
+  const closeFinishModal = useCallback(() => setShowFinishModal(false), [])
   const hasSet = workout.exercises.some((e) => e.sets.length > 0)
   const canFinish = workout.exercises.length > 0 && hasSet
   const recent = recentExerciseNames(sessions)
@@ -97,7 +99,7 @@ export function WorkoutScreen({
         <ConfirmDialog
           title={tr('workout.exitTitle')}
           body={tr('workout.exitBody')}
-          onClose={() => setConfirmingExit(false)}
+          onClose={closeExitDialog}
           returnFocusRef={backButtonRef}
         >
           <div className="flex gap-2 flex-wrap [&_button]:flex-1">
@@ -127,7 +129,7 @@ export function WorkoutScreen({
       {showFinishModal && (
         <ConfirmDialog
           title={tr('workout.finishNotesTitle')}
-          onClose={() => setShowFinishModal(false)}
+          onClose={closeFinishModal}
         >
           <div>
             <NoteField
@@ -140,7 +142,7 @@ export function WorkoutScreen({
               <Button
                 type="button"
                 variant="secondary"
-                onClick={() => setShowFinishModal(false)}
+                onClick={closeFinishModal}
               >
                 {tr('common.cancel')}
               </Button>
@@ -215,8 +217,8 @@ export function WorkoutScreen({
           </IconButton>
           <Button
             type="button"
-            variant="secondary"
-            className="mt-2"
+            variant="primary"
+            className="mt-2 w-full"
             onClick={() => setShowFinishModal(true)}
             disabled={!canFinish}
           >

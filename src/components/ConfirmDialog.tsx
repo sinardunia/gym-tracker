@@ -71,9 +71,9 @@ export function ConfirmDialog({
         }
       }}
     >
-      <div className="w-full max-w-[400px] flex flex-col gap-3 p-4 bg-brand-card border border-brand-border rounded-xl shadow-[0_16px_32px_rgba(0,0,0,0.2)]">
+      <div className="w-full max-w-[400px] max-h-[90vh] sm:max-h-[85vh] flex flex-col gap-3 p-3 sm:p-4 bg-brand-card border border-brand-border rounded-xl shadow-[0_16px_32px_rgba(0,0,0,0.2)] overflow-y-auto overscroll-contain">
         {title && (
-          <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center justify-between gap-2 shrink-0">
             <h3>{title}</h3>
             <button
               type="button"

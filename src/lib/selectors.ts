@@ -1,3 +1,4 @@
+import { localeOf, type Lang } from '../i18n'
 import { EXERCISE_LIBRARY } from './library'
 import type {
   ConsistencyStats,
@@ -572,6 +573,78 @@ export type MilestoneId = (typeof MILESTONE_IDS)[keyof typeof MILESTONE_IDS]
  * `comeback-7d` is repeatable — it re-fires whenever gapDays >= 7 and a workout was just finished.
  * `newPRsCount` is the number of PRs detected in the just-finished workout.
  */
+/**
+ * 12-week heatmap grid: weeks[week][day] = session count.
+ * Columns are weeks (newest last), rows are Sun–Sat.
+ */
+export function computeHeatmapData(
+  sessions: Workout[],
+): { weeks: number[][]; maxPerDay: number } {
+  const finished = sessions.filter((s) => s.finishedAt !== null)
+  const msPerDay = 86_400_000
+  const now = new Date()
+  const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const todayDow = todayMidnight.getDay()
+
+  const countMap = new Map<string, number>()
+  for (const s of finished) {
+    const d = new Date(s.finishedAt as string)
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+    countMap.set(key, (countMap.get(key) ?? 0) + 1)
+  }
+
+  const WEEKS = 12
+  const weeks: number[][] = []
+  let maxPerDay = 0
+
+  for (let w = 0; w < WEEKS; w++) {
+    const row: number[] = []
+    for (let dow = 0; dow < 7; dow++) {
+      const offset = (WEEKS - 1 - w) * 7 + (6 - dow) + (6 - todayDow)
+      const date = new Date(todayMidnight.getTime() - offset * msPerDay)
+      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+      const count = countMap.get(key) ?? 0
+      row.push(count)
+      if (count > maxPerDay) maxPerDay = count
+    }
+    weeks.push(row)
+  }
+
+  return { weeks, maxPerDay }
+}
+
+/**
+ * Session count per month for the last 6 months.
+ */
+export function computeMonthlyVolume(
+  sessions: Workout[],
+  lang: Lang,
+): { month: string; count: number; ISO: string }[] {
+  const locale = localeOf(lang)
+  const finished = sessions.filter((s) => s.finishedAt !== null)
+
+  const counts = new Map<string, number>()
+  for (const s of finished) {
+    const d = new Date(s.finishedAt as string)
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+    counts.set(key, (counts.get(key) ?? 0) + 1)
+  }
+
+  const months: { month: string; count: number; ISO: string }[] = []
+  const now = new Date()
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+    months.push({
+      month: d.toLocaleDateString(locale, { month: 'short' }),
+      count: counts.get(key) ?? 0,
+      ISO: key,
+    })
+  }
+
+  return months
+}
+
 export function checkMilestones(
   stats: ConsistencyStats,
   seenMilestones: ReadonlySet<string>,

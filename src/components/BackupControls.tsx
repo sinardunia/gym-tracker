@@ -1,4 +1,5 @@
 import { useState, type ChangeEvent } from 'react'
+import { Download, Upload } from 'lucide-react'
 import { useI18n } from '../i18n'
 import { parseBackup } from '../lib/backup'
 import type { BackupMessage, PersistedState } from '../lib/types'
@@ -59,20 +60,25 @@ export function BackupControls({
   return (
     <Card>
       <h2>{tr('backup.title')}</h2>
-      <p className="text-brand-text">{tr('backup.desc')}</p>
-      <div className="flex gap-2 flex-wrap [&_button]:flex-1 [&_.file-button]:flex-1">
-        <Button type="button" variant="secondary" onClick={handleExport}>
-          {tr('backup.export')}
-        </Button>
-        <label className="inline-flex items-center justify-center px-4 py-3 border border-brand-border rounded-[10px] text-brand-heading cursor-pointer hover:border-brand-accent [&_input]:hidden">
-          {tr('backup.import')}
-          <input type="file" accept="application/json,.json" onChange={handleImportFile} />
-        </label>
+      <p className="text-brand-text text-[13px]">{tr('backup.desc')}</p>
+      <div className="flex flex-col gap-2">
+        <p className="text-brand-text text-[13px] m-0">{tr('backup.exportHint')}</p>
+        <div className="flex gap-2 flex-wrap [&_button]:flex-1 [&_.file-button]:flex-1">
+          <Button type="button" variant="secondary" onClick={handleExport}>
+            <Download size={16} aria-hidden="true" />
+            {tr('backup.export')}
+          </Button>
+          <label className="inline-flex items-center justify-center gap-2 px-4 py-3 border border-brand-border rounded-[10px] text-brand-heading cursor-pointer hover:border-brand-accent text-sm font-medium [&_input]:hidden">
+            <Upload size={16} aria-hidden="true" />
+            {tr('backup.import')}
+            <input type="file" accept="application/json,.json" onChange={handleImportFile} />
+          </label>
+        </div>
       </div>
 
       {pendingImport && (
         <div className="flex flex-col gap-2 p-3 rounded-[10px] bg-brand-row">
-          <p>{tr('backup.importWarning')}</p>
+          <p className="text-brand-text text-[13px] m-0">{tr('backup.importWarning')}</p>
           <div className="flex gap-2 flex-wrap [&_button]:flex-1 [&_.file-button]:flex-1">
             <Button type="button" variant="danger" onClick={confirmImport}>
               {tr('backup.confirmImport')}
@@ -82,14 +88,14 @@ export function BackupControls({
               variant="secondary"
               onClick={() => setPendingImport(null)}
             >
-              {tr('cancel')}
+              {tr('common.cancel')}
             </Button>
           </div>
         </div>
       )}
 
       {message && (
-        <p className={message.kind === 'error' ? 'text-brand-danger text-sm m-0' : 'text-brand-text'}>
+        <p className={message.kind === 'error' ? 'text-brand-danger text-[13px] m-0' : 'text-brand-text text-[13px] m-0'}>
           {message.text}
         </p>
       )}
