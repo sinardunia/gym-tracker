@@ -108,28 +108,16 @@ export function HomeScreen({
           <h1>Gym Tracker</h1>
           <p className="muted">{tr('home.tagline')}</p>
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            className="btn-sm secondary lang-toggle"
-            onClick={onToggleLang}
-            aria-label={
-              lang === 'id' ? tr('lang.switchToEn') : tr('lang.switchToId')
-            }
-          >
-            {lang === 'id' ? 'EN' : 'ID'}
-          </button>
-          <button
-            type="button"
-            ref={settingsBtnRef}
-            className={`icon-btn${settingsOpen ? ' active' : ''}`}
-            onClick={() => setSettingsOpen((open) => !open)}
-            aria-label={tr('home.settings')}
-            title={tr('home.settings')}
-          >
-            <Icon name="settings" size={18} />
-          </button>
-        </div>
+        <button
+          type="button"
+          ref={settingsBtnRef}
+          className={`icon-btn${settingsOpen ? ' active' : ''}`}
+          onClick={() => setSettingsOpen((open) => !open)}
+          aria-label={tr('home.settings')}
+          title={tr('home.settings')}
+        >
+          <Icon name="settings" size={18} />
+        </button>
       </header>
 
       {activeWorkout && (
@@ -315,6 +303,8 @@ export function HomeScreen({
           onSetTheme={onSetTheme}
           backupState={backupState}
           onImportBackup={onImportBackup}
+          lang={lang}
+          onToggleLang={onToggleLang}
         />
       )}
     </main>
