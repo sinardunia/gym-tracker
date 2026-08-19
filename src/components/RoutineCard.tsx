@@ -1,10 +1,59 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useI18n } from '../i18n'
 import { Icon } from './Icon'
 import { InlineRename } from './InlineRename'
 import { AddRoutineExerciseForm } from './AddRoutineExerciseForm'
 import { DayScheduleSelect } from './DayScheduleSelect'
 import type { Routine, ScheduleConflict, Weekday } from '../lib/types'
+
+function DropdownMenu({
+  items,
+  ariaLabel,
+}: {
+  items: { label: string; onClick: () => void; variant?: 'danger' }[]
+  ariaLabel: string
+}) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        type="button"
+        className="icon-btn"
+        onClick={() => setOpen((o) => !o)}
+        aria-label={ariaLabel}
+        aria-expanded={open}
+      >
+        <Icon name="more" size={18} />
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
+          <div className="absolute right-0 top-full mt-1 z-20 min-w-[140px] bg-brand-card border border-brand-border rounded-lg shadow-lg py-1">
+            {items.map((item) => (
+              <button
+                key={item.label}
+                type="button"
+                className={`w-full text-left px-3 py-2 text-sm font-[inherit] cursor-pointer hover:bg-brand-row ${
+                  item.variant === 'danger'
+                    ? 'text-red-500 hover:text-red-600'
+                    : 'text-brand-heading'
+                }`}
+                onClick={() => {
+                  item.onClick()
+                  setOpen(false)
+                }}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
 
 export function RoutineCard({
   routine,
@@ -44,7 +93,7 @@ export function RoutineCard({
   }
 
   return (
-    <section className="card routine">
+    <section className="card routine transition-shadow duration-200 hover:shadow-md">
       <div className="routine-head">
         {renaming ? (
           <InlineRename
@@ -57,21 +106,13 @@ export function RoutineCard({
           />
         ) : (
           <>
-            <div className="routine-title">
-              <h3>{routine.name}</h3>
+            <div className="routine-title min-w-0 flex-1">
+              <h3 className="text-lg">{routine.name}</h3>
               <p className="muted exercise-summary">
                 {routine.days.length} {p(routine.days.length, 'routine.day')}
               </p>
             </div>
-            <div className="exercise-actions">
-              <button
-                type="button"
-                className="icon-btn"
-                onClick={() => setRenaming(true)}
-                aria-label={tr('routine.rename')}
-              >
-                <Icon name="pencil" size={16} />
-              </button>
+            <div className="flex items-center gap-1">
               {confirmDelete ? (
                 <span className="inline-confirm">
                   <button
@@ -90,14 +131,13 @@ export function RoutineCard({
                   </button>
                 </span>
               ) : (
-                <button
-                  type="button"
-                  className="icon-btn danger"
-                  onClick={() => setConfirmDelete(true)}
-                  aria-label={tr('routine.delete')}
-                >
-                  <Icon name="trash" size={16} />
-                </button>
+                <DropdownMenu
+                  ariaLabel={tr('routine.options')}
+                  items={[
+                    { label: tr('routine.rename'), onClick: () => setRenaming(true) },
+                    { label: tr('routine.delete'), onClick: () => setConfirmDelete(true), variant: 'danger' },
+                  ]}
+                />
               )}
             </div>
           </>
@@ -110,10 +150,9 @@ export function RoutineCard({
 
       {routine.days.length > 0 && (
         <ul className="days">
-          {routine.days.map((day, dayIndex) => {
+          {routine.days.map((day) => {
             const assignedWeekday =
-              Object.entries(routine.schedule).find(([, id]) => id === day.id)?.[0] ??
-              ''
+              Object.entries(routine.schedule).find(([, id]) => id === day.id)?.[0] ?? ''
             const takenWeekdays = Object.entries(routine.schedule)
               .filter(([, id]) => id !== day.id)
               .map(([w]) => Number(w))
@@ -138,12 +177,8 @@ export function RoutineCard({
                       <span className="day-toggle-main">
                         <span>{day.name}</span>
                         <Icon
-                          name={
-                            expandedDayId === day.id
-                              ? 'chevron-up'
-                              : 'chevron-down'
-                          }
-                          size={18}
+                          name={expandedDayId === day.id ? 'chevron-up' : 'chevron-down'}
+                          size={24}
                         />
                       </span>
                       <span className="muted">
@@ -151,42 +186,15 @@ export function RoutineCard({
                         {p(day.exerciseNames.length, 'routine.exercise')}
                       </span>
                     </button>
-                    <div className="exercise-actions">
-                      <button
-                        type="button"
-                        className="icon-btn"
-                        disabled={dayIndex === 0}
-                        onClick={() => onMoveDay(day.id, -1)}
-                        aria-label={tr('routine.moveDayUp')}
-                      >
-                        <Icon name="arrow-up" size={16} />
-                      </button>
-                      <button
-                        type="button"
-                        className="icon-btn"
-                        disabled={dayIndex === routine.days.length - 1}
-                        onClick={() => onMoveDay(day.id, 1)}
-                        aria-label={tr('routine.moveDayDown')}
-                      >
-                        <Icon name="arrow-down" size={16} />
-                      </button>
-                      <button
-                        type="button"
-                        className="icon-btn"
-                        onClick={() => setRenamingDayId(day.id)}
-                        aria-label={tr('routine.renameDay')}
-                      >
-                        <Icon name="pencil" size={16} />
-                      </button>
-                      <button
-                        type="button"
-                        className="icon-btn danger"
-                        onClick={() => onRemoveDay(day.id)}
-                        aria-label={tr('routine.removeDay')}
-                      >
-                        <Icon name="trash" size={16} />
-                      </button>
-                    </div>
+                    <DropdownMenu
+                      ariaLabel={tr('routine.dayOptions')}
+                      items={[
+                        { label: tr('routine.moveDayUp'), onClick: () => onMoveDay(day.id, -1) },
+                        { label: tr('routine.moveDayDown'), onClick: () => onMoveDay(day.id, 1) },
+                        { label: tr('routine.renameDay'), onClick: () => setRenamingDayId(day.id) },
+                        { label: tr('routine.removeDay'), onClick: () => onRemoveDay(day.id), variant: 'danger' },
+                      ]}
+                    />
                   </div>
                 )}
 

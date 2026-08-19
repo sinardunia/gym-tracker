@@ -3,7 +3,7 @@ import { ConfirmDialog } from '../../components/ConfirmDialog'
 import { BackupControls } from '../../components/BackupControls'
 import { FeedbackCard } from '../../components/FeedbackCard'
 import { Icon } from '../../components/Icon'
-import { useI18n } from '../../i18n'
+import { useI18n, type Lang } from '../../i18n'
 import { GITHUB_URL, SAWERIA_URL } from '../../lib/config'
 import { THEMES, type Theme } from '../../lib/theme'
 import type { PersistedState } from '../../lib/types'
@@ -15,6 +15,8 @@ export function SettingsModal({
   onSetTheme,
   backupState,
   onImportBackup,
+  lang,
+  onToggleLang,
 }: {
   onClose: () => void
   returnFocusRef: RefObject<HTMLButtonElement | null>
@@ -22,6 +24,8 @@ export function SettingsModal({
   onSetTheme: (theme: Theme) => void
   backupState: PersistedState
   onImportBackup: (state: PersistedState) => void
+  lang: Lang
+  onToggleLang: () => void
 }) {
   const { tr } = useI18n()
   return (
@@ -33,6 +37,36 @@ export function SettingsModal({
     >
       <div className="settings-content">
         <BackupControls state={backupState} onImport={onImportBackup} />
+
+        <section className="about-sub">
+          <h3>{tr('lang.title')}</h3>
+          <div className="grid grid-cols-2 gap-2" role="group" aria-label={tr('lang.title')}>
+            <button
+              type="button"
+              className={`flex items-center justify-center gap-2 px-3 py-2.5 border rounded-lg text-[13px] font-[inherit] cursor-pointer transition-[background,color,border-color] duration-[120ms] ${
+                lang === 'id'
+                  ? 'bg-brand-accent-bg border-brand-accent text-brand-heading font-semibold'
+                  : 'border-brand-border bg-brand-card text-brand-text hover:border-brand-accent'
+              }`}
+              onClick={() => lang !== 'id' && onToggleLang()}
+            >
+              <span className="text-base">🇮🇩</span>
+              <span>Bahasa Indonesia</span>
+            </button>
+            <button
+              type="button"
+              className={`flex items-center justify-center gap-2 px-3 py-2.5 border rounded-lg text-[13px] font-[inherit] cursor-pointer transition-[background,color,border-color] duration-[120ms] ${
+                lang === 'en'
+                  ? 'bg-brand-accent-bg border-brand-accent text-brand-heading font-semibold'
+                  : 'border-brand-border bg-brand-card text-brand-text hover:border-brand-accent'
+              }`}
+              onClick={() => lang !== 'en' && onToggleLang()}
+            >
+              <span className="text-base">🇺🇸</span>
+              <span>English</span>
+            </button>
+          </div>
+        </section>
 
         <section className="about-sub">
           <h3>{tr('theme.title')}</h3>
