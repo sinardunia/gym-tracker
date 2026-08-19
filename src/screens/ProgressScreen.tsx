@@ -1,7 +1,9 @@
 import { useMemo } from 'react'
 import { useI18n } from '../i18n'
-import { exerciseHistory, computeConsistency } from '../lib/selectors'
+import { exerciseHistory, computeConsistency, computeHeatmapData, computeMonthlyVolume } from '../lib/selectors'
 import { ExerciseChart } from '../components/ExerciseChart'
+import { HeatmapChart } from '../components/HeatmapChart'
+import { VolumeChart } from '../components/VolumeChart'
 import { formatDate, formatSetWeight } from '../lib/format'
 import type { Workout } from '../lib/types'
 
@@ -19,6 +21,8 @@ export function ProgressScreen({
   const { tr, p, lang } = useI18n()
   const history = useMemo(() => exerciseHistory(sessions), [sessions])
   const stats = useMemo(() => computeConsistency(sessions), [sessions])
+  const heatmap = useMemo(() => computeHeatmapData(sessions), [sessions])
+  const volume = useMemo(() => computeMonthlyVolume(sessions, lang), [sessions, lang])
 
   if (sessions.length === 0) {
     return (
@@ -50,6 +54,21 @@ export function ProgressScreen({
       >
         {selected ? tr('progress.backToList') : tr('program.back')}
       </button>
+
+      {!selected && sessions.length > 0 && (
+        <>
+          <section className="card">
+            <h2>12-Minggu Terakhir</h2>
+            <HeatmapChart weeks={heatmap.weeks} maxPerDay={heatmap.maxPerDay} />
+          </section>
+          {volume.some((v) => v.count > 0) && (
+            <section className="card">
+              <h2>Volume Bulanan</h2>
+              <VolumeChart data={volume} />
+            </section>
+          )}
+        </>
+      )}
 
       {item ? (
         <>
