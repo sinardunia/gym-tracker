@@ -203,7 +203,7 @@ function AppContent({
       {viewedSession ? (
         <SummaryScreen
           workout={viewedSession}
-          onStartAnother={startWorkout}
+          onStartAnother={() => startWorkout()}
           onBack={() => setViewedSession(null)}
           onEdit={editSession}
           onDelete={deleteSession}
