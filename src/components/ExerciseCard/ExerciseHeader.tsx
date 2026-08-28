@@ -23,7 +23,7 @@ export function ExerciseHeader({
   const { tr, p } = useI18n()
   const setCount = exercise.sets.length
   const lastSetSummary =
-    setCount > 0 ? tr('ex.lastSet', { count: setCount }) : tr('ex.noSets')
+    setCount > 0 ? p(setCount, 'ex.lastSet') : tr('ex.noSets')
 
   return (
     <div className="flex items-start gap-2">

@@ -1,5 +1,5 @@
 /* eslint-disable react/only-export-components */
-import { createContext, useContext, type ReactNode } from 'react'
+import { createContext, useContext, useMemo, type ReactNode } from 'react'
 
 export type Lang = 'id' | 'en'
 
@@ -92,7 +92,8 @@ const ID: Record<string, string> = {
   'timer.restartAria': 'Ulangi timer istirahat',
 
   'ex.sets': 'set',
-  'ex.lastSet': '{count} set tercatat',
+  'ex.lastSet.one': '{count} set tercatat',
+  'ex.lastSet.other': '{count} set tercatat',
   'ex.noSets': 'Belum ada set',
   'ex.fillInput': 'Isi input ({weight} × {reps})',
   'ex.fillInputBodyweight': 'Isi input ({reps} reps)',
@@ -441,7 +442,8 @@ const EN: Record<string, string> = {
   'timer.restartAria': 'Restart rest timer',
 
   'ex.sets': 'sets',
-  'ex.lastSet': '{count} sets logged',
+  'ex.lastSet.one': '{count} set logged',
+  'ex.lastSet.other': '{count} sets logged',
   'ex.noSets': 'No sets logged yet',
   'ex.fillInput': 'Fill input ({weight} × {reps})',
   'ex.fillInputBodyweight': 'Fill input ({reps} reps)',
@@ -738,7 +740,7 @@ export function I18nProvider({
   lang: Lang
   children: ReactNode
 }) {
-  const value: I18n = {
+  const value: I18n = useMemo(() => ({
     lang,
     tr: (key, vars) => {
       const template = DICTS[lang][key] ?? DICTS.en[key]
@@ -752,7 +754,7 @@ export function I18nProvider({
       if (template === undefined) warnMissing(key)
       return interpolate(template ?? key, { count })
     },
-  }
+  }), [lang])
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>
 }
 
