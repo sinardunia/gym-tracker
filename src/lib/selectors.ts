@@ -119,7 +119,7 @@ export function getRecommendedWorkout(
       }
     }
     // Fallback: match by day name or exercise overlap if dayId wasn't stored
-    if (lastDayIndex === -1 && session.exercises.length > 0) {
+    if (lastDayIndex === -1 && session.routineId === primaryRoutine.id && session.exercises.length > 0) {
       const sessionExNames = new Set(session.exercises.map((e) => e.name.toLowerCase()))
       const matchedIdx = primaryRoutine.days.findIndex((d) =>
         d.exerciseNames.some((name) => sessionExNames.has(name.toLowerCase())),
@@ -185,7 +185,7 @@ export function findLibraryMatches(query: string): LibraryExercise[] {
   if (!query) return []
   return EXERCISE_LIBRARY.filter((exercise) =>
     [exercise.name, ...exercise.aliases].some((alias) =>
-      alias.toLowerCase().includes(query),
+      alias.toLowerCase().includes(query.toLowerCase()),
     ),
   )
 }
@@ -407,8 +407,7 @@ function getMondayISO(date: Date): string {
 
 /** Returns the ISO date string (YYYY-MM-DD) of the previous day. */
 function getPreviousDayISO(date: Date): string {
-  const d = new Date(date)
-  d.setUTCDate(d.getUTCDate() - 1)
+  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate() - 1)
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
@@ -656,7 +655,7 @@ export function computeHeatmapData(
   for (let w = 0; w < WEEKS; w++) {
     const row: number[] = []
     for (let dow = 0; dow < 7; dow++) {
-      const offset = (WEEKS - 1 - w) * 7 + (6 - dow) + (6 - todayDow)
+      const offset = (WEEKS - 1 - w) * 7 + (todayDow - dow)
       const date = new Date(todayMidnight.getTime() - offset * msPerDay)
       const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
       const count = countMap.get(key) ?? 0
@@ -771,7 +770,7 @@ export function analyzeWorkout(workout: Workout, lang: Lang): WorkoutAnalysis {
 
   if (totalSets > 30) {
     suggestions.push(lang === 'id'
-      ? `Total ${totalSets} set. Pertimbangkan untuk kurangi jika已经超过 kemampuan recovery.`
+      ? `Total ${totalSets} set. Pertimbangkan untuk kurangi jika sudah melebihi kemampuan recovery.`
       : `Total ${totalSets} sets. Consider reducing if recovery is compromised.`)
   }
 

@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
+  computeHeatmapData,
   detectNewPRs,
+  findLibraryMatches,
   findPersonalBest,
   groupSetRows,
   suggestDrop,
@@ -162,5 +164,29 @@ describe('detectNewPRs', () => {
       },
     ])
     expect(detectNewPRs(prior, finished)).toHaveLength(0)
+  })
+})
+
+describe('findLibraryMatches', () => {
+  it('matches case-insensitively', () => {
+    const results = findLibraryMatches('Bench')
+    expect(results.length).toBeGreaterThan(0)
+    expect(results.some((e) => e.name.toLowerCase().includes('bench'))).toBe(true)
+  })
+
+  it('returns empty for no match', () => {
+    expect(findLibraryMatches('xyznotreal')).toEqual([])
+  })
+
+  it('returns empty for empty query', () => {
+    expect(findLibraryMatches('')).toEqual([])
+  })
+})
+
+describe('computeHeatmapData', () => {
+  it('today cell is at grid end', () => {
+    const { weeks } = computeHeatmapData([])
+    expect(weeks).toHaveLength(12)
+    expect(weeks[0]).toHaveLength(7)
   })
 })
