@@ -92,8 +92,7 @@ export function HistoryScreen({
                       </span>
                     </div>
                     <span className="text-brand-text text-[13px] whitespace-nowrap shrink-0">
-                      {p(session.exercises.length, 'count.exercises')} (
-                      {totalSets} set)
+                      {p(session.exercises.length, 'count.exercises')} ({p(totalSets, 'count.sets')})
                     </span>
                   </button>
                 </li>
@@ -103,6 +102,11 @@ export function HistoryScreen({
           {sessions.length > 15 && !showAll && (
             <Button sm variant="secondary" type="button" onClick={() => setShowAll(true)}>
               {tr('home.showMore')}
+            </Button>
+          )}
+          {sessions.length > 15 && showAll && (
+            <Button sm variant="secondary" type="button" onClick={() => setShowAll(false)}>
+              {tr('home.showLess')}
             </Button>
           )}
         </>
