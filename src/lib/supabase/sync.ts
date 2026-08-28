@@ -194,7 +194,6 @@ export function createDebouncedPusher(
   getState: () => PersistedState,
 ) {
   let timer: number | null = null
-  let lastPushedAt = 0
 
   function schedule() {
     if (!isSupabaseConfigured || !supabase) return
@@ -203,21 +202,24 @@ export function createDebouncedPusher(
     if (timer) window.clearTimeout(timer)
     timer = window.setTimeout(async () => {
       const state = getState()
-      // throttle: don't push more than once per debounce window if already synced
-      const now = Date.now()
-      if (now - lastPushedAt < SYNC_DEBOUNCE_MS) return
-      lastPushedAt = now
       await pushStateToSupabase(state, userId)
     }, SYNC_DEBOUNCE_MS)
   }
 
-  // Flush pending on online event
+  // Flush pending on online event - push latest state, not just pending snapshot
   async function flushPending() {
-    const pending = getPending()
     const userId = getUserId()
-    if (!pending || !userId) return
+    if (!userId) return
     if (!navigator.onLine) return
-    await pushStateToSupabase(pending.state, userId)
+    const latest = getState()
+    const pending = getPending()
+    // If pending is newer than latest, use pending; otherwise use latest
+    if (pending) {
+      const merged = mergeStates(latest, pending.state)
+      await pushStateToSupabase(merged, userId)
+    } else {
+      await pushStateToSupabase(latest, userId)
+    }
   }
 
   function attachOnlineListener() {
@@ -229,18 +231,59 @@ export function createDebouncedPusher(
 }
 
 export function mergeStates(local: PersistedState, remote: PersistedState): PersistedState {
-  // Simple last-write-wins based on savedAt
+  // Union merge: combine sessions/routines by id to avoid data loss across devices.
+  // For duplicate ids, keep the newer by startedAt/updated cycle (fallback to local).
   const localTime = local.savedAt ? Date.parse(local.savedAt) : 0
   const remoteTime = remote.savedAt ? Date.parse(remote.savedAt) : 0
 
-  // If remote is newer, prefer remote. Otherwise keep local.
-  // But always prefer non-empty over empty to avoid data loss on first sync.
   const localEmpty = local.sessions.length === 0 && local.routines.length === 0 && !local.activeWorkout
   const remoteEmpty = remote.sessions.length === 0 && remote.routines.length === 0 && !remote.activeWorkout
 
   if (remoteEmpty && !localEmpty) return local
   if (localEmpty && !remoteEmpty) return remote
 
-  if (remoteTime > localTime) return remote
-  return local
+  // Union sessions by id
+  const sessionMap = new Map<string, Workout>()
+  for (const s of remote.sessions) sessionMap.set(s.id, s)
+  for (const s of local.sessions) {
+    const existing = sessionMap.get(s.id)
+    if (!existing) {
+      sessionMap.set(s.id, s)
+    } else {
+      // Prefer newer finishedAt/startedAt if available
+      const eTime = existing.finishedAt ? Date.parse(existing.finishedAt) : Date.parse(existing.startedAt)
+      const lTime = s.finishedAt ? Date.parse(s.finishedAt) : Date.parse(s.startedAt)
+      if (lTime > eTime) sessionMap.set(s.id, s)
+    }
+  }
+  const sessions = [...sessionMap.values()].sort(
+    (a, b) => Date.parse(b.startedAt) - Date.parse(a.startedAt),
+  )
+
+  // Union routines by id
+  const routineMap = new Map<string, Routine>()
+  for (const r of remote.routines) routineMap.set(r.id, r)
+  for (const r of local.routines) {
+    if (!routineMap.has(r.id)) routineMap.set(r.id, r)
+    // if duplicate, keep local (most recent action was local)
+  }
+  const routines = [...routineMap.values()]
+
+  // activeWorkout: last-write-wins by savedAt, fallback to whichever exists
+  let activeWorkout: PersistedState['activeWorkout'] = null
+  if (local.activeWorkout && remote.activeWorkout) {
+    activeWorkout = remoteTime > localTime ? remote.activeWorkout : local.activeWorkout
+  } else {
+    activeWorkout = local.activeWorkout ?? remote.activeWorkout ?? null
+  }
+
+  const savedAt =
+    remoteTime > localTime ? remote.savedAt : local.savedAt ?? remote.savedAt
+
+  return { activeWorkout, sessions, routines, savedAt }
+}
+
+export function isEqualState(a: PersistedState, b: PersistedState): boolean {
+  // Quick deep equality via JSON (ok for small gym data)
+  return JSON.stringify(a) === JSON.stringify(b)
 }

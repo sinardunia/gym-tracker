@@ -58,12 +58,13 @@ export function usePersistedState(): {
     }
   }, [state, userId])
 
-  // Pull on auth change and merge
+  // Pull on auth change and merge - ensures cross-device history sync
   useEffect(() => {
     if (!userId) {
       hasPulledRef.current = null
       return
     }
+    // Allow re-pull on demand via hasPulledRef reset (exposed via sync button)
     if (hasPulledRef.current === userId) return
     hasPulledRef.current = userId
     let cancelled = false
@@ -72,14 +73,28 @@ export function usePersistedState(): {
       const remote = await pullStateFromSupabase(userId)
       if (cancelled) return
       if (remote) {
+        const local = stateRef.current
+        const merged = mergeStates(local, remote)
+        const needsPush =
+          merged.sessions.length !== remote.sessions.length ||
+          merged.routines.length !== remote.routines.length ||
+          JSON.stringify(merged.activeWorkout) !== JSON.stringify(remote.activeWorkout) ||
+          // also push if local had data not in remote (mobile anonymous data)
+          local.sessions.length > remote.sessions.length ||
+          local.routines.length > remote.routines.length
+
         setState((current) => {
-          const merged = mergeStates(current, remote)
-          // if merged is remote, we need to save it locally immediately
-          if (merged !== current) {
-            saveState(merged)
+          // recompute merged from current in case state changed during pull
+          const freshMerged = mergeStates(current, remote)
+          if (JSON.stringify(freshMerged) !== JSON.stringify(current)) {
+            saveState(freshMerged)
           }
-          return merged
+          return freshMerged
         })
+        // Push union back to cloud if local had extra history (ensures mobile data appears on PC)
+        if (needsPush) {
+          await pushStateToSupabase(merged, userId)
+        }
         try {
           const v = localStorage.getItem('gym-tracker.lastSyncAt')
           setLastSyncAt(v)
@@ -87,7 +102,7 @@ export function usePersistedState(): {
           // ignore
         }
       } else {
-        // No remote data: push local if not empty (first login migration)
+        // Pull failed (null) - push local if not empty (first login migration fallback)
         const isLocalEmpty =
           stateRef.current.sessions.length === 0 &&
           stateRef.current.routines.length === 0 &&
@@ -138,6 +153,45 @@ export function usePersistedState(): {
       cancelled = true
     }
   }, [])
+
+  // Re-pull when tab becomes visible or comes back online (cross-device sync)
+  useEffect(() => {
+    if (!userId) return
+    let cancelled = false
+    async function refetch() {
+      if (cancelled) return
+      if (document.visibilityState !== 'visible' && !navigator.onLine) return
+      setIsSyncing(true)
+      const remote = await pullStateFromSupabase(userId!)
+      if (cancelled || !remote) {
+        setIsSyncing(false)
+        return
+      }
+      setState((current) => {
+        const merged = mergeStates(current, remote)
+        if (JSON.stringify(merged) !== JSON.stringify(current)) {
+          saveState(merged)
+          return merged
+        }
+        return current
+      })
+      setIsSyncing(false)
+    }
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') void refetch()
+    }
+    const onOnline = () => void refetch()
+    document.addEventListener('visibilitychange', onVisible)
+    window.addEventListener('online', onOnline)
+    // Also pull on focus (covers browser switch PC/mobile)
+    window.addEventListener('focus', onOnline)
+    return () => {
+      cancelled = true
+      document.removeEventListener('visibilitychange', onVisible)
+      window.removeEventListener('online', onOnline)
+      window.removeEventListener('focus', onOnline)
+    }
+  }, [userId])
 
   useEffect(() => {
     void navigator.storage?.persist?.().catch(() => {})
