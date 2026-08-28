@@ -1,4 +1,5 @@
 import { useEffect, useRef, type ReactNode, type RefObject } from 'react'
+import { X } from 'lucide-react'
 
 export function ConfirmDialog({
   title,
@@ -61,7 +62,7 @@ export function ConfirmDialog({
   return (
     <div
       ref={dialogRef}
-      className="fixed inset-0 z-10 flex items-center justify-center px-4 pt-[calc(16px+env(safe-area-inset-top))] pb-[calc(16px+env(safe-area-inset-bottom))] bg-black/45"
+      className="fixed inset-0 z-10 flex items-center justify-center px-4 pt-[calc(16px+env(safe-area-inset-top))] pb-[calc(16px+env(safe-area-inset-bottom))] bg-black/45 backdrop-blur-sm"
       role="dialog"
       aria-modal="true"
       aria-label={ariaLabel}
@@ -81,7 +82,7 @@ export function ConfirmDialog({
               onClick={onClose}
               aria-label="Close"
             >
-              ✕
+              <X size={16} aria-hidden="true" />
             </button>
           </div>
         )}

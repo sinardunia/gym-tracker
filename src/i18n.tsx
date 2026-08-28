@@ -28,6 +28,7 @@ const ID: Record<string, string> = {
   'home.recentSessions': 'Sesi terakhir',
   'home.viewAllHistory': 'Lihat Semua Riwayat →',
   'home.noSessions': 'Belum ada sesi yang selesai.',
+  'home.weeklySchedule': 'Jadwal Mingguan',
   'home.routines': 'Jadwal',
   'home.progress': 'Progress',
 
@@ -146,6 +147,7 @@ const ID: Record<string, string> = {
   'addEx.nameLabel': 'Nama exercise',
   'addEx.namePlaceholder': 'mis. Bench Press',
   'addEx.library': 'Pustaka exercise',
+  'addEx.yourExercises': 'Exercise-mu',
   'addEx.recent': 'Baru dipakai',
   'addEx.add': 'Tambah exercise',
 
@@ -267,6 +269,7 @@ const ID: Record<string, string> = {
   'weekday.6': 'Sabtu',
 
   'summary.title': 'Workout selesai',
+  'summary.saving': 'Menyimpan...',
   'summary.savedNotice': '✓ Workout berhasil disimpan',
   'summary.startAnother': 'Mulai workout lain',
   'summary.back': 'Kembali',
@@ -302,6 +305,8 @@ const ID: Record<string, string> = {
   // ConsistencyWidget
   'consistency.weekStreak': 'Minggu ke-{n} berturut-turut',
   'consistency.weekStreakOne': 'Minggu pertama aktif',
+  'consistency.dayStreak': '{n} hari berturut-turut',
+  'consistency.dayStreakOne': '1 hari berturut-turut',
   'consistency.totalSessions': '{n} sesi total',
   'consistency.lastTrained': 'Terakhir latihan {n} hari lalu',
   'consistency.newChapter': 'Mulai babak baru',
@@ -322,6 +327,8 @@ const ID: Record<string, string> = {
   'summary.prLineFirst': '(pertama kali dicatat)',
   'summary.prBodyweight': '{exercise} — {reps} reps',
   'summary.prBodyweightPrev': '(sebelumnya {reps} reps)',
+  'summary.analysisTitle': 'Analisis Workout',
+  'summary.analysisDuration': 'Durasi: {n} menit',
 
   // Milestone callouts
   'milestone.first-workout': 'Sesi pertama selesai.',
@@ -371,6 +378,7 @@ const EN: Record<string, string> = {
   'home.recentSessions': 'Recent sessions',
   'home.viewAllHistory': 'View Full History →',
   'home.noSessions': 'No completed sessions yet.',
+  'home.weeklySchedule': 'Weekly Schedule',
   'home.routines': 'Routines',
   'home.progress': 'Progress',
 
@@ -488,6 +496,7 @@ const EN: Record<string, string> = {
   'addEx.nameLabel': 'Exercise name',
   'addEx.namePlaceholder': 'e.g. Bench Press',
   'addEx.library': 'Exercise library',
+  'addEx.yourExercises': 'Your exercises',
   'addEx.recent': 'Recently used',
   'addEx.add': 'Add exercise',
 
@@ -609,6 +618,7 @@ const EN: Record<string, string> = {
   'weekday.6': 'Saturday',
 
   'summary.title': 'Workout complete',
+  'summary.saving': 'Saving...',
   'summary.savedNotice': '✓ Workout saved successfully',
   'summary.startAnother': 'Start another workout',
   'summary.back': 'Back',
@@ -644,6 +654,8 @@ const EN: Record<string, string> = {
   // ConsistencyWidget
   'consistency.weekStreak': 'Week {n} in a row',
   'consistency.weekStreakOne': 'First active week',
+  'consistency.dayStreak': '{n} days in a row',
+  'consistency.dayStreakOne': '1 day in a row',
   'consistency.totalSessions': '{n} sessions total',
   'consistency.lastTrained': 'Last trained {n} days ago',
   'consistency.newChapter': 'Start a new chapter',
@@ -664,6 +676,8 @@ const EN: Record<string, string> = {
   'summary.prLineFirst': '(first time recorded)',
   'summary.prBodyweight': '{exercise} — {reps} reps',
   'summary.prBodyweightPrev': '(was {reps} reps)',
+  'summary.analysisTitle': 'Workout Analysis',
+  'summary.analysisDuration': 'Duration: {n} minutes',
 
   // Milestone callouts
   'milestone.first-workout': 'First session complete.',

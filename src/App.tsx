@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Agentation } from 'agentation'
-import { I18nProvider, LANG_KEY, type Lang } from './i18n'
+import { I18nProvider, LANG_KEY, useI18n, type Lang } from './i18n'
 import { HomeScreen } from './screens/HomeScreen'
 import { WorkoutScreen } from './screens/WorkoutScreen'
 import { SummaryScreen } from './screens/SummaryScreen'
@@ -69,6 +69,7 @@ function AppContent({
   onSetTheme: (theme: Theme) => void
 }) {
   const { state, setState, workoutActions, routineActions } = useApp()
+  const { tr } = useI18n()
   const { takeLastFinished } = workoutActions
   const [activeTab, setActiveTab] = useState<TabKey>('home')
   const [viewedSession, setViewedSession] = useState<Workout | null>(null)
@@ -80,11 +81,14 @@ function AppContent({
   const [consistencyStats, setConsistencyStats] = useState<ConsistencyStats>({
     currentWeekStreak: 0,
     longestWeekStreak: 0,
+    currentDayStreak: 0,
+    longestDayStreak: 0,
     totalSessions: 0,
     lastTrainedAt: null,
     gapDays: null,
   })
   const [newPRs, setNewPRs] = useState<PRDetection[]>([])
+  const [savingWorkout, setSavingWorkout] = useState(false)
 
   useDevSeedData(state, setState)
 
@@ -126,12 +130,19 @@ function AppContent({
   }
 
   function finishWorkout() {
-    const finished = workoutActions.finishWorkout()
-    if (!finished) return
-    setViewedSession(finished)
-    setWorkoutPaused(false)
-    setCollapsedExerciseIds(new Set())
-    clearTimerSnapshots()
+    setSavingWorkout(true)
+    setTimeout(() => {
+      const finished = workoutActions.finishWorkout()
+      if (!finished) {
+        setSavingWorkout(false)
+        return
+      }
+      setViewedSession(finished)
+      setWorkoutPaused(false)
+      setCollapsedExerciseIds(new Set())
+      clearTimerSnapshots()
+      setSavingWorkout(false)
+    }, 600)
   }
 
   function editSession(session: Workout) {
@@ -200,6 +211,12 @@ function AppContent({
 
   return (
     <div className="flex flex-col min-h-dvh pb-[72px]">
+      {savingWorkout && (
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-3 bg-brand-bg">
+          <div className="w-12 h-12 rounded-full border-4 border-brand-border border-t-brand-accent animate-spin" />
+          <span className="text-brand-text text-sm font-medium">{tr('summary.saving')}</span>
+        </div>
+      )}
       {viewedSession ? (
         <SummaryScreen
           workout={viewedSession}

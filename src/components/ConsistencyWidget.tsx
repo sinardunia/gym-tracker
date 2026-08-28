@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { Flame } from 'lucide-react'
 import { useI18n } from '../i18n'
 import type { ConsistencyStats } from '../lib/types'
 
@@ -22,19 +23,16 @@ export function ConsistencyWidget({ stats }: { stats: ConsistencyStats }) {
     setIsAnimating(false)
   }, [stats.currentWeekStreak])
 
-  // On first render after animation, persist the new value
   useEffect(() => {
     if (!isAnimating) {
       prevStreakRef.current = stats.currentWeekStreak
     }
   }, [isAnimating, stats.currentWeekStreak])
 
-  // Hide entirely if no sessions yet
   if (stats.totalSessions === 0) return null
 
-  const { currentWeekStreak, totalSessions, gapDays } = stats
+  const { currentWeekStreak, currentDayStreak, totalSessions, gapDays } = stats
 
-  // Comeback state: gap >= 7 days
   if (gapDays !== null && gapDays >= 7) {
     const copyKey = gapDays >= 14 ? 'consistency.comeback14' : 'consistency.comeback7'
     return (
@@ -49,8 +47,7 @@ export function ConsistencyWidget({ stats }: { stats: ConsistencyStats }) {
     )
   }
 
-  // No active streak (streak broke — a full elapsed week had no session)
-  if (currentWeekStreak === 0) {
+  if (currentWeekStreak === 0 && currentDayStreak === 0) {
     return (
       <div className="px-3.5 py-2.5 bg-brand-card border border-brand-border rounded-[10px] flex items-center justify-between gap-3">
         <span className="text-[13px] text-brand-text text-right">
@@ -63,24 +60,36 @@ export function ConsistencyWidget({ stats }: { stats: ConsistencyStats }) {
     )
   }
 
-  // Show gap subtext if 3–6 days since last session (streak intact)
   const showLastTrained = gapDays !== null && gapDays >= 3 && gapDays < 7
 
-  const streakLabel =
-    currentWeekStreak === 1
-      ? tr('consistency.weekStreakOne')
-      : tr('consistency.weekStreak', { n: currentWeekStreak })
+  const dayStreakLabel =
+    currentDayStreak === 1
+      ? tr('consistency.dayStreakOne')
+      : tr('consistency.dayStreak', { n: currentDayStreak })
 
   return (
     <div className="px-3.5 py-2.5 bg-brand-card border border-brand-border rounded-[10px] flex items-center justify-between gap-3">
-      <div className="flex items-baseline gap-1.5">
-        <span
-          className={`text-[22px] font-extrabold text-brand-accent tabular-nums leading-none${isAnimating ? ' animate-[streak-count-in_400ms_ease-out_forwards]' : ''}`}
-          aria-label={streakLabel}
-        >
-          {currentWeekStreak}w
-        </span>
-        <span className="text-[13px] font-semibold text-brand-heading">{streakLabel}</span>
+      <div className="flex items-center gap-3">
+        {currentDayStreak > 0 && (
+          <div className="flex items-center gap-1.5">
+            <Flame size={20} className="text-orange-500" aria-hidden="true" />
+            <span
+              className={`text-[22px] font-extrabold text-orange-500 tabular-nums leading-none${isAnimating ? ' animate-[streak-count-in_400ms_ease-out_forwards]' : ''}`}
+              aria-label={dayStreakLabel}
+            >
+              {currentDayStreak}
+            </span>
+          </div>
+        )}
+        {currentWeekStreak > 0 && (
+          <div className="flex items-baseline gap-1.5">
+            <span
+              className={`text-[15px] font-bold text-brand-accent tabular-nums leading-none${isAnimating ? ' animate-[streak-count-in_400ms_ease-out_forwards]' : ''}`}
+            >
+              {currentWeekStreak}w
+            </span>
+          </div>
+        )}
       </div>
       <div className="text-[13px] text-brand-text text-right">
         {showLastTrained

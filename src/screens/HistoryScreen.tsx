@@ -13,6 +13,13 @@ function resolveDayName(workout: Workout, routines: Routine[]): string | null {
   return day?.name ?? null
 }
 
+/** Resolve the routine/program name from a workout's routineId, or null if not found. */
+function resolveRoutineName(workout: Workout, routines: Routine[]): string | null {
+  if (!workout.routineId) return null
+  const routine = routines.find((r) => r.id === workout.routineId)
+  return routine?.name ?? null
+}
+
 /** Primary display label for a session: day name > exercise names > fallback */
 function sessionLabel(workout: Workout, routines: Routine[]): string {
   const dayName = resolveDayName(workout, routines)
@@ -59,6 +66,7 @@ export function HistoryScreen({
             {visibleSessions.map((session) => {
               const totalSets = countSets(session)
               const primary = sessionLabel(session, routines)
+              const routineName = resolveRoutineName(session, routines)
               const hasDayName = resolveDayName(session, routines) !== null
               const preview = hasDayName ? exercisePreview(session) : ''
               const dateStr = formatDateShort(session.startedAt, lang)
@@ -73,6 +81,9 @@ export function HistoryScreen({
                   >
                     <div className="flex flex-col gap-0.5">
                       <span className="font-semibold text-brand-heading text-[15px] leading-[1.3]">{primary}</span>
+                      {routineName && (
+                        <span className="text-brand-accent text-[13px] font-medium">{routineName}</span>
+                      )}
                       {preview && (
                         <span className="text-brand-text text-[13px]">{preview}</span>
                       )}

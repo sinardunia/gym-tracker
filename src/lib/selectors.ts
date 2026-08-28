@@ -405,6 +405,13 @@ function getMondayISO(date: Date): string {
   return d.toISOString().slice(0, 10)
 }
 
+/** Returns the ISO date string (YYYY-MM-DD) of the previous day. */
+function getPreviousDayISO(date: Date): string {
+  const d = new Date(date)
+  d.setUTCDate(d.getUTCDate() - 1)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
 /**
  * Computes consistency stats from finished sessions.
  *
@@ -422,6 +429,8 @@ export function computeConsistency(sessions: Workout[]): ConsistencyStats {
     return {
       currentWeekStreak: 0,
       longestWeekStreak: 0,
+      currentDayStreak: 0,
+      longestDayStreak: 0,
       totalSessions: 0,
       lastTrainedAt: null,
       gapDays: null,
@@ -456,7 +465,7 @@ export function computeConsistency(sessions: Workout[]): ConsistencyStats {
 
   // Walk backward from the most recent trained week
   if (allWeeks.length === 0) {
-    return { currentWeekStreak: 0, longestWeekStreak: 0, totalSessions, lastTrainedAt, gapDays }
+    return { currentWeekStreak: 0, longestWeekStreak: 0, currentDayStreak: 0, longestDayStreak: 0, totalSessions, lastTrainedAt, gapDays }
   }
 
   // Determine starting week for streak count
@@ -506,7 +515,54 @@ export function computeConsistency(sessions: Workout[]): ConsistencyStats {
     if (runLength > longestWeekStreak) longestWeekStreak = runLength
   }
 
-  return { currentWeekStreak, longestWeekStreak, totalSessions, lastTrainedAt, gapDays }
+  // Compute daily streak (consecutive calendar days with sessions)
+  const trainingDays = new Set<string>()
+  for (const s of finished) {
+    const d = new Date(s.finishedAt as string)
+    trainingDays.add(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`)
+  }
+  const allDays = Array.from(trainingDays).sort((a, b) => b.localeCompare(a))
+
+  let currentDayStreak = 0
+  let longestDayStreak = 0
+  let dayRunLength = 0
+
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+  const mostRecentDay = allDays[0]
+
+  if (mostRecentDay === todayStr || mostRecentDay === getPreviousDayISO(now)) {
+    let expectedDate = new Date(mostRecentDay + 'T00:00:00Z')
+    for (const dayStr of allDays) {
+      const dayDate = new Date(dayStr + 'T00:00:00Z')
+      const diff = Math.round((expectedDate.getTime() - dayDate.getTime()) / msPerDay)
+      if (diff === 0) {
+        dayRunLength += 1
+        expectedDate = new Date(dayDate.getTime() - msPerDay)
+      } else {
+        break
+      }
+    }
+    currentDayStreak = dayRunLength
+  }
+
+  dayRunLength = 0
+  for (let i = 0; i < allDays.length; i++) {
+    if (i === 0) {
+      dayRunLength = 1
+    } else {
+      const prev = new Date(allDays[i - 1] + 'T00:00:00Z')
+      const cur = new Date(allDays[i] + 'T00:00:00Z')
+      const diff = Math.round((prev.getTime() - cur.getTime()) / msPerDay)
+      if (diff === 1) {
+        dayRunLength += 1
+      } else {
+        dayRunLength = 1
+      }
+    }
+    if (dayRunLength > longestDayStreak) longestDayStreak = dayRunLength
+  }
+
+  return { currentWeekStreak, longestWeekStreak, currentDayStreak, longestDayStreak, totalSessions, lastTrainedAt, gapDays }
 }
 
 /**
@@ -677,4 +733,60 @@ export function checkMilestones(
   }
 
   return triggered
+}
+
+export type WorkoutAnalysis = {
+  durationMinutes: number
+  suggestions: string[]
+}
+
+export function analyzeWorkout(workout: Workout, lang: Lang): WorkoutAnalysis {
+  const start = new Date(workout.startedAt).getTime()
+  const end = workout.finishedAt ? new Date(workout.finishedAt).getTime() : Date.now()
+  const durationMinutes = Math.round((end - start) / 60000)
+
+  const suggestions: string[] = []
+  const totalSets = workout.exercises.reduce((sum, e) => sum + e.sets.length, 0)
+  const exerciseCount = workout.exercises.length
+
+  if (durationMinutes < 20) {
+    suggestions.push(lang === 'id'
+      ? 'Workout sangat singkat. Pertimbangkan untuk menambah set atau exercise.'
+      : 'Very short workout. Consider adding more sets or exercises.')
+  } else if (durationMinutes > 120) {
+    suggestions.push(lang === 'id'
+      ? 'Workout lebih dari 2 jam. Pertimbangkan untuk split latihan atau kurangi rest time.'
+      : 'Workout over 2 hours. Consider splitting your training or reducing rest time.')
+  } else if (durationMinutes > 90) {
+    suggestions.push(lang === 'id'
+      ? 'Workout cukup panjang. Pastikan warm-up dan cool-down tetap dilakukan.'
+      : 'Long workout. Make sure you still warm up and cool down properly.')
+  }
+
+  if (exerciseCount >= 8) {
+    suggestions.push(lang === 'id'
+      ? `Banyak exercise (${exerciseCount}). Fokus kualitas > kuantitas.`
+      : `Many exercises (${exerciseCount}). Focus on quality over quantity.`)
+  }
+
+  if (totalSets > 30) {
+    suggestions.push(lang === 'id'
+      ? `Total ${totalSets} set. Pertimbangkan untuk kurangi jika已经超过 kemampuan recovery.`
+      : `Total ${totalSets} sets. Consider reducing if recovery is compromised.`)
+  }
+
+  const avgSetsPerExercise = exerciseCount > 0 ? totalSets / exerciseCount : 0
+  if (avgSetsPerExercise < 2 && exerciseCount > 0) {
+    suggestions.push(lang === 'id'
+      ? 'Rata-rata set per exercise rendah. Tambah 1-2 set untuk stimulus yang cukup.'
+      : 'Low average sets per exercise. Add 1-2 more sets for adequate stimulus.')
+  }
+
+  if (suggestions.length === 0) {
+    suggestions.push(lang === 'id'
+      ? 'Workout terlihat seimbang. Pertahankan konsistensi!'
+      : 'Workout looks balanced. Keep it up!')
+  }
+
+  return { durationMinutes, suggestions }
 }

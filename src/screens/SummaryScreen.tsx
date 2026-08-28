@@ -4,7 +4,7 @@ import { SetList } from '../components/SetList'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { Button, Card, Screen } from '../components/ui'
 import { countSets, formatDate, formatSetWeight } from '../lib/format'
-import { computeConsistency } from '../lib/selectors'
+import { analyzeWorkout, computeConsistency } from '../lib/selectors'
 import type { PRDetection, Workout } from '../lib/types'
 
 export function SummaryScreen({
@@ -27,6 +27,7 @@ export function SummaryScreen({
   const { tr, p, lang } = useI18n()
   const [confirmingDelete, setConfirmingDelete] = useState(false)
   const consistencyStats = computeConsistency(sessions)
+  const analysis = analyzeWorkout(workout, lang)
   return (
     <Screen>
       <header className="mb-1 [&_h1]:mb-1">
@@ -46,6 +47,18 @@ export function SummaryScreen({
           <strong style={{ color: 'var(--positive)' }}>{tr('summary.savedNotice')}</strong>
         </div>
       </div>
+
+      {analysis.suggestions.length > 0 && (
+        <div className="bg-brand-row border border-brand-border rounded-[10px] px-3.5 py-3 flex flex-col gap-1.5">
+          <span className="text-[13px] font-bold uppercase tracking-wider text-brand-accent">
+            {tr('summary.analysisTitle')}
+          </span>
+          <span className="text-[13px] text-brand-text">{tr('summary.analysisDuration', { n: analysis.durationMinutes })}</span>
+          {analysis.suggestions.map((s, i) => (
+            <span key={i} className="text-[13px] text-brand-text">• {s}</span>
+          ))}
+        </div>
+      )}
 
       {newPRs.length > 0 && (
         <div className="bg-brand-positive-bg border border-brand-positive rounded-[10px] px-3.5 py-3 flex flex-col gap-2">

@@ -87,6 +87,10 @@ export type ConsistencyStats = {
   currentWeekStreak: number
   /** All-time highest week streak. */
   longestWeekStreak: number
+  /** Consecutive calendar days with ≥ 1 finished session, counting backward from today. */
+  currentDayStreak: number
+  /** All-time highest day streak. */
+  longestDayStreak: number
   /** Total count of all finished sessions. */
   totalSessions: number
   /** ISO string of finishedAt from the most recent finished session, or null. */

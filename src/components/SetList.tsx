@@ -177,7 +177,7 @@ export function SetList({
           <span className="flex-1 min-w-0 flex justify-between items-center gap-2">
             <span>
               {!isDrop && tr('ex.setLabel', { n: setNumber })}
-              {set.type !== 'working' && tr(`setType.${set.type}`)}
+              {set.type !== 'working' && `${isDrop ? ' ' : ''}${tr(`setType.${set.type}`)}`}
             </span>
             <span>
               {tr('ex.repsCount', { reps: set.reps })}

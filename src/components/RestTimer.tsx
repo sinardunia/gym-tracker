@@ -159,7 +159,7 @@ export function RestTimer({ workoutId }: { workoutId: string }) {
           <span className="text-brand-positive text-[13px] font-semibold">
             {tr('timer.timeUp')}
           </span>
-          <Button type="button" sm variant="positive" onClick={() => start(duration)}>
+          <Button type="button" variant="positive" className="flex-1 text-[15px] font-bold" onClick={() => start(duration)}>
             {tr('timer.restart')}
           </Button>
         </>

@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { X } from 'lucide-react'
 import { useI18n } from '../i18n'
 import { usePwaUpdate } from '../lib/pwa'
 import { Button, IconButton } from './ui'
@@ -32,7 +33,7 @@ export function UpdateBanner() {
               onClick={dismissRefresh}
               aria-label={tr('common.cancel')}
             >
-              ✕
+              <X size={16} aria-hidden="true" />
             </IconButton>
           </div>
         </>
@@ -44,7 +45,7 @@ export function UpdateBanner() {
             onClick={dismissOfflineReady}
             aria-label={tr('common.cancel')}
           >
-            ✕
+            <X size={16} aria-hidden="true" />
           </IconButton>
         </>
       )}

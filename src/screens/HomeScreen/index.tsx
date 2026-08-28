@@ -4,6 +4,7 @@ import { useI18n, type Lang } from '../../i18n'
 import { Button, Card, IconButton, Screen } from '../../components/ui'
 import { InstallPwaBanner } from '../../components/InstallPwaBanner'
 import { ConsistencyWidget } from '../../components/ConsistencyWidget'
+import { WeeklySchedule } from '../../components/WeeklySchedule'
 import { ActiveWorkoutBanner } from './ActiveWorkoutBanner'
 import { RoutinePicker } from './RoutinePicker'
 import { SettingsModal } from './SettingsModal'
@@ -27,6 +28,12 @@ function resolveDayName(workout: Workout, routines: Routine[]): string | null {
   if (!routine) return null
   const day = routine.days.find((d) => d.id === workout.dayId)
   return day?.name ?? null
+}
+
+function resolveRoutineName(workout: Workout, routines: Routine[]): string | null {
+  if (!workout.routineId) return null
+  const routine = routines.find((r) => r.id === workout.routineId)
+  return routine?.name ?? null
 }
 
 function sessionLabel(workout: Workout, routines: Routine[]): string {
@@ -127,6 +134,8 @@ export function HomeScreen({
       )}
 
       <ConsistencyWidget stats={consistencyStats} />
+
+      <WeeklySchedule routines={routines} />
 
       <Card>
         <h2>
@@ -250,6 +259,7 @@ export function HomeScreen({
               {previewSessions.map((session) => {
                 const totalSets = countSets(session)
                 const primary = sessionLabel(session, routines)
+                const routineName = resolveRoutineName(session, routines)
                 const hasDayName = resolveDayName(session, routines) !== null
                 const exNames = session.exercises.map((e) => e.name)
                 const preview = hasDayName
@@ -270,6 +280,9 @@ export function HomeScreen({
                         <span className="font-semibold text-brand-heading text-[15px] leading-[1.3]">
                           {primary}
                         </span>
+                        {routineName && (
+                          <span className="text-brand-accent text-[13px] font-medium">{routineName}</span>
+                        )}
                         {preview && (
                           <span className="text-brand-text text-[13px]">{preview}</span>
                         )}

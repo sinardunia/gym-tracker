@@ -91,5 +91,5 @@ export function Select({ className = '', ...rest }: SelectHTMLAttributes<HTMLSel
 }
 
 export function Textarea({ className = '', ...rest }: TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  return <textarea className={`${FIELD_BASE} resize-y min-h-10 text-sm ${className}`.trim()} {...rest} />
+  return <textarea className={`${FIELD_BASE} min-h-10 text-sm ${className}`.trim()} {...rest} />
 }

@@ -7,7 +7,7 @@ import { ExerciseCard } from '../components/ExerciseCard'
 import { AddExerciseForm } from '../components/AddExerciseForm'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { Button, IconButton, Screen } from '../components/ui'
-import { FloatingPlateCalculatorButton } from '../components/PlateCalculator'
+
 import { recentExerciseNames } from '../lib/selectors'
 import { formatTime } from '../lib/format'
 import type { ExerciseUnit, SetType, Workout } from '../lib/types'
@@ -230,7 +230,6 @@ export function WorkoutScreen({
         )}
       </div>
 
-      <FloatingPlateCalculatorButton />
     </Screen>
   )
 }
