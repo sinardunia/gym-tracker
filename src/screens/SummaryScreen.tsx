@@ -91,7 +91,7 @@ export function SummaryScreen({
                   })
 
             return (
-              <div key={pr.exerciseName} className="flex flex-col gap-px">
+              <div key={`${pr.exerciseName}-${pr.unit}`} className="flex flex-col gap-px">
                 <span className="text-[15px] font-semibold text-brand-heading">{mainLine}</span>
                 <span className="text-[13px] text-brand-text">{prevLine}</span>
               </div>

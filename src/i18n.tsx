@@ -354,6 +354,7 @@ const ID: Record<string, string> = {
 
   'unit.kg': 'kg',
   'unit.plates': 'plat',
+  'unit.bodyweight': 'Berat badan',
 
   'calc.title': 'Kalkulator',
   'calc.btn': 'Kalkulator',
@@ -708,6 +709,7 @@ const EN: Record<string, string> = {
 
   'unit.kg': 'kg',
   'unit.plates': 'plates',
+  'unit.bodyweight': 'Bodyweight',
 
   'calc.title': 'Calculator',
   'calc.btn': 'Calculator',

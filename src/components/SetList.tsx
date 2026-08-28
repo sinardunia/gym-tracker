@@ -1,4 +1,4 @@
-import { useState, type Ref } from 'react'
+import { useState, Fragment, type Ref } from 'react'
 import { Check } from 'lucide-react'
 import { useI18n } from '../i18n'
 import { Button, Input, Select } from './ui'
@@ -41,7 +41,7 @@ export function SetList({
     type: SetType
   } | null>(null)
   const [editError, setEditError] = useState<string | null>(null)
-  let number = 0
+  
 
   function startEdit(set: WorkoutSet) {
     setEditingId(set.id)
@@ -196,13 +196,14 @@ export function SetList({
 
   return (
     <ul className="list-none m-0 p-0 flex flex-col gap-1.5">
-      {rows.flatMap(({ set, drops }) => {
-        number += 1
-        const setNumber = number
-        return [
-          renderSetRow(set, false, setNumber),
-          ...drops.map((drop) => renderSetRow(drop, true, setNumber)),
-        ]
+      {rows.map(({ set, drops }, idx) => {
+        const setNumber = idx + 1
+        return (
+          <Fragment key={set.id}>
+            {renderSetRow(set, false, setNumber)}
+            {drops.map((drop) => renderSetRow(drop, true, setNumber))}
+          </Fragment>
+        )
       })}
     </ul>
   )

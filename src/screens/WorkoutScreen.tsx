@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { ArrowLeft } from 'lucide-react'
 import { useI18n } from '../i18n'
 import { NoteField } from '../components/NoteField'
@@ -65,6 +65,9 @@ export function WorkoutScreen({
   const [confirmingExit, setConfirmingExit] = useState(false)
   const [showFinishModal, setShowFinishModal] = useState(false)
   const [finishNote, setFinishNote] = useState(() => workout.note ?? '')
+  useEffect(() => {
+    setFinishNote(workout.note ?? '')
+  }, [workout.note])
   const [activeExerciseId, setActiveExerciseId] = useState<string | null>(
     () => workout.exercises[0]?.id ?? null,
   )

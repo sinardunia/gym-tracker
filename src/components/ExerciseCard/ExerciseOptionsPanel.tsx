@@ -35,7 +35,7 @@ export function ExerciseOptionsPanel({
         >
           <option value="kg">{tr('unit.kg')}</option>
           <option value="plate">{tr('unit.plates')}</option>
-          <option value="bodyweight">bodyweight</option>
+          <option value="bodyweight">{tr('unit.bodyweight')}</option>
         </Select>
       </div>
       <div className="flex gap-1.5 flex-wrap items-center">

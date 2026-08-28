@@ -22,7 +22,8 @@ export function loadTimerSnapshot(workoutId: string): TimerSnapshot | null {
       typeof snapshot.duration !== 'number' ||
       !Number.isFinite(snapshot.duration) ||
       typeof snapshot.endAt !== 'number' ||
-      !Number.isFinite(snapshot.endAt)
+      !Number.isFinite(snapshot.endAt) ||
+      snapshot.endAt <= Date.now()
     ) {
       return null
     }
