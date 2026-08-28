@@ -59,13 +59,18 @@ function setLastSyncAt(iso: string) {
 // Push local state to Supabase (upsert workouts, routines, user_state)
 // Offline-first: always succeeds locally, sync is best-effort in background.
 export async function pushStateToSupabase(state: PersistedState, userId: string): Promise<boolean> {
-  if (!isSupabaseConfigured || !supabase) return false
+  if (!isSupabaseConfigured || !supabase) {
+    console.warn('[supabase sync] not configured')
+    return false
+  }
   if (!navigator.onLine) {
+    console.log('[supabase sync] offline, queueing', { sessions: state.sessions.length, routines: state.routines.length })
     setPending(state)
     return false
   }
 
   try {
+    console.log('[supabase sync] pushing', { sessions: state.sessions.length, routines: state.routines.length, hasActive: !!state.activeWorkout, userId })
     // Upsert routines
     if (state.routines.length > 0) {
       const rows = state.routines.map((r: Routine) => ({
@@ -76,22 +81,25 @@ export async function pushStateToSupabase(state: PersistedState, userId: string)
         updated_at: new Date().toISOString(),
       }))
       const { error } = await supabase.from('routines').upsert(rows, { onConflict: 'id' })
-      if (error) throw error
-    } else {
-      // No routines: ensure we don't leave stale? We handle deletions separately
+      if (error) {
+        console.error('[supabase sync] routines upsert error', error)
+        throw error
+      }
     }
 
-    // Handle routine deletions: fetch remote ids and delete missing
-    const { data: remoteRoutines } = await supabase.from('routines').select('id').eq('user_id', userId)
+    // Handle routine deletions: fetch remote ids and delete missing (only after successful upsert)
+    const { data: remoteRoutines, error: routErr } = await supabase.from('routines').select('id').eq('user_id', userId)
+    if (routErr) console.warn('[supabase sync] fetch remote routines failed', routErr)
     if (remoteRoutines) {
       const localIds = new Set(state.routines.map((r) => r.id))
       const toDelete = remoteRoutines.filter((r) => !localIds.has(r.id)).map((r) => r.id)
       if (toDelete.length > 0) {
-        await supabase.from('routines').delete().in('id', toDelete)
+        const { error: delErr } = await supabase.from('routines').delete().in('id', toDelete)
+        if (delErr) console.warn('[supabase sync] delete routines failed', delErr)
       }
     }
 
-    // Upsert workouts (sessions)
+    // Upsert workouts (sessions) - this is history
     if (state.sessions.length > 0) {
       const rows = state.sessions.map((w: Workout) => ({
         id: w.id,
@@ -105,15 +113,25 @@ export async function pushStateToSupabase(state: PersistedState, userId: string)
         updated_at: new Date().toISOString(),
       }))
       const { error } = await supabase.from('workouts').upsert(rows, { onConflict: 'id' })
-      if (error) throw error
+      if (error) {
+        console.error('[supabase sync] workouts upsert error', error, { rowsSample: rows[0] })
+        throw error
+      } else {
+        console.log('[supabase sync] workouts upsert ok', rows.length)
+      }
+    } else {
+      console.log('[supabase sync] no local sessions to push (0)')
     }
 
-    const { data: remoteWorkouts } = await supabase.from('workouts').select('id').eq('user_id', userId)
+    const { data: remoteWorkouts, error: wFetchErr } = await supabase.from('workouts').select('id').eq('user_id', userId)
+    if (wFetchErr) console.warn('[supabase sync] fetch remote workouts failed', wFetchErr)
     if (remoteWorkouts) {
       const localIds = new Set(state.sessions.map((w) => w.id))
       const toDelete = remoteWorkouts.filter((r) => !localIds.has(r.id)).map((r) => r.id)
       if (toDelete.length > 0) {
-        await supabase.from('workouts').delete().in('id', toDelete)
+        console.log('[supabase sync] deleting remote workouts not in local', toDelete.length)
+        const { error: delErr } = await supabase.from('workouts').delete().in('id', toDelete)
+        if (delErr) console.warn('[supabase sync] delete workouts failed', delErr)
       }
     }
 
@@ -127,11 +145,15 @@ export async function pushStateToSupabase(state: PersistedState, userId: string)
       },
       { onConflict: 'user_id' },
     )
-    if (stateError) throw stateError
+    if (stateError) {
+      console.error('[supabase sync] user_state upsert error', stateError)
+      throw stateError
+    }
 
     const now = new Date().toISOString()
     setLastSyncAt(now)
     clearPending()
+    console.log('[supabase sync] push success at', now)
     return true
   } catch (err) {
     // Keep pending for retry
@@ -145,15 +167,26 @@ export async function pushStateToSupabase(state: PersistedState, userId: string)
 export async function pullStateFromSupabase(userId: string): Promise<PersistedState | null> {
   if (!isSupabaseConfigured || !supabase) return null
   try {
+    console.log('[supabase sync] pulling for', userId)
     const [{ data: workouts, error: wErr }, { data: routines, error: rErr }, { data: userState, error: sErr }] =
       await Promise.all([
         supabase.from('workouts').select('data, updated_at').eq('user_id', userId).order('started_at', { ascending: false }),
         supabase.from('routines').select('data, updated_at').eq('user_id', userId),
         supabase.from('user_state').select('active_workout, saved_at, updated_at').eq('user_id', userId).maybeSingle(),
       ])
-    if (wErr) throw wErr
-    if (rErr) throw rErr
-    if (sErr) throw sErr
+    if (wErr) {
+      console.error('[supabase sync] pull workouts error', wErr)
+      throw wErr
+    }
+    if (rErr) {
+      console.error('[supabase sync] pull routines error', rErr)
+      throw rErr
+    }
+    if (sErr) {
+      console.error('[supabase sync] pull user_state error', sErr)
+      throw sErr
+    }
+    console.log('[supabase sync] pull got', { workouts: workouts?.length ?? 0, routines: routines?.length ?? 0, hasState: !!userState })
 
     const sessions: Workout[] = (workouts ?? [])
       .map((row) => row.data as Workout)

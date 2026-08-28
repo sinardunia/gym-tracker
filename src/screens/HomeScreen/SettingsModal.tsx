@@ -1,5 +1,5 @@
-import type { RefObject } from 'react'
-import { Monitor, Moon, Sun } from 'lucide-react'
+import { useState, type RefObject } from 'react'
+import { Monitor, Moon, Sun, RefreshCw } from 'lucide-react'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
 import { BackupControls } from '../../components/BackupControls'
 import { FeedbackCard } from '../../components/FeedbackCard'
@@ -31,7 +31,8 @@ export function SettingsModal({
 }) {
   const { tr } = useI18n()
   const { user, loading, signInWithGoogle, signOut, isConfigured } = useAuth()
-  const { isSyncing, lastSyncAt } = useApp()
+  const { isSyncing, lastSyncAt, forceSync } = useApp()
+  const [syncMsg, setSyncMsg] = useState<string | null>(null)
   return (
     <ConfirmDialog
       title={tr('home.settings')}
@@ -64,27 +65,48 @@ export function SettingsModal({
                 </button>
               </div>
             ) : (
-              <div className="flex items-center gap-3 rounded-lg border border-brand-border bg-brand-card px-3 py-2.5">
-                <img
-                  src={user.user_metadata?.avatar_url ?? `https://ui-avatars.com/api/?name=${encodeURIComponent(user.email ?? 'U')}`}
-                  alt=""
-                  className="h-8 w-8 rounded-full"
-                />
-                <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm font-medium text-brand-heading">{user.user_metadata?.full_name ?? user.email}</div>
-                  <div className="truncate text-xs text-brand-text">{user.email}</div>
-                  <div className="text-[11px] text-brand-text">
-                    {isSyncing ? tr('account.syncing') : lastSyncAt ? tr('account.synced', { time: new Date(lastSyncAt).toLocaleTimeString() }) : tr('account.offlineReady')}
-                    {!navigator.onLine && ` • ${tr('account.offline')}`}
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-3 rounded-lg border border-brand-border bg-brand-card px-3 py-2.5">
+                  <img
+                    src={user.user_metadata?.avatar_url ?? `https://ui-avatars.com/api/?name=${encodeURIComponent(user.email ?? 'U')}`}
+                    alt=""
+                    className="h-8 w-8 rounded-full"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-sm font-medium text-brand-heading">{user.user_metadata?.full_name ?? user.email}</div>
+                    <div className="truncate text-xs text-brand-text">{user.email}</div>
+                    <div className="text-[11px] text-brand-text">
+                      {isSyncing ? tr('account.syncing') : lastSyncAt ? tr('account.synced', { time: new Date(lastSyncAt).toLocaleTimeString() }) : tr('account.offlineReady')}
+                      {!navigator.onLine && ` • ${tr('account.offline')}`}
+                    </div>
                   </div>
+                  <button
+                    type="button"
+                    onClick={signOut}
+                    className="rounded-lg border border-brand-border px-3 py-1.5 text-xs font-medium text-brand-text hover:bg-brand-row dark:hover:bg-zinc-800"
+                  >
+                    {tr('account.signOut')}
+                  </button>
                 </div>
                 <button
                   type="button"
-                  onClick={signOut}
-                  className="rounded-lg border border-brand-border px-3 py-1.5 text-xs font-medium text-brand-text hover:bg-brand-row dark:hover:bg-zinc-800"
+                  disabled={isSyncing}
+                  onClick={async () => {
+                    setSyncMsg(null)
+                    const res = await forceSync()
+                    if (res.error) setSyncMsg(`Error: ${res.error}`)
+                    else setSyncMsg(`Synced! Pushed ${res.pushed} sessions, pulled ${res.pulled} from cloud. Check console for details.`)
+                    setTimeout(() => setSyncMsg(null), 4000)
+                  }}
+                  className="inline-flex items-center justify-center gap-2 rounded-lg border border-brand-border bg-brand-card px-3 py-2 text-sm font-medium text-brand-heading hover:border-brand-accent disabled:opacity-50"
                 >
-                  {tr('account.signOut')}
+                  <RefreshCw size={14} className={isSyncing ? 'animate-spin' : ''} />
+                  {isSyncing ? tr('account.syncing') : 'Force Sync Now (push all history)'}
                 </button>
+                {syncMsg && <p className="text-xs text-brand-text">{syncMsg}</p>}
+                <p className="text-[11px] text-brand-text">
+                  History must be uploaded from the device where you created it first. Tap Force Sync on your phone while logged in, then Force Sync on PC. Open browser console (F12) to see [supabase sync] logs.
+                </p>
               </div>
             )}
           </section>

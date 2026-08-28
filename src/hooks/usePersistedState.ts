@@ -14,6 +14,7 @@ export function usePersistedState(): {
   setState: Dispatch<SetStateAction<PersistedState>>
   isSyncing: boolean
   lastSyncAt: string | null
+  forceSync: () => Promise<{ pulled: number; pushed: number; error?: string }>
 } {
   const [state, setState] = useState<PersistedState>(loadState)
   const [isSyncing, setIsSyncing] = useState(false)
@@ -193,9 +194,52 @@ export function usePersistedState(): {
     }
   }, [userId])
 
+  async function forceSync(): Promise<{ pulled: number; pushed: number; error?: string }> {
+    if (!userId) return { pulled: 0, pushed: 0, error: 'Not signed in' }
+    if (!navigator.onLine) return { pulled: 0, pushed: 0, error: 'Offline' }
+    setIsSyncing(true)
+    try {
+      // First push local (ensures anonymous history created before login is uploaded)
+      const localBefore = stateRef.current
+      const pushedOk = await pushStateToSupabase(localBefore, userId)
+      // Then pull remote and merge (union)
+      const remote = await pullStateFromSupabase(userId)
+      if (remote) {
+        setState((current) => {
+          const merged = mergeStates(current, remote)
+          if (JSON.stringify(merged) !== JSON.stringify(current)) {
+            saveState(merged)
+            return merged
+          }
+          return current
+        })
+        // If pull got more than local had, push union back (covers edge)
+        const merged = mergeStates(localBefore, remote)
+        if (merged.sessions.length > remote.sessions.length || merged.routines.length > remote.routines.length) {
+          await pushStateToSupabase(merged, userId)
+        }
+        try {
+          const v = localStorage.getItem('gym-tracker.lastSyncAt')
+          setLastSyncAt(v)
+        } catch {
+          // ignore
+        }
+        setIsSyncing(false)
+        return { pulled: remote.sessions.length, pushed: localBefore.sessions.length, error: pushedOk ? undefined : 'Push failed, check console' }
+      }
+      setIsSyncing(false)
+      return { pulled: 0, pushed: localBefore.sessions.length, error: pushedOk ? undefined : 'Pull returned null' }
+    } catch (e) {
+      setIsSyncing(false)
+      const msg = e instanceof Error ? e.message : String(e)
+      console.error('[forceSync] error', e)
+      return { pulled: 0, pushed: 0, error: msg }
+    }
+  }
+
   useEffect(() => {
     void navigator.storage?.persist?.().catch(() => {})
   }, [])
 
-  return { state, setState, isSyncing, lastSyncAt }
+  return { state, setState, isSyncing, lastSyncAt, forceSync }
 }

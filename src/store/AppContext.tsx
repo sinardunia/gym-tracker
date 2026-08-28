@@ -14,6 +14,7 @@ export type AppContextValue = {
   routineActions: RoutineActions
   isSyncing: boolean
   lastSyncAt: string | null
+  forceSync: () => Promise<{ pulled: number; pushed: number; error?: string }>
 }
 
 const AppContext = createContext<AppContextValue | null>(null)
@@ -25,11 +26,12 @@ export function AppProvider({
   routineActions,
   isSyncing,
   lastSyncAt,
+  forceSync,
   children,
 }: AppContextValue & { children: ReactNode }) {
   return (
     <AppContext.Provider
-      value={{ state, setState, workoutActions, routineActions, isSyncing, lastSyncAt }}
+      value={{ state, setState, workoutActions, routineActions, isSyncing, lastSyncAt, forceSync }}
     >
       {children}
     </AppContext.Provider>
