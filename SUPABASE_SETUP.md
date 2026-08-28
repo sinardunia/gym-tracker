@@ -32,7 +32,9 @@ await supabase.from('workouts').select('id').limit(1)
 1. **Google Cloud Console** → APIs & Services → Credentials
    - Client ID: `158697693366-qsiiiegj76ttrp9bm45fhg41j72e6ecb.apps.googleusercontent.com`
    - Client Secret: `GOCSPX-...` (keep secret)
-   - Authorized redirect: `https://kniqcstlfsohslhwobjb.supabase.co/auth/v1/callback`
+   - **Authorized redirect URI (exact, no wildcard):** `https://kniqcstlfsohslhwobjb.supabase.co/auth/v1/callback`
+   - **Authorized JavaScript origin:** `https://kniqcstlfsohslhwobjb.supabase.co` and `http://localhost:5173`
+   - Save and wait 5 minutes for propagation.
 
 2. **Supabase Dashboard → Authentication → Providers → Google**
    - Enable Google
@@ -40,8 +42,16 @@ await supabase.from('workouts').select('id').limit(1)
    - Save
 
 3. **Supabase Dashboard → Authentication → URL Configuration**
-   - Site URL: `http://localhost:5173` (dev) and your prod URL
-   - Redirect URLs: `http://localhost:5173/*`, `https://your-domain/*`
+   - Site URL: `http://localhost:5173` (dev) — after deploying, change to your prod URL `https://your-domain.vercel.app`
+   - **Additional Redirect URLs (one per line, must be exact origin without trailing slash):**
+     ```
+     http://localhost:5173
+     http://localhost:5173/
+     https://your-domain.vercel.app
+     https://your-domain.vercel.app/
+     ```
+   - If you test on Vercel preview, add that preview URL too. Wildcard `/*` is supported but add both with/without slash to avoid `redirect_uri_mismatch`.
+   - App code now uses `window.location.origin` (`src/lib/supabase/auth.tsx:44`) so it matches whatever domain you are on.
 
 ## 4. How offline-first sync works
 
@@ -65,7 +75,11 @@ bun run dev
 ## 6. Troubleshooting
 
 - `Could not find table...` → migration not run. Run step 2.
-- `Google sign-in error: redirect mismatch` → check redirect URLs in Google + Supabase.
+- **`Error 400: redirect_uri_mismatch` / `Access blocked: This app's request is invalid`** → This is Google rejecting the redirect. Fix:
+  1. Google Cloud Console must have `https://kniqcstlfsohslhwobjb.supabase.co/auth/v1/callback` in **Authorized redirect URIs** (exact string, no slash variant).
+  2. Supabase Dashboard → Auth → URL Config → **Redirect URLs** must include your current origin exactly as shown in browser address bar (e.g. `http://localhost:5173` or `https://xxx.vercel.app`). Add both with and without trailing `/`.
+  3. Clear site cookies for `supabase.co` and `accounts.google.com`, wait 5 min, retry.
+  4. Verify Vercel env vars are set: Vercel → Project Settings → Environment Variables → `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_GOOGLE_CLIENT_ID` → Redeploy.
 - Sync not happening → check browser console `[supabase sync]`, ensure `VITE_SUPABASE_URL` + `anonKey` correct and user is signed in (`AuthButton` shows email).
 - Need to reset: `localStorage.clear()` + delete rows in Supabase Table Editor.
 

@@ -38,10 +38,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function signInWithGoogle() {
     if (!supabase) throw new Error('Supabase not configured')
+    // Use origin without trailing slash to match Supabase redirect URL config exactly.
+    // Supabase will append /auth/callback internally; this redirectTo is where user lands after Supabase handles Google callback.
+    const redirectTo = window.location.origin
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/`,
+        redirectTo,
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        },
       },
     })
     if (error) throw error
