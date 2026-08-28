@@ -8,7 +8,6 @@ import { WeeklySchedule } from '../../components/WeeklySchedule'
 import { ActiveWorkoutBanner } from './ActiveWorkoutBanner'
 import { RoutinePicker } from './RoutinePicker'
 import { SettingsModal } from './SettingsModal'
-import { AuthButton } from '../../components/AuthButton'
 import { getRecommendedWorkout } from '../../lib/selectors'
 import {
   countSets,
@@ -133,8 +132,6 @@ export function HomeScreen({
       {activeWorkout && (
         <ActiveWorkoutBanner workout={activeWorkout} onResume={onResumeWorkout} />
       )}
-
-      <AuthButton />
 
       <ConsistencyWidget stats={consistencyStats} />
 
