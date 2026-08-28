@@ -9,7 +9,7 @@ import type {
 } from '../lib/types'
 
 export function useWorkoutActions(
-  state: PersistedState,
+  _state: PersistedState,
   setState: Dispatch<SetStateAction<PersistedState>>,
 ) {
   const editingSessionIdRef = useRef<string | null>(null)
@@ -38,32 +38,38 @@ export function useWorkoutActions(
   }
 
   function finishWorkout(): Workout | null {
-    if (!state.activeWorkout) return null
-    const finished: Workout = normalizeWorkout({
-      ...state.activeWorkout,
-      finishedAt: new Date().toISOString(),
-    })
-    lastFinishedRef.current = finished
+    let finished: Workout | null = null
     const editingId = editingSessionIdRef.current
     editingSessionIdRef.current = null
-    setState((s) => ({
-      ...s,
-      activeWorkout: null,
-      sessions: editingId
-        ? s.sessions.map((session) =>
-            session.id === editingId ? finished : session,
-          )
-        : [finished, ...s.sessions],
-    }))
+    setState((s) => {
+      if (!s.activeWorkout) return s
+      finished = normalizeWorkout({
+        ...s.activeWorkout,
+        finishedAt: new Date().toISOString(),
+      })
+      lastFinishedRef.current = finished
+      return {
+        ...s,
+        activeWorkout: null,
+        sessions: editingId
+          ? s.sessions.map((session) =>
+              session.id === editingId ? finished! : session,
+            )
+          : [finished, ...s.sessions],
+      }
+    })
     return finished
   }
 
   function editSession(session: Workout) {
     editingSessionIdRef.current = session.id
-    setState((s) => ({
-      ...s,
-      activeWorkout: normalizeWorkout({ ...session, finishedAt: null }),
-    }))
+    setState((s) => {
+      if (s.activeWorkout && s.activeWorkout.finishedAt === null) return s
+      return {
+        ...s,
+        activeWorkout: normalizeWorkout({ ...session, finishedAt: null }),
+      }
+    })
   }
 
   function deleteSession(sessionId: string) {
