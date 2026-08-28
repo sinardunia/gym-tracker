@@ -138,7 +138,13 @@ export function SetEntryForm({
                 }`}
                 onClick={() => {
                   setSetType(type)
-                  setDropParentId(null)
+                  if (type === 'dropset') {
+                    const workingSets = exercise.sets.filter((s) => s.type === 'working')
+                    const lastWorking = workingSets[workingSets.length - 1]
+                    setDropParentId(lastWorking?.id ?? null)
+                  } else {
+                    setDropParentId(null)
+                  }
                 }}
               >
                 {tr(`setType.${type}`)}
