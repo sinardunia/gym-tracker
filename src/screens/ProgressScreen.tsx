@@ -60,12 +60,12 @@ export function ProgressScreen({
       {!selected && sessions.length > 0 && (
         <>
           <Card>
-            <h2>12-Minggu Terakhir</h2>
+            <h2>{tr('progress.last12Weeks')}</h2>
             <HeatmapChart weeks={heatmap.weeks} maxPerDay={heatmap.maxPerDay} />
           </Card>
           {volume.some((v) => v.count > 0) && (
             <Card>
-              <h2>Volume Bulanan</h2>
+              <h2>{tr('progress.monthlyVolume')}</h2>
               <VolumeChart data={volume} />
             </Card>
           )}
@@ -92,7 +92,7 @@ export function ProgressScreen({
               </div>
             )}
             <p className="text-brand-text" style={{ fontSize: '13px', marginTop: 0 }}>
-              {item.entries.length} {p(item.entries.length, 'count.sessions')} tercatat
+               {item.entries.length} {p(item.entries.length, 'count.sessions')} {tr('progress.recorded')}
             </p>
           </Card>
           {item.entries.length >= 4 && item.best && (
@@ -103,7 +103,7 @@ export function ProgressScreen({
               const weightText = formatSetWeight(entry.unit, entry.best.weightKg, tr)
               return (
                 <li
-                  key={entry.finishedAt}
+                  key={`${entry.finishedAt}-${entry.name}`}
                   className="flex justify-between items-center gap-2 px-2.5 py-2 bg-brand-row rounded-lg"
                 >
                   <span>{formatDate(entry.finishedAt, lang)}</span>
@@ -154,8 +154,8 @@ export function ProgressScreen({
                 if (h.entries.length < 2) return null
                 const last = h.entries[h.entries.length - 1]
                 const prev = h.entries[h.entries.length - 2]
-                const lastVal = h.best?.unit === 'bodyweight' ? last.best.reps : last.best.weightKg
-                const prevVal = h.best?.unit === 'bodyweight' ? prev.best.reps : prev.best.weightKg
+                const lastVal = last.unit === 'bodyweight' ? last.best.reps : last.best.weightKg
+                const prevVal = prev.unit === 'bodyweight' ? prev.best.reps : prev.best.weightKg
                 if (lastVal > prevVal) return 'up'
                 if (lastVal < prevVal) return 'down'
                 return 'flat'
