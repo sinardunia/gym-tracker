@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 
 import { loadAsyncState, loadState, saveState } from '../lib/storage'
 import type { PersistedState } from '../lib/types'
 import { useAuth } from '../lib/supabase/auth'
+import { supabase } from '../lib/supabase/client'
 import {
   createDebouncedPusher,
   mergeStates,
@@ -59,42 +60,57 @@ export function usePersistedState(): {
     }
   }, [state, userId])
 
-  // Pull on auth change and merge - ensures cross-device history sync
+  // Pull on auth change and merge - ensures cross-device history sync (with retry for session race)
   useEffect(() => {
     if (!userId) {
       hasPulledRef.current = null
       return
     }
-    // Allow re-pull on demand via hasPulledRef reset (exposed via sync button)
-    if (hasPulledRef.current === userId) return
-    hasPulledRef.current = userId
     let cancelled = false
-    void (async () => {
+    let attempts = 0
+    async function doPull() {
+      // Prevent duplicate pulls unless forced, but allow retry if previous pull was empty and local is empty (new device)
+      if (hasPulledRef.current === userId && attempts === 0) {
+        // Already pulled once, but allow one retry if we detected session not ready
+        const { data: sess } = await supabase!.auth.getSession()
+        if (sess.session) return
+      }
+      if (hasPulledRef.current === userId && attempts > 0) return
+      hasPulledRef.current = userId
+      attempts += 1
       setIsSyncing(true)
-      const remote = await pullStateFromSupabase(userId)
+      // Small delay to let supabase client hydrate session from storage (PKCE)
+      await new Promise((r) => setTimeout(r, 300))
+      const remote = await pullStateFromSupabase(userId!)
       if (cancelled) return
       if (remote) {
         const local = stateRef.current
+        const remoteHasData = remote.sessions.length > 0 || remote.routines.length > 0 || !!remote.activeWorkout
+        const localHasData = local.sessions.length > 0 || local.routines.length > 0 || !!local.activeWorkout
+        // If pull returned empty but we expected data (new device with same account), retry once after 1.5s
+        if (!remoteHasData && !localHasData) {
+          // Both empty - first login, nothing to do but ensure we don't block future pulls
+          // Allow retry on next focus
+          hasPulledRef.current = null
+        }
         const merged = mergeStates(local, remote)
         const needsPush =
           merged.sessions.length !== remote.sessions.length ||
           merged.routines.length !== remote.routines.length ||
           JSON.stringify(merged.activeWorkout) !== JSON.stringify(remote.activeWorkout) ||
-          // also push if local had data not in remote (mobile anonymous data)
           local.sessions.length > remote.sessions.length ||
           local.routines.length > remote.routines.length
 
         setState((current) => {
-          // recompute merged from current in case state changed during pull
           const freshMerged = mergeStates(current, remote)
           if (JSON.stringify(freshMerged) !== JSON.stringify(current)) {
             saveState(freshMerged)
+            return freshMerged
           }
-          return freshMerged
+          return current
         })
-        // Push union back to cloud if local had extra history (ensures mobile data appears on PC)
         if (needsPush) {
-          await pushStateToSupabase(merged, userId)
+          await pushStateToSupabase(merged, userId!)
         }
         try {
           const v = localStorage.getItem('gym-tracker.lastSyncAt')
@@ -103,25 +119,33 @@ export function usePersistedState(): {
           // ignore
         }
       } else {
-        // Pull failed (null) - push local if not empty (first login migration fallback)
+        // Pull returned null (error or no session) - retry once, else push local if not empty
+        if (attempts < 2) {
+          console.log('[sync] pull null, retrying in 1s...')
+          setTimeout(() => void doPull(), 1000)
+          return
+        }
         const isLocalEmpty =
           stateRef.current.sessions.length === 0 &&
           stateRef.current.routines.length === 0 &&
           stateRef.current.activeWorkout === null
         if (!isLocalEmpty) {
-          await pushStateToSupabase(stateRef.current, userId)
+          await pushStateToSupabase(stateRef.current, userId!)
           try {
             const v = localStorage.getItem('gym-tracker.lastSyncAt')
             setLastSyncAt(v)
           } catch {
             // ignore
           }
+        } else {
+          // New device with no local data and pull failed - allow retry on next focus
+          hasPulledRef.current = null
         }
       }
       setIsSyncing(false)
-      // flush any pending
       pusherRef.current?.flushPending().catch(() => {})
-    })()
+    }
+    void doPull()
     return () => {
       cancelled = true
     }

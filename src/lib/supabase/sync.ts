@@ -70,7 +70,12 @@ export async function pushStateToSupabase(state: PersistedState, userId: string)
   }
 
   try {
-    console.log('[supabase sync] pushing', { sessions: state.sessions.length, routines: state.routines.length, hasActive: !!state.activeWorkout, userId })
+    const { data: sess } = await supabase.auth.getSession()
+    console.log('[supabase sync] pushing', { sessions: state.sessions.length, routines: state.routines.length, hasActive: !!state.activeWorkout, userId, hasSession: !!sess.session, sessUserId: sess.session?.user?.id })
+    if (!sess.session) {
+      console.error('[supabase sync] push aborted: no session (RLS will block). Sign in again.')
+      return false
+    }
     // Upsert routines
     if (state.routines.length > 0) {
       const rows = state.routines.map((r: Routine) => ({
@@ -165,9 +170,21 @@ export async function pushStateToSupabase(state: PersistedState, userId: string)
 
 // Pull remote state and merge with local (remote wins if newer)
 export async function pullStateFromSupabase(userId: string): Promise<PersistedState | null> {
-  if (!isSupabaseConfigured || !supabase) return null
+  if (!isSupabaseConfigured || !supabase) {
+    console.warn('[supabase sync] pull skipped: not configured')
+    return null
+  }
   try {
-    console.log('[supabase sync] pulling for', userId)
+    // Verify session is valid before querying (RLS requires auth.uid())
+    const { data: sess } = await supabase.auth.getSession()
+    const sessUserId = sess.session?.user?.id
+    console.log('[supabase sync] pulling for', userId, 'session user', sessUserId, 'hasSession', !!sess.session)
+    if (!sess.session) {
+      console.warn('[supabase sync] no session, pull may return 0 due to RLS')
+    }
+    if (sessUserId && sessUserId !== userId) {
+      console.warn('[supabase sync] userId mismatch! arg', userId, 'session', sessUserId)
+    }
     const [{ data: workouts, error: wErr }, { data: routines, error: rErr }, { data: userState, error: sErr }] =
       await Promise.all([
         supabase.from('workouts').select('data, updated_at').eq('user_id', userId).order('started_at', { ascending: false }),
