@@ -12,6 +12,8 @@ export type AppContextValue = {
   setState: Dispatch<SetStateAction<PersistedState>>
   workoutActions: WorkoutActions
   routineActions: RoutineActions
+  isSyncing: boolean
+  lastSyncAt: string | null
 }
 
 const AppContext = createContext<AppContextValue | null>(null)
@@ -21,11 +23,13 @@ export function AppProvider({
   setState,
   workoutActions,
   routineActions,
+  isSyncing,
+  lastSyncAt,
   children,
 }: AppContextValue & { children: ReactNode }) {
   return (
     <AppContext.Provider
-      value={{ state, setState, workoutActions, routineActions }}
+      value={{ state, setState, workoutActions, routineActions, isSyncing, lastSyncAt }}
     >
       {children}
     </AppContext.Provider>

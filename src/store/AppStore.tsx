@@ -5,7 +5,7 @@ import { useRoutineActions } from '../hooks/useRoutineActions'
 import { AppProvider } from './AppContext'
 
 export function AppStore({ children }: { children: ReactNode }) {
-  const { state, setState } = usePersistedState()
+  const { state, setState, isSyncing, lastSyncAt } = usePersistedState()
   const workoutActions = useWorkoutActions(state, setState)
   const routineActions = useRoutineActions(state, setState)
   return (
@@ -14,6 +14,8 @@ export function AppStore({ children }: { children: ReactNode }) {
       setState={setState}
       workoutActions={workoutActions}
       routineActions={routineActions}
+      isSyncing={isSyncing}
+      lastSyncAt={lastSyncAt}
     >
       {children}
     </AppProvider>
