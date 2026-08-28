@@ -95,17 +95,19 @@ export function SettingsModal({
                     setSyncMsg(null)
                     const res = await forceSync()
                     if (res.error) setSyncMsg(`Error: ${res.error}`)
-                    else setSyncMsg(`Synced! Pushed ${res.pushed} sessions, pulled ${res.pulled} from cloud. Check console for details.`)
-                    setTimeout(() => setSyncMsg(null), 4000)
+                    else setSyncMsg(`Synced! Pushed ${res.pushed} sessions, pulled ${res.pulled} from cloud.`)
+                    setTimeout(() => setSyncMsg(null), 5000)
                   }}
                   className="inline-flex items-center justify-center gap-2 rounded-lg border border-brand-border bg-brand-card px-3 py-2 text-sm font-medium text-brand-heading hover:border-brand-accent disabled:opacity-50"
                 >
                   <RefreshCw size={14} className={isSyncing ? 'animate-spin' : ''} />
                   {isSyncing ? tr('account.syncing') : 'Force Sync Now (push all history)'}
                 </button>
-                {syncMsg && <p className="text-xs text-brand-text">{syncMsg}</p>}
+                {syncMsg && (
+                  <p className={`text-xs ${syncMsg.startsWith('Error') ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'}`}>{syncMsg}</p>
+                )}
                 <p className="text-[11px] text-brand-text">
-                  History must be uploaded from the device where you created it first. Tap Force Sync on your phone while logged in, then Force Sync on PC. Open browser console (F12) to see [supabase sync] logs.
+                  History must be uploaded from the device where you created it first. Tap Force Sync on your phone while logged in, then Force Sync on PC.
                 </p>
               </div>
             )}

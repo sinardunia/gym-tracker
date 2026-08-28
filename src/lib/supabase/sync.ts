@@ -56,25 +56,38 @@ function setLastSyncAt(iso: string) {
   }
 }
 
+export function formatSyncError(err: unknown): string {
+  const msg = err instanceof Error ? err.message : typeof err === 'object' && err !== null && 'message' in err ? String((err as { message: string }).message) : String(err)
+  const code = typeof err === 'object' && err !== null && 'code' in err ? String((err as { code: string }).code) : ''
+  if (code === '42501' || msg.includes('row-level security') || msg.includes('violates row-level')) return 'Permission denied (RLS). Please sign out and sign in again, and ensure Supabase policies allow your user.'
+  if (msg.includes('Failed to fetch') || msg.includes('NetworkError') || msg.includes('fetch')) return 'Network error. Check internet and Supabase URL.'
+  if (msg.includes('JWT') || msg.includes('expired') || msg.includes('invalid token')) return 'Session expired. Please sign out and sign in again.'
+  if (msg.includes('not configured')) return 'Supabase not configured (missing URL/key).'
+  if (msg.includes('offline') || msg.includes('no session')) return msg
+  return msg.slice(0, 200)
+}
+
 // Push local state to Supabase (upsert workouts, routines, user_state)
 // Offline-first: always succeeds locally, sync is best-effort in background.
-export async function pushStateToSupabase(state: PersistedState, userId: string): Promise<boolean> {
+export async function pushStateToSupabase(state: PersistedState, userId: string): Promise<{ ok: boolean; error?: string }> {
   if (!isSupabaseConfigured || !supabase) {
-    console.warn('[supabase sync] not configured')
-    return false
+    const err = 'Supabase not configured (missing VITE_SUPABASE_URL/ANON_KEY)'
+    console.warn('[supabase sync]', err)
+    return { ok: false, error: err }
   }
   if (!navigator.onLine) {
     console.log('[supabase sync] offline, queueing', { sessions: state.sessions.length, routines: state.routines.length })
     setPending(state)
-    return false
+    return { ok: false, error: 'Offline — queued for next online' }
   }
 
   try {
     const { data: sess } = await supabase.auth.getSession()
     console.log('[supabase sync] pushing', { sessions: state.sessions.length, routines: state.routines.length, hasActive: !!state.activeWorkout, userId, hasSession: !!sess.session, sessUserId: sess.session?.user?.id })
     if (!sess.session) {
-      console.error('[supabase sync] push aborted: no session (RLS will block). Sign in again.')
-      return false
+      const err = 'No session (RLS will block). Please sign out and sign in again.'
+      console.error('[supabase sync] push aborted:', err)
+      return { ok: false, error: err }
     }
     // Upsert routines
     if (state.routines.length > 0) {
@@ -159,12 +172,13 @@ export async function pushStateToSupabase(state: PersistedState, userId: string)
     setLastSyncAt(now)
     clearPending()
     console.log('[supabase sync] push success at', now)
-    return true
+    return { ok: true }
   } catch (err) {
     // Keep pending for retry
     setPending(state)
-    console.warn('[supabase sync] push failed, queued for retry', err)
-    return false
+    const friendly = formatSyncError(err)
+    console.warn('[supabase sync] push failed, queued for retry', err, 'friendly:', friendly)
+    return { ok: false, error: friendly }
   }
 }
 
@@ -242,6 +256,7 @@ export async function pullStateFromSupabase(userId: string): Promise<PersistedSt
 export function createDebouncedPusher(
   getUserId: () => string | null,
   getState: () => PersistedState,
+  onResult?: (res: { ok: boolean; error?: string }) => void,
 ) {
   let timer: number | null = null
 
@@ -252,7 +267,8 @@ export function createDebouncedPusher(
     if (timer) window.clearTimeout(timer)
     timer = window.setTimeout(async () => {
       const state = getState()
-      await pushStateToSupabase(state, userId)
+      const res = await pushStateToSupabase(state, userId)
+      onResult?.(res)
     }, SYNC_DEBOUNCE_MS)
   }
 
@@ -266,9 +282,11 @@ export function createDebouncedPusher(
     // If pending is newer than latest, use pending; otherwise use latest
     if (pending) {
       const merged = mergeStates(latest, pending.state)
-      await pushStateToSupabase(merged, userId)
+      const res = await pushStateToSupabase(merged, userId)
+      onResult?.(res)
     } else {
-      await pushStateToSupabase(latest, userId)
+      const res = await pushStateToSupabase(latest, userId)
+      onResult?.(res)
     }
   }
 

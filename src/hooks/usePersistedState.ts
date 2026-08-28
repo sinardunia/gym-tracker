@@ -15,11 +15,13 @@ export function usePersistedState(): {
   setState: Dispatch<SetStateAction<PersistedState>>
   isSyncing: boolean
   lastSyncAt: string | null
+  syncError: string | null
   forceSync: () => Promise<{ pulled: number; pushed: number; error?: string }>
 } {
   const [state, setState] = useState<PersistedState>(loadState)
   const [isSyncing, setIsSyncing] = useState(false)
   const [lastSyncAt, setLastSyncAt] = useState<string | null>(null)
+  const [syncError, setSyncError] = useState<string | null>(null)
   const { user } = useAuth()
   const stateRef = useRef(state)
   stateRef.current = state
@@ -36,13 +38,21 @@ export function usePersistedState(): {
     pusherRef.current = createDebouncedPusher(
       () => userId,
       () => stateRef.current,
+      (res) => {
+        if (res.ok) setSyncError(null)
+        else if (res.error) setSyncError(res.error)
+      },
     )
   }
-  // keep userId/stateRef fresh by recreating pusher when user changes? Use effect to update closure
+  // keep userId/stateRef fresh by recreating pusher when user changes
   useEffect(() => {
     pusherRef.current = createDebouncedPusher(
       () => userId,
       () => stateRef.current,
+      (res) => {
+        if (res.ok) setSyncError(null)
+        else if (res.error) setSyncError(res.error)
+      },
     )
     const cleanup = pusherRef.current.attachOnlineListener()
     return cleanup
@@ -110,7 +120,11 @@ export function usePersistedState(): {
           return current
         })
         if (needsPush) {
-          await pushStateToSupabase(merged, userId!)
+          const res = await pushStateToSupabase(merged, userId!)
+          if (res.ok) setSyncError(null)
+          else if (res.error) setSyncError(res.error)
+        } else {
+          setSyncError(null)
         }
         try {
           const v = localStorage.getItem('gym-tracker.lastSyncAt')
@@ -130,7 +144,9 @@ export function usePersistedState(): {
           stateRef.current.routines.length === 0 &&
           stateRef.current.activeWorkout === null
         if (!isLocalEmpty) {
-          await pushStateToSupabase(stateRef.current, userId!)
+          const res = await pushStateToSupabase(stateRef.current, userId!)
+          if (res.ok) setSyncError(null)
+          else if (res.error) setSyncError(res.error)
           try {
             const v = localStorage.getItem('gym-tracker.lastSyncAt')
             setLastSyncAt(v)
@@ -140,6 +156,7 @@ export function usePersistedState(): {
         } else {
           // New device with no local data and pull failed - allow retry on next focus
           hasPulledRef.current = null
+          setSyncError('Pull failed: no data and no session. Check sign-in and internet.')
         }
       }
       setIsSyncing(false)
@@ -219,13 +236,16 @@ export function usePersistedState(): {
   }, [userId])
 
   async function forceSync(): Promise<{ pulled: number; pushed: number; error?: string }> {
-    if (!userId) return { pulled: 0, pushed: 0, error: 'Not signed in' }
-    if (!navigator.onLine) return { pulled: 0, pushed: 0, error: 'Offline' }
+    if (!userId) return { pulled: 0, pushed: 0, error: 'Not signed in — please sign in with Google first' }
+    if (!navigator.onLine) return { pulled: 0, pushed: 0, error: 'Offline — will retry when online' }
     setIsSyncing(true)
+    setSyncError(null)
     try {
       // First push local (ensures anonymous history created before login is uploaded)
       const localBefore = stateRef.current
-      const pushedOk = await pushStateToSupabase(localBefore, userId)
+      const pushRes = await pushStateToSupabase(localBefore, userId)
+      if (!pushRes.ok && pushRes.error) setSyncError(pushRes.error)
+      else if (pushRes.ok) setSyncError(null)
       // Then pull remote and merge (union)
       const remote = await pullStateFromSupabase(userId)
       if (remote) {
@@ -240,7 +260,8 @@ export function usePersistedState(): {
         // If pull got more than local had, push union back (covers edge)
         const merged = mergeStates(localBefore, remote)
         if (merged.sessions.length > remote.sessions.length || merged.routines.length > remote.routines.length) {
-          await pushStateToSupabase(merged, userId)
+          const res2 = await pushStateToSupabase(merged, userId)
+          if (!res2.ok && res2.error) setSyncError(res2.error)
         }
         try {
           const v = localStorage.getItem('gym-tracker.lastSyncAt')
@@ -249,14 +270,17 @@ export function usePersistedState(): {
           // ignore
         }
         setIsSyncing(false)
-        return { pulled: remote.sessions.length, pushed: localBefore.sessions.length, error: pushedOk ? undefined : 'Push failed, check console' }
+        if (!pushRes.ok) return { pulled: remote.sessions.length, pushed: localBefore.sessions.length, error: pushRes.error }
+        return { pulled: remote.sessions.length, pushed: localBefore.sessions.length }
       }
       setIsSyncing(false)
-      return { pulled: 0, pushed: localBefore.sessions.length, error: pushedOk ? undefined : 'Pull returned null' }
+      if (!pushRes.ok) return { pulled: 0, pushed: localBefore.sessions.length, error: pushRes.error }
+      return { pulled: 0, pushed: localBefore.sessions.length, error: 'Pull returned no data — check Supabase tables and RLS' }
     } catch (e) {
       setIsSyncing(false)
       const msg = e instanceof Error ? e.message : String(e)
       console.error('[forceSync] error', e)
+      setSyncError(msg)
       return { pulled: 0, pushed: 0, error: msg }
     }
   }
@@ -265,5 +289,5 @@ export function usePersistedState(): {
     void navigator.storage?.persist?.().catch(() => {})
   }, [])
 
-  return { state, setState, isSyncing, lastSyncAt, forceSync }
+  return { state, setState, isSyncing, lastSyncAt, syncError, forceSync }
 }
