@@ -204,14 +204,19 @@ export function normalizeRoutine(routine: Routine): Routine {
 }
 
 export function normalizeSet(set: WorkoutSet): WorkoutSet {
-  return { ...set, type: set.type ?? 'working' }
+  return {
+    ...set,
+    type: set.type ?? 'working',
+    reps: Math.max(0, Math.round(set.reps)),
+    weightKg: Math.max(0, set.weightKg),
+  }
 }
 
 export function normalizeExercise(exercise: Exercise): Exercise {
   return {
     ...exercise,
     unit: exercise.unit ?? 'kg',
-    note: exercise.note?.trim() ? exercise.note : undefined,
+    note: exercise.note?.trim() || undefined,
     sets: exercise.sets.map(normalizeSet),
   }
 }
@@ -228,7 +233,9 @@ export function isPersistedState(value: unknown): value is PersistedState {
   if (typeof value !== 'object' || value === null) return false
   const data = value as Record<string, unknown>
   const activeWorkoutIsValid =
-    data.activeWorkout === null || isWorkout(data.activeWorkout)
+    data.activeWorkout === undefined ||
+    data.activeWorkout === null ||
+    isWorkout(data.activeWorkout)
   const routinesAreValid =
     data.routines === undefined ||
     (Array.isArray(data.routines) && data.routines.every(isRoutine))
