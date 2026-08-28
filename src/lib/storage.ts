@@ -79,7 +79,7 @@ export async function loadAsyncState(): Promise<PersistedState | null> {
     const idbState = await get<PersistedState>(STORAGE_KEY)
     if (idbState && isPersistedState(idbState)) {
       return {
-        activeWorkout: idbState.activeWorkout
+        activeWorkout: isWorkout(idbState.activeWorkout)
           ? normalizeWorkout(idbState.activeWorkout)
           : null,
         sessions: idbState.sessions.map(normalizeWorkout),
