@@ -38,20 +38,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function signInWithGoogle() {
     if (!supabase) throw new Error('Supabase not configured')
-    // Use origin without trailing slash to match Supabase redirect URL config exactly.
-    // Supabase will append /auth/callback internally; this redirectTo is where user lands after Supabase handles Google callback.
+    // redirectTo must be an exact URL listed in Supabase Dashboard > Auth > URL Configuration > Redirect URLs
+    // and Supabase callback https://<project>.supabase.co/auth/v1/callback must be in Google Cloud Console > Authorized redirect URIs
     const redirectTo = window.location.origin
-    const { error } = await supabase.auth.signInWithOAuth({
+    // For debugging redirect_uri_mismatch, log the authorize URL Supabase generates
+    const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo,
-        queryParams: {
-          access_type: 'offline',
-          prompt: 'consent',
-        },
+        // Skip extra queryParams that can trigger consent screen issues in testing mode
+        skipBrowserRedirect: false,
       },
     })
     if (error) throw error
+    // Log for debugging (visible in console if redirect fails)
+    if (data?.url) console.log('[auth] Google OAuth URL:', data.url, 'redirectTo:', redirectTo)
   }
 
   async function signOut() {

@@ -18,6 +18,8 @@ export function AuthButton() {
   }
 
   if (!user) {
+    const currentOrigin = typeof window !== 'undefined' ? window.location.origin : ''
+    const supabaseCallback = 'https://kniqcstlfsohslhwobjb.supabase.co/auth/v1/callback'
     return (
       <div className="flex flex-col gap-2 rounded-xl border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900">
         <div className="text-sm font-medium">Sync across devices</div>
@@ -25,7 +27,21 @@ export function AuthButton() {
           Works fully offline. Sign in to backup & sync your workouts automatically in background.
         </p>
         <button
-          onClick={() => signInWithGoogle().catch((e) => alert(e.message))}
+          onClick={async () => {
+            try {
+              await signInWithGoogle()
+            } catch (e) {
+              const msg = e instanceof Error ? e.message : String(e)
+              // Show detailed help for redirect_uri_mismatch
+              if (msg.includes('redirect') || msg.toLowerCase().includes('mismatch')) {
+                alert(
+                  `OAuth error: ${msg}\n\nFix:\n1. Google Cloud Console > Credentials > OAuth client > Authorized redirect URIs must include:\n${supabaseCallback}\n\n2. Supabase Dashboard > Auth > URL Config > Redirect URLs must include:\n${currentOrigin}\nand ${currentOrigin}/\n\nCurrent origin: ${currentOrigin}`,
+                )
+              } else {
+                alert(msg)
+              }
+            }
+          }}
           className="inline-flex items-center justify-center gap-2 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden>
@@ -45,6 +61,22 @@ export function AuthButton() {
           Continue with Google
         </button>
         <span className="text-[11px] text-zinc-400">Offline-first • data stays on device until you sign in</span>
+        {/* Debug helper for redirect_uri_mismatch - copy these exactly */}
+        <details className="mt-1 rounded bg-zinc-50 p-2 text-[11px] dark:bg-zinc-800/50">
+          <summary className="cursor-pointer text-zinc-500">Fix redirect_uri_mismatch?</summary>
+          <div className="mt-2 space-y-1 break-all">
+            <div>
+              <span className="font-medium">1. Google Console → Authorized redirect URI:</span>
+              <code className="block select-all rounded bg-white px-1.5 py-1 dark:bg-zinc-900">{supabaseCallback}</code>
+            </div>
+            <div>
+              <span className="font-medium">2. Supabase → Redirect URLs → add:</span>
+              <code className="block select-all rounded bg-white px-1.5 py-1 dark:bg-zinc-900">{currentOrigin}</code>
+              <code className="block select-all rounded bg-white px-1.5 py-1 dark:bg-zinc-900">{currentOrigin}/</code>
+            </div>
+            <div className="text-zinc-400">Also add your Vercel URL if testing deployed: same two lines.</div>
+          </div>
+        </details>
       </div>
     )
   }
