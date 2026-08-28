@@ -174,8 +174,9 @@ function AppContent({
     setCollapsedExerciseIds((ids) => {
       const isCollapsed = ids.has(exerciseId)
       if (isCollapsed) {
-        const allIds = state.activeWorkout?.exercises.map((e) => e.id) ?? []
-        return new Set(allIds.filter((id) => id !== exerciseId))
+        const next = new Set(ids)
+        next.delete(exerciseId)
+        return next
       }
       const next = new Set(ids)
       next.add(exerciseId)
@@ -296,13 +297,15 @@ function AppContent({
         </>
       )}
 
-      <BottomNav
-        activeTab={activeTab}
-        onTabChange={(tab) => {
-          setViewedSession(null)
-          setActiveTab(tab)
-        }}
-      />
+      {!viewedSession && (
+        <BottomNav
+          activeTab={activeTab}
+          onTabChange={(tab) => {
+            setViewedSession(null)
+            setActiveTab(tab)
+          }}
+        />
+      )}
     </div>
   )
 }
